@@ -5,11 +5,17 @@ on:
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+'
 
+# pub.dev OIDC publishing — no secrets needed, but requires one-time setup:
+# 1. Go to https://pub.dev/packages/flutter_state_migrator/admin
+# 2. Enable "Automated publishing" → GitHub Actions
+# 3. Repository: RanveerSingh1997/flutter-state-migrator
+# 4. Tag pattern: v{{version}}
+
 jobs:
   publish:
     runs-on: ubuntu-latest
     permissions:
-      id-token: write # Required for OIDC publishing
+      id-token: write # Required for OIDC token exchange with pub.dev
 
     steps:
       - uses: actions/checkout@v4
@@ -21,5 +27,5 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Publish
+      - name: Publish (OIDC)
         run: dart pub publish --force
