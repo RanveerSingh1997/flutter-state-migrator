@@ -102,10 +102,15 @@ The core pipeline for the tool has been successfully established and proven on a
 - [x] **Team Review Mode**: UI hooks for comments and approvals.
 - [x] **CI Pipeline Integration**: Automated report generation and upload from GitHub Actions.
 
-### Phase 18: Custom Plugin System (🚧 Next Steps)
-- [ ] **Plugin Architecture**: Support for custom adapters and transformers via external Dart scripts.
-- [ ] **Dynamic Loading**: Use `dart:isolate` or dynamic imports to load project-specific rules.
-- [ ] **Ecosystem Marketplace**: Foundation for sharing community-built migration plugins.
+### Phase 18: Custom Plugin System (✅ Completed)
+- [x] **Plugin Architecture**: Support for custom adapters and transformers via external Dart scripts.
+- [x] **Dynamic Loading**: Registry-based system for project-specific rules.
+- [x] **Extensible Pipeline**: Unified IR aggregation from core and third-party plugins.
+
+### Phase 19: AI-Assisted Logic Transformation (🚧 Next Steps)
+- [ ] **Local LLM Integration**: Support for refactoring complex method bodies using local models (e.g., Ollama).
+- [ ] **Context-Aware Refactoring**: Use class-wide context to improve AI-generated state updates.
+- [ ] **AI Confidence Scoring**: Only apply AI changes above a specific confidence threshold.
 
 ---
 
