@@ -68,51 +68,139 @@ class MyWidget extends ConsumerWidget {
 
   String _generateStateNotifier(LogicUnitNode node) {
     final buffer = StringBuffer();
-    final stateClassName = '${node.name}State';
-    buffer.writeln('// 🔄 Suggestion: Convert ${node.name} to StateNotifier');
-    buffer.writeln('// Note: StateNotifier requires an immutable state class.');
-    buffer.writeln('class $stateClassName {');
-    for (final variable in node.stateVariables) {
-      final name = variable.startsWith('_') ? variable.substring(1) : variable;
-      buffer.writeln('  final dynamic $name;');
+
+    switch (node.notifierType) {
+      case NotifierType.asyncNotifier:
+        buffer.writeln(
+          '// 🔄 Suggestion: Convert ${node.name} to AsyncNotifier (detected async methods)',
+        );
+        buffer.writeln('@riverpod');
+        buffer.writeln(
+          'class ${node.name}Notifier extends ${node.isFamilyCandidate ? '_\$${node.name}Notifier' : 'AsyncNotifier<dynamic>'} {',
+        );
+        buffer.writeln('  @override');
+        buffer.writeln('  Future<dynamic> build() async {');
+        buffer.writeln('    return null; // TODO: Return initial async state');
+        buffer.writeln('  }');
+        for (final method in node.methods) {
+          final transformedBody = _bodyTransformer.transformBody(
+            method.bodySnippet,
+            node.stateVariables,
+          );
+          buffer.writeln(
+            '  ${method.isAsync ? 'Future<void>' : 'void'} ${method.name}() $transformedBody',
+          );
+          buffer.writeln();
+        }
+        buffer.writeln('}');
+        if (node.isFamilyCandidate) {
+          buffer.writeln(
+            '// ⚠️  This class has constructor parameters — use .family modifier:',
+          );
+          buffer.writeln(
+            '// final ${node.name.toLowerCase()}Provider = AsyncNotifierProvider.family<${node.name}Notifier, dynamic, ArgType>(...);',
+          );
+        }
+
+      case NotifierType.streamNotifier:
+        buffer.writeln(
+          '// 🔄 Suggestion: Convert ${node.name} to StreamNotifier (detected Stream return types)',
+        );
+        buffer.writeln('@riverpod');
+        buffer.writeln(
+          'class ${node.name}Notifier extends StreamNotifier<dynamic> {',
+        );
+        buffer.writeln('  @override');
+        buffer.writeln('  Stream<dynamic> build() {');
+        buffer.writeln('    return const Stream.empty(); // TODO: Return stream');
+        buffer.writeln('  }');
+        for (final method in node.methods) {
+          final transformedBody = _bodyTransformer.transformBody(
+            method.bodySnippet,
+            node.stateVariables,
+          );
+          buffer.writeln('  void ${method.name}() $transformedBody');
+          buffer.writeln();
+        }
+        buffer.writeln('}');
+        if (node.isFamilyCandidate) {
+          buffer.writeln(
+            '// ⚠️  This class has constructor parameters — use .family modifier:',
+          );
+          buffer.writeln(
+            '// final ${node.name.toLowerCase()}Provider = StreamNotifierProvider.family<${node.name}Notifier, dynamic, ArgType>(...);',
+          );
+        }
+
+      case NotifierType.stateNotifier:
+        final stateClassName = '${node.name}State';
+        buffer.writeln(
+          '// 🔄 Suggestion: Convert ${node.name} to StateNotifier',
+        );
+        buffer.writeln(
+          '// Note: StateNotifier requires an immutable state class.',
+        );
+        buffer.writeln('class $stateClassName {');
+        for (final variable in node.stateVariables) {
+          final name =
+              variable.startsWith('_') ? variable.substring(1) : variable;
+          buffer.writeln('  final dynamic $name;');
+        }
+        buffer.writeln();
+        buffer.writeln('  $stateClassName({');
+        for (final variable in node.stateVariables) {
+          final name =
+              variable.startsWith('_') ? variable.substring(1) : variable;
+          buffer.writeln('    this.$name,');
+        }
+        buffer.writeln('  });');
+        buffer.writeln();
+        buffer.writeln('  $stateClassName copyWith({');
+        for (final variable in node.stateVariables) {
+          final name =
+              variable.startsWith('_') ? variable.substring(1) : variable;
+          buffer.writeln('    dynamic $name,');
+        }
+        buffer.writeln('  }) {');
+        buffer.writeln('    return $stateClassName(');
+        for (final variable in node.stateVariables) {
+          final name =
+              variable.startsWith('_') ? variable.substring(1) : variable;
+          buffer.writeln('      $name: $name ?? this.$name,');
+        }
+        buffer.writeln('    );');
+        buffer.writeln('  }');
+        buffer.writeln('}');
+        buffer.writeln('');
+        buffer.writeln(
+          'class ${node.name}Notifier extends StateNotifier<$stateClassName> {',
+        );
+        buffer.writeln(
+          '  ${node.name}Notifier() : super($stateClassName());',
+        );
+        buffer.writeln('');
+        for (final method in node.methods) {
+          final transformedBody = _bodyTransformer.transformBody(
+            method.bodySnippet,
+            node.stateVariables,
+          );
+          buffer.writeln('  void ${method.name}() $transformedBody');
+          buffer.writeln();
+        }
+        buffer.writeln('}');
+        if (node.isFamilyCandidate) {
+          buffer.writeln(
+            '// ⚠️  This class has constructor parameters — use .family modifier:',
+          );
+          final providerName = '${node.name.toLowerCase()}Provider';
+          buffer.writeln(
+            '// final $providerName = StateNotifierProvider.family<${node.name}Notifier, ${node.name}State, ArgType>((ref, arg) {',
+          );
+          buffer.writeln('//   return ${node.name}Notifier(arg);');
+          buffer.writeln('// });');
+        }
     }
-    buffer.writeln();
-    buffer.writeln('  $stateClassName({');
-    for (final variable in node.stateVariables) {
-      final name = variable.startsWith('_') ? variable.substring(1) : variable;
-      buffer.writeln('    this.$name,');
-    }
-    buffer.writeln('  });');
-    buffer.writeln();
-    buffer.writeln('  $stateClassName copyWith({');
-    for (final variable in node.stateVariables) {
-      final name = variable.startsWith('_') ? variable.substring(1) : variable;
-      buffer.writeln('    dynamic $name,');
-    }
-    buffer.writeln('  }) {');
-    buffer.writeln('    return $stateClassName(');
-    for (final variable in node.stateVariables) {
-      final name = variable.startsWith('_') ? variable.substring(1) : variable;
-      buffer.writeln('      $name: $name ?? this.$name,');
-    }
-    buffer.writeln('    );');
-    buffer.writeln('  }');
-    buffer.writeln('}');
-    buffer.writeln('');
-    buffer.writeln(
-      'class ${node.name}Notifier extends StateNotifier<$stateClassName> {',
-    );
-    buffer.writeln('  ${node.name}Notifier() : super($stateClassName());');
-    buffer.writeln('');
-    for (final method in node.methods) {
-      final transformedBody = _bodyTransformer.transformBody(
-        method.bodySnippet,
-        node.stateVariables,
-      );
-      buffer.writeln('  void ${method.name}() $transformedBody');
-      buffer.writeln();
-    }
-    buffer.writeln('}');
+
     return buffer.toString();
   }
 

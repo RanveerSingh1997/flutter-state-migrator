@@ -10,15 +10,26 @@ abstract class ProviderNode {
   });
 }
 
+/// Which Riverpod notifier primitive best fits the detected class shape.
+enum NotifierType { stateNotifier, asyncNotifier, streamNotifier }
+
 class MethodInfo {
   final String name;
   final bool callsNotifyListeners;
   final String bodySnippet;
 
+  /// True when the method body contains `async`/`await`.
+  final bool isAsync;
+
+  /// Source text of the declared return type (e.g. `'Future<void>'`, `'Stream<int>'`).
+  final String returnType;
+
   MethodInfo({
     required this.name,
     required this.callsNotifyListeners,
     required this.bodySnippet,
+    this.isAsync = false,
+    this.returnType = 'void',
   });
 }
 
@@ -28,11 +39,20 @@ class LogicUnitNode extends ProviderNode {
   final List<MethodInfo> methods;
   final bool isNotifier;
 
+  /// Best-fit Riverpod primitive inferred from the class's method signatures.
+  final NotifierType notifierType;
+
+  /// True when the class constructor has required parameters (beyond `key`),
+  /// indicating a `.family` provider is needed.
+  final bool isFamilyCandidate;
+
   LogicUnitNode({
     required this.name,
     required this.stateVariables,
     required this.methods,
     required this.isNotifier,
+    this.notifierType = NotifierType.stateNotifier,
+    this.isFamilyCandidate = false,
     required super.filePath,
     required super.offset,
     required super.length,
@@ -44,6 +64,8 @@ class LogicUnitNode extends ProviderNode {
     'state': stateVariables,
     'methods': methods,
     'notifier': isNotifier,
+    'notifierType': notifierType.name,
+    'isFamilyCandidate': isFamilyCandidate,
   };
 }
 

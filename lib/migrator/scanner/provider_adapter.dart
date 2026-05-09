@@ -30,20 +30,39 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
       final stateVariables = <String>[];
       final methods = <MethodInfo>[];
 
+      bool isFamilyCandidate = false;
       for (final member in node.members) {
         if (member is FieldDeclaration) {
           for (final variable in member.fields.variables) {
             stateVariables.add(variable.name.lexeme);
           }
+        } else if (member is ConstructorDeclaration) {
+          // Any constructor param beyond `key` signals a .family provider is needed
+          for (final param in member.parameters.parameters) {
+            final paramName = param.name?.lexeme ?? '';
+            if (paramName != 'key') {
+              isFamilyCandidate = true;
+              break;
+            }
+          }
         } else if (member is MethodDeclaration) {
           if (member.name.lexeme != 'dispose') {
             final body = member.body.toSource();
             final callsNotify = body.contains('notifyListeners()');
+            final returnType = member.returnType?.toSource() ?? 'void';
+            final isAsync = member.body is BlockFunctionBody
+                ? (member.body as BlockFunctionBody).keyword?.lexeme == 'async'
+                : member.body is ExpressionFunctionBody
+                    ? (member.body as ExpressionFunctionBody).keyword?.lexeme ==
+                        'async'
+                    : false;
             methods.add(
               MethodInfo(
                 name: member.name.lexeme,
                 callsNotifyListeners: callsNotify,
                 bodySnippet: body,
+                isAsync: isAsync,
+                returnType: returnType,
               ),
             );
           }
@@ -56,6 +75,8 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
           stateVariables: stateVariables,
           methods: methods,
           isNotifier: true,
+          notifierType: _detectNotifierType(methods),
+          isFamilyCandidate: isFamilyCandidate,
           filePath: filePath,
           offset: node.offset,
           length: node.length,
@@ -463,5 +484,17 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
     }
 
     super.visitMethodInvocation(node);
+  }
+
+  NotifierType _detectNotifierType(List<MethodInfo> methods) {
+    for (final m in methods) {
+      if (m.returnType.startsWith('Stream<')) return NotifierType.streamNotifier;
+    }
+    for (final m in methods) {
+      if (m.isAsync || m.returnType.startsWith('Future<')) {
+        return NotifierType.asyncNotifier;
+      }
+    }
+    return NotifierType.stateNotifier;
   }
 }

@@ -18,23 +18,43 @@ class BlocAdapter extends RecursiveAstVisitor<void> {
         final stateType = extendsClause.superclass.typeArguments?.arguments.last.toSource() ?? 'dynamic';
         
         final methods = <MethodInfo>[];
+        bool isFamilyCandidate = false;
         for (final member in node.members) {
-          if (member is MethodDeclaration) {
+          if (member is ConstructorDeclaration) {
+            for (final param in member.parameters.parameters) {
+              final paramName = param.name?.lexeme ?? '';
+              if (paramName != 'key') {
+                isFamilyCandidate = true;
+                break;
+              }
+            }
+          } else if (member is MethodDeclaration) {
             final body = member.body.toSource();
             final callsEmit = body.contains('emit(');
+            final returnType = member.returnType?.toSource() ?? 'void';
+            final isAsync = member.body is BlockFunctionBody
+                ? (member.body as BlockFunctionBody).keyword?.lexeme == 'async'
+                : member.body is ExpressionFunctionBody
+                    ? (member.body as ExpressionFunctionBody).keyword?.lexeme ==
+                        'async'
+                    : false;
             methods.add(MethodInfo(
               name: member.name.lexeme,
-              callsNotifyListeners: callsEmit, // Map 'emit' to notifyListeners for IR consistency
+              callsNotifyListeners: callsEmit,
               bodySnippet: body,
+              isAsync: isAsync,
+              returnType: returnType,
             ));
           }
         }
 
         nodes.add(LogicUnitNode(
           name: className,
-          stateVariables: [stateType], // Use state type as a marker
+          stateVariables: [stateType],
           methods: methods,
           isNotifier: true,
+          notifierType: _detectNotifierType(methods),
+          isFamilyCandidate: isFamilyCandidate,
           filePath: filePath,
           offset: node.offset,
           length: node.length,
@@ -42,5 +62,17 @@ class BlocAdapter extends RecursiveAstVisitor<void> {
       }
     }
     super.visitClassDeclaration(node);
+  }
+
+  NotifierType _detectNotifierType(List<MethodInfo> methods) {
+    for (final m in methods) {
+      if (m.returnType.startsWith('Stream<')) return NotifierType.streamNotifier;
+    }
+    for (final m in methods) {
+      if (m.isAsync || m.returnType.startsWith('Future<')) {
+        return NotifierType.asyncNotifier;
+      }
+    }
+    return NotifierType.stateNotifier;
   }
 }
