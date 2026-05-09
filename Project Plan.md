@@ -97,10 +97,15 @@ The core pipeline for the tool has been successfully established and proven on a
 - [x] **Interactive Overview**: Visual stats and file lists for the migration process.
 - [x] **CLI Bridge**: Unified command to launch the visual interface.
 
-### Phase 17: Cloud Collaboration & CI Integration (🚧 Next Steps)
-- [ ] **Remote Report Sync**: Upload migration audits to a central cloud dashboard.
-- [ ] **Team Review Mode**: Add comments and approvals to proposed refactors.
-- [ ] **CI Pipeline Integration**: Automated report generation and upload from GitHub Actions.
+### Phase 17: Cloud Collaboration & CI Integration (✅ Completed)
+- [x] **Remote Report Sync**: Upload migration audits to a central cloud dashboard.
+- [x] **Team Review Mode**: UI hooks for comments and approvals.
+- [x] **CI Pipeline Integration**: Automated report generation and upload from GitHub Actions.
+
+### Phase 18: Custom Plugin System (🚧 Next Steps)
+- [ ] **Plugin Architecture**: Support for custom adapters and transformers via external Dart scripts.
+- [ ] **Dynamic Loading**: Use `dart:isolate` or dynamic imports to load project-specific rules.
+- [ ] **Ecosystem Marketplace**: Foundation for sharing community-built migration plugins.
 
 ---
 
