@@ -1,0 +1,12 @@
+{
+  "timestamp": "2026-05-09T21:07:39.289502",
+  "target": "test_project",
+  "modified_files": [
+    "test_project/lib/main.dart"
+  ],
+  "summary": {
+    "total_nodes": 3,
+    "logic_units": 0,
+    "widgets": 1
+  }
+}
