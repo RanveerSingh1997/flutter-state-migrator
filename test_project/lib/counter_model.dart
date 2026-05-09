@@ -29,4 +29,3 @@ class CounterModel extends ChangeNotifier {
   }
 }
 */
-

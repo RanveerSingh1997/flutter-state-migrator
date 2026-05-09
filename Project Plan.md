@@ -31,13 +31,13 @@ The core pipeline for the tool has been successfully established and proven on a
 - [x] Append global `StateNotifierProvider` declarations to the source files.
 - [x] Validate "Aggressive Mode" end-to-end on a test project.
 
-### Phase 5: Refinement & Advanced Patterns (🚧 Next Steps)
-- [ ] **MultiProvider Support**: Detect and unwrap `MultiProvider`, migrating all grouped providers to global Riverpod scopes.
-- [ ] **Selectors**: Automatically convert `Selector<T, R>` patterns to `ref.watch(provider.select((state) => state.r))`.
-- [ ] **Async Providers**: Migrate `FutureProvider` and `StreamProvider` to Riverpod equivalents handling `AsyncValue`.
-- [ ] **Auto-Formatting**: Integrate `dart format` via a shell execution or formatter API to clean up formatting after aggressive edits.
+### Phase 5: Refinement & Advanced Patterns (✅ Completed)
+- [x] **MultiProvider Support**: Detected and unwrapped `MultiProvider`, migrating all grouped providers to global Riverpod scopes.
+- [x] **Selectors**: Automatically converted `Selector<T, R>` patterns to `ref.watch(provider.select(...))`.
+- [x] **Async Providers**: Migrated `FutureProvider` and `StreamProvider` to Riverpod equivalents.
+- [x] **Auto-Formatting**: Integrated `dart format` to clean up formatting after aggressive edits.
 
-### Phase 6: Polish & Distribution (📅 Future)
+### Phase 6: Polish & Distribution (🚧 Next Steps)
 - [ ] Comprehensive unit test suite covering various edge cases.
 - [ ] Extensive project documentation (`README.md`, `CONTRIBUTING.md`).
 - [ ] Publish the tool to `pub.dev`.

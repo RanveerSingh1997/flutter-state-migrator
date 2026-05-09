@@ -111,7 +111,21 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
 
     // Detect MultiProvider(...)
     if (typeName == 'MultiProvider') {
-      nodes.add(MultiProviderNode(filePath: filePath, offset: node.offset, length: node.length));
+      int? childOffset;
+      int? childLength;
+      for (final arg in node.argumentList.arguments) {
+        if (arg is NamedExpression && arg.name.label.name == 'child') {
+          childOffset = arg.expression.offset;
+          childLength = arg.expression.length;
+        }
+      }
+      nodes.add(MultiProviderNode(
+        childOffset: childOffset,
+        childLength: childLength,
+        filePath: filePath,
+        offset: node.offset,
+        length: node.length,
+      ));
     }
 
     // Detect Selector<T, R>(...)
@@ -120,26 +134,43 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
       if (typeArgs != null && typeArgs.arguments.length >= 2) {
         final consumedType = typeArgs.arguments[0].beginToken.lexeme;
         final selectedType = typeArgs.arguments[1].beginToken.lexeme;
+        String selectorSnippet = '/* TODO: Selector */';
+        for (final arg in node.argumentList.arguments) {
+          if (arg is NamedExpression && arg.name.label.name == 'selector') {
+            selectorSnippet = arg.expression.toSource();
+          }
+        }
         nodes.add(SelectorNode(
-          consumedClass: consumedType, 
+          consumedClass: consumedType,
           selectedType: selectedType,
-          filePath: filePath, 
-          offset: node.offset, 
-          length: node.length
+          selectorSnippet: selectorSnippet,
+          filePath: filePath,
+          offset: node.offset,
+          length: node.length,
         ));
       }
     }
-    
+
     // Detect FutureProvider / StreamProvider(...)
     if (typeName == 'FutureProvider' || typeName == 'StreamProvider') {
       String providedType = 'Unknown';
+      int? childOffset;
+      int? childLength;
       final typeArgs = node.constructorName.type.typeArguments;
       if (typeArgs != null && typeArgs.arguments.isNotEmpty) {
         providedType = typeArgs.arguments.first.beginToken.lexeme;
       }
+      for (final arg in node.argumentList.arguments) {
+        if (arg is NamedExpression && arg.name.label.name == 'child') {
+          childOffset = arg.expression.offset;
+          childLength = arg.expression.length;
+        }
+      }
       nodes.add(AsyncProviderNode(
         providerType: typeName,
         providedType: providedType,
+        childOffset: childOffset,
+        childLength: childLength,
         filePath: filePath,
         offset: node.offset,
         length: node.length,
@@ -151,10 +182,10 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
 
   @override
   void visitMethodInvocation(MethodInvocation node) {
-    final methodName = node.methodName.name;
+    final nodeName = node.methodName.name;
 
     // Detect ChangeNotifierProvider(...) as MethodInvocation
-    if (methodName == 'ChangeNotifierProvider') {
+    if (nodeName == 'ChangeNotifierProvider') {
        String? providedClass;
        int? childOffset;
        int? childLength;
@@ -180,7 +211,7 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
          }
        }
        nodes.add(ProviderDeclarationNode(
-         providerType: methodName,
+         providerType: nodeName,
          providedClass: providedClass ?? 'Unknown',
          childOffset: childOffset,
          childLength: childLength,
@@ -218,36 +249,67 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
     }
 
     // Detect MultiProvider(...)
-    if (node.methodName.name == 'MultiProvider') {
-      nodes.add(MultiProviderNode(filePath: filePath, offset: node.offset, length: node.length));
+    if (nodeName == 'MultiProvider') {
+      int? childOffset;
+      int? childLength;
+      for (final arg in node.argumentList.arguments) {
+        if (arg is NamedExpression && arg.name.label.name == 'child') {
+          childOffset = arg.expression.offset;
+          childLength = arg.expression.length;
+        }
+      }
+      nodes.add(MultiProviderNode(
+        childOffset: childOffset,
+        childLength: childLength,
+        filePath: filePath,
+        offset: node.offset,
+        length: node.length,
+      ));
     }
 
     // Detect Selector<T, R>(...)
-    if (node.methodName.name == 'Selector') {
+    if (nodeName == 'Selector') {
       final typeArgs = node.typeArguments;
       if (typeArgs != null && typeArgs.arguments.length >= 2) {
         final consumedType = typeArgs.arguments[0].beginToken.lexeme;
         final selectedType = typeArgs.arguments[1].beginToken.lexeme;
+        String selectorSnippet = '/* TODO: Selector */';
+        for (final arg in node.argumentList.arguments) {
+          if (arg is NamedExpression && arg.name.label.name == 'selector') {
+            selectorSnippet = arg.expression.toSource();
+          }
+        }
         nodes.add(SelectorNode(
-          consumedClass: consumedType, 
+          consumedClass: consumedType,
           selectedType: selectedType,
-          filePath: filePath, 
-          offset: node.offset, 
-          length: node.length
+          selectorSnippet: selectorSnippet,
+          filePath: filePath,
+          offset: node.offset,
+          length: node.length,
         ));
       }
     }
 
     // Detect FutureProvider / StreamProvider(...)
-    if (node.methodName.name == 'FutureProvider' || node.methodName.name == 'StreamProvider') {
+    if (nodeName == 'FutureProvider' || nodeName == 'StreamProvider') {
       String providedType = 'Unknown';
+      int? childOffset;
+      int? childLength;
       final typeArgs = node.typeArguments;
       if (typeArgs != null && typeArgs.arguments.isNotEmpty) {
         providedType = typeArgs.arguments.first.beginToken.lexeme;
       }
+      for (final arg in node.argumentList.arguments) {
+        if (arg is NamedExpression && arg.name.label.name == 'child') {
+          childOffset = arg.expression.offset;
+          childLength = arg.expression.length;
+        }
+      }
       nodes.add(AsyncProviderNode(
-        providerType: node.methodName.name,
+        providerType: nodeName,
         providedType: providedType,
+        childOffset: childOffset,
+        childLength: childLength,
         filePath: filePath,
         offset: node.offset,
         length: node.length,

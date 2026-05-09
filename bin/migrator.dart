@@ -163,6 +163,10 @@ void main(List<String> arguments) {
         print('✅ Rewrote ${entry.key}');
       }
     }
+    
+    print('\n🧹 Running dart format...');
+    Process.runSync('dart', ['format', targetPath]);
+    print('✨ Done!');
   } else {
     print('❌ Unknown mode: $mode');
   }

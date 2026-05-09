@@ -73,10 +73,12 @@ class ProviderOfNode extends ProviderNode {
 class SelectorNode extends ProviderNode {
   final String consumedClass;
   final String selectedType;
+  final String selectorSnippet;
 
   SelectorNode({
     required this.consumedClass,
     required this.selectedType,
+    required this.selectorSnippet,
     required super.filePath,
     required super.offset,
     required super.length,
@@ -84,7 +86,12 @@ class SelectorNode extends ProviderNode {
 }
 
 class MultiProviderNode extends ProviderNode {
+  final int? childOffset;
+  final int? childLength;
+
   MultiProviderNode({
+    this.childOffset,
+    this.childLength,
     required super.filePath,
     required super.offset,
     required super.length,
@@ -94,10 +101,14 @@ class MultiProviderNode extends ProviderNode {
 class AsyncProviderNode extends ProviderNode {
   final String providerType; // FutureProvider or StreamProvider
   final String providedType; // The type returned by the future/stream
+  final int? childOffset;
+  final int? childLength;
 
   AsyncProviderNode({
     required this.providerType,
     required this.providedType,
+    this.childOffset,
+    this.childLength,
     required super.filePath,
     required super.offset,
     required super.length,

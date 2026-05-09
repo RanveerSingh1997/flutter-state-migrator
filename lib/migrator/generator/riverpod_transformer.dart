@@ -20,9 +20,13 @@ class RiverpodTransformer {
       return _transformWidget(node, originalSource);
     } else if (node is ConsumerNode) {
       return _transformConsumer(node, originalSource);
+    } else if (node is SelectorNode) {
+      return _transformSelector(node, originalSource);
+    } else if (node is MultiProviderNode) {
+      return _transformMultiProvider(node, originalSource);
+    } else if (node is AsyncProviderNode) {
+      return _transformAsyncProvider(node, originalSource);
     }
-    // Selector, MultiProvider, AsyncProvider are harder to transform via simple string replacement
-    // without more AST details. We leave them as empty to signal that manual migration might be needed.
     return [];
   }
 
@@ -47,9 +51,11 @@ class RiverpodTransformer {
   List<TextEdit> _transformProviderDeclaration(ProviderDeclarationNode node, String originalSource) {
     final providerName = '${node.providedClass.toLowerCase()}Provider';
     
-    String replacement = '/* TODO: Missing child for ${node.providedClass} */';
+    final edits = <TextEdit>[];
+
     if (node.childOffset != null && node.childLength != null) {
-      replacement = originalSource.substring(node.childOffset!, node.childOffset! + node.childLength!);
+      final replacement = originalSource.substring(node.childOffset!, node.childOffset! + node.childLength!);
+      edits.add(TextEdit(node.offset, node.length, replacement));
     }
 
     final globalProviderDef = '''
@@ -60,10 +66,75 @@ final $providerName = StateNotifierProvider<${node.providedClass}Notifier, ${nod
 });
 ''';
 
-    return [
-      TextEdit(node.offset, node.length, replacement),
-      TextEdit(originalSource.length, 0, globalProviderDef),
-    ];
+    edits.add(TextEdit(originalSource.length, 0, globalProviderDef));
+    return edits;
+  }
+
+  List<TextEdit> _transformMultiProvider(MultiProviderNode node, String originalSource) {
+    if (node.childOffset != null && node.childLength != null) {
+      final replacement = originalSource.substring(node.childOffset!, node.childOffset! + node.childLength!);
+      return [TextEdit(node.offset, node.length, replacement)];
+    }
+    return [];
+  }
+
+  List<TextEdit> _transformSelector(SelectorNode node, String originalSource) {
+    final edits = <TextEdit>[];
+    final snippet = originalSource.substring(node.offset, node.offset + node.length);
+
+    // 1. Replace Selector<A, B> with Consumer
+    final selectorRegex = RegExp(r'Selector<\w+,\s*\w+>');
+    final selectorMatch = selectorRegex.firstMatch(snippet);
+    if (selectorMatch != null) {
+      edits.add(TextEdit(
+          node.offset + selectorMatch.start, selectorMatch.group(0)!.length, 'Consumer'));
+    }
+
+    // 2. Remove the selector: argument
+    final selectorArgRegex = RegExp(r'selector:\s*[\s\S]+?(?=builder:)', multiLine: true);
+    final selectorArgMatch = selectorArgRegex.firstMatch(snippet);
+    if (selectorArgMatch != null) {
+      edits.add(TextEdit(node.offset + selectorArgMatch.start, selectorArgMatch.group(0)!.length, ''));
+    }
+
+    // 3. Find builder signature and replace
+    final builderRegex = RegExp(r'builder:\s*\(\s*([^,]+)\s*,\s*([^,]+)\s*,\s*([^)]+)\)\s*\{', multiLine: true);
+    final builderMatch = builderRegex.firstMatch(snippet);
+    if (builderMatch != null) {
+      final ctx = builderMatch.group(1)!.trim();
+      final val = builderMatch.group(2)!.trim();
+      final ch = builderMatch.group(3)!.trim();
+      final providerName = '${node.consumedClass.toLowerCase()}Provider';
+
+      final newBuilder =
+          "builder: ($ctx, ref, $ch) {\n    final $val = ref.watch($providerName.select(${node.selectorSnippet}));";
+
+      edits.add(TextEdit(
+          node.offset + builderMatch.start, builderMatch.group(0)!.length, newBuilder));
+    }
+
+    return edits;
+  }
+
+  List<TextEdit> _transformAsyncProvider(AsyncProviderNode node, String originalSource) {
+    final providerName = '${node.providedType.toLowerCase()}Provider';
+    final edits = <TextEdit>[];
+
+    if (node.childOffset != null && node.childLength != null) {
+      final replacement = originalSource.substring(node.childOffset!, node.childOffset! + node.childLength!);
+      edits.add(TextEdit(node.offset, node.length, replacement));
+    }
+
+    final globalProviderDef = '''
+
+// TODO: Auto-migrated Riverpod ${node.providerType}
+final $providerName = ${node.providerType == 'FutureProvider' ? 'FutureProvider' : 'StreamProvider'}<${node.providedType}>((ref) {
+  return /* TODO: Return ${node.providerType == 'FutureProvider' ? 'Future' : 'Stream'} */;
+});
+''';
+
+    edits.add(TextEdit(originalSource.length, 0, globalProviderDef));
+    return edits;
   }
 
   List<TextEdit> _transformLogicUnit(LogicUnitNode node, String originalSource) {
@@ -132,36 +203,30 @@ final $providerName = StateNotifierProvider<${node.providedClass}Notifier, ${nod
   List<TextEdit> _transformConsumer(ConsumerNode node, String originalSource) {
     final edits = <TextEdit>[];
     final snippet = originalSource.substring(node.offset, node.offset + node.length);
-    
+
     // 1. Replace Consumer<Type> with Consumer
     final consumerRegex = RegExp(r'Consumer<\w+>');
     final consumerMatch = consumerRegex.firstMatch(snippet);
     if (consumerMatch != null) {
       edits.add(TextEdit(
-        node.offset + consumerMatch.start,
-        consumerMatch.group(0)!.length,
-        'Consumer'
-      ));
+          node.offset + consumerMatch.start, consumerMatch.group(0)!.length, 'Consumer'));
     }
-    
+
     // 2. Find builder signature and replace
-    final builderRegex = RegExp(r'builder:\s*\(([^,]+),\s*([^,]+),\s*([^)]+)\)\s*\{');
+    final builderRegex = RegExp(r'builder:\s*\(\s*([^,]+)\s*,\s*([^,]+)\s*,\s*([^)]+)\)\s*\{', multiLine: true);
     final builderMatch = builderRegex.firstMatch(snippet);
     if (builderMatch != null) {
-      final ctx = builderMatch.group(1);
-      final val = builderMatch.group(2);
-      final ch = builderMatch.group(3);
+      final ctx = builderMatch.group(1)!.trim();
+      final val = builderMatch.group(2)!.trim();
+      final ch = builderMatch.group(3)!.trim();
       final providerName = '${node.consumedClass.toLowerCase()}Provider';
-      
+
       final newBuilder = "builder: ($ctx, ref, $ch) {\n    final $val = ref.watch($providerName);";
-      
+
       edits.add(TextEdit(
-        node.offset + builderMatch.start,
-        builderMatch.group(0)!.length,
-        newBuilder
-      ));
+          node.offset + builderMatch.start, builderMatch.group(0)!.length, newBuilder));
     }
-    
+
     return edits;
   }
 }
