@@ -2,21 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'counter_model.dart';
 import 'settings_screen.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 void main() {
   runApp(
-    MultiProvider(
-      providers: [ChangeNotifierProvider(create: (_) => CounterModel())],
-      child: const MyApp(),
-    ),
+    ProviderScope(child: const MyApp()),
   );
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends ConsumerWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp(
       title: 'Provider Migration Example',
       theme: ThemeData(primarySwatch: Colors.blue),
@@ -25,11 +23,11 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Home'),
@@ -44,8 +42,8 @@ class HomeScreen extends StatelessWidget {
         ],
       ),
       body: Center(
-        child: Consumer<CounterModel>(
-          builder: (context, counter, child) => Text(
+        child: Consumer(
+          builder: (context, ref, child) => ref.watch(countermodelProvider) Text(
             'Count: ${counter.count}',
             style: Theme.of(context).textTheme.headlineMedium,
           ),
@@ -53,9 +51,14 @@ class HomeScreen extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () =>
-            Provider.of<CounterModel>(context, listen: false).increment(),
+            ref.read(countermodelProvider).increment(),
         child: const Icon(Icons.add),
       ),
     );
   }
 }
+
+// TODO: Auto-migrated Riverpod Provider
+final countermodelProvider = StateNotifierProvider<CounterModelNotifier, CounterModelState>((ref) {
+  return CounterModelNotifier();
+});

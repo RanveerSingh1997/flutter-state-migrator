@@ -1,0 +1,17 @@
+{
+  "timestamp": "2026-05-09T22:30:52.770833",
+  "target": "example/lib",
+  "complexity_score": 16.5,
+  "packages": [],
+  "modified_files": [
+    "example/lib/settings_screen.dart",
+    "example/lib/main.dart",
+    "example/lib/counter_model.dart"
+  ],
+  "summary": {
+    "total_nodes": 11,
+    "logic_units": 1,
+    "widgets": 3,
+    "duration_ms": 1
+  }
+}
