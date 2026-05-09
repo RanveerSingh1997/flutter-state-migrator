@@ -137,10 +137,10 @@ The **Flutter State Migrator** is now the premier modernization engine for the F
 - [x] **ROI Dashboard**: Estimated "Engineering Hours Saved" visualization.
 - [x] **Migration Accuracy Tracker**: automated vs manual code ratio analysis.
 
-### Phase 23: Interactive CLI Wizard (🚧 Next Steps)
-- [ ] **Guided Onboarding**: Replace raw flags with a terminal-based questionnaire.
-- [ ] **Smart Prompts**: Ask questions based on detected libraries (e.g. "Provider detected. Proceed?").
-- [ ] **Configuration Generation**: Allow users to save their wizard answers to a `migrator.yaml` file.
+### Phase 23: Interactive CLI Wizard (✅ Completed)
+- [x] **Guided Onboarding**: Replace raw flags with a terminal-based questionnaire.
+- [x] **Smart Prompts**: Ask questions based on detected libraries (e.g. "Provider detected. Proceed?").
+- [x] **Configuration Generation**: Allow users to save their wizard answers to a `migrator.yaml` file.
 
 ---
 

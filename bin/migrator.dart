@@ -12,9 +12,8 @@ import '../lib/migrator/analysis/monorepo_manager.dart';
 import '../lib/migrator/analysis/visualizer.dart';
 import '../lib/migrator/analysis/cloud_manager.dart';
 import '../lib/migrator/analysis/ai_manager.dart';
-import '../lib/migrator/analysis/snapshot_manager.dart';
-import '../lib/migrator/analysis/dependency_manager.dart';
 import '../lib/migrator/analysis/analytics_manager.dart';
+import '../lib/migrator/analysis/wizard.dart';
 import 'dart:convert';
 
 Future<void> main(List<String> arguments) async {
@@ -68,26 +67,55 @@ Future<void> main(List<String> arguments) async {
       abbr: 'h',
       negatable: false,
       help: 'Show usage information',
+    )
+    ..addFlag(
+      'wizard',
+      abbr: 'w',
+      negatable: false,
+      help: 'Launch the interactive setup wizard',
     );
 
   final argResults = parser.parse(arguments);
 
-  if (argResults['help'] as bool || argResults.rest.isEmpty) {
+  String targetPath;
+  String mode;
+  bool useAi;
+  bool syncCloud;
+  bool dryRun;
+  bool visualize;
+  bool dashboard;
+  bool generateReport;
+  bool cleanImports;
+
+  if (argResults['help'] as bool) {
     print('Usage: dart run bin/migrator.dart [options] <flutter_project_path>');
     print(parser.usage);
     exit(0);
   }
 
-  final targetPath = argResults.rest.first;
-  final mode = argResults['mode'] as String;
-  final config = ConfigurationManager.loadConfig(targetPath);
-  final cleanImports = argResults['clean-imports'] as bool;
-  final generateReport = argResults['report'] as bool;
-  final dryRun = argResults['dry-run'] as bool;
-  final visualize = argResults['visualize'] as bool;
-  final dashboard = argResults['dashboard'] as bool;
-  final sync = argResults['sync'] as bool;
-  final useAi = argResults['ai'] as bool;
+  if (argResults.rest.isEmpty || argResults['wizard'] as bool) {
+    final wizard = InteractiveWizard();
+    final config = wizard.start();
+    targetPath = config.targetPath;
+    mode = config.mode;
+    useAi = config.useAi;
+    syncCloud = config.syncCloud;
+    dryRun = config.dryRun;
+    visualize = config.visualize;
+    dashboard = false;
+    generateReport = config.generateReport;
+    cleanImports = config.cleanImports;
+  } else {
+    targetPath = argResults.rest.first;
+    mode = argResults['mode'] as String;
+    cleanImports = argResults['clean-imports'] as bool;
+    generateReport = argResults['report'] as bool;
+    dryRun = argResults['dry-run'] as bool;
+    visualize = argResults['visualize'] as bool;
+    dashboard = argResults['dashboard'] as bool;
+    syncCloud = argResults['sync'] as bool;
+    useAi = argResults['ai'] as bool;
+  }
 
   final monorepo = MonorepoManager(targetPath);
   final packages = monorepo.findPackages();
@@ -107,12 +135,25 @@ Future<void> main(List<String> arguments) async {
     '\x1B[1m\x1B[35m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\x1B[0m',
   );
 
+  // Load project-level config (migrator_config.yaml) if present.
+  final projectConfig = ConfigurationManager.loadConfig(targetPath);
+  if (projectConfig.providerNaming != 'camelCase' || !projectConfig.autoMergeState) {
+    print('⚙️  Loaded project config: naming=${projectConfig.providerNaming}, autoMerge=${projectConfig.autoMergeState}');
+  }
+
   // Pipeline
   // 1. Scan targetPath for Dart files
   // 2. Parse into AST
   // 3. Extract IR models using ProviderAdapter
   final scanner = AstScanner(targetPath);
   final nodes = scanner.scanProject();
+
+  // Warn about any circular dependencies before transforming.
+  final depChecker = DependencyChecker();
+  final depWarnings = depChecker.checkCircularDependencies(nodes);
+  for (final warning in depWarnings) {
+    print('\x1B[33m⚠️  $warning\x1B[0m');
+  }
 
   print('\n📊 Found ${nodes.length} Provider-related elements:');
   if (visualize) {
@@ -248,7 +289,6 @@ Future<void> main(List<String> arguments) async {
     final importManager = ImportManager();
     int modifiedFilesCount = 0;
     final startTime = DateTime.now();
-    final complexityScore = nodes.length * 1.5;
     final analyticsManager = AnalyticsManager();
     final roiMetrics = analyticsManager.calculateMetrics(nodes, packages.length);
 
@@ -258,6 +298,7 @@ Future<void> main(List<String> arguments) async {
       'mode': mode,
       'packages': packages.map((p) => {'name': p.name, 'root': p.rootPath}).toList(),
       'metrics': roiMetrics,
+      'modified_files': <String>[],
       'nodes': nodes.map((n) {
         if (n is LogicUnitNode) {
           return {
@@ -333,9 +374,29 @@ Future<void> main(List<String> arguments) async {
       reportFile.writeAsStringSync(reportJson);
       print('\n📊 Report generated at: ${reportFile.path}');
 
-      if (sync) {
+      if (syncCloud) {
         final cloudManager = CloudManager();
         await cloudManager.uploadReport(reportData);
+      }
+    }
+
+    if (useAi) {
+      print('\n🤖 Running AI-assisted logic refactoring...');
+      final aiManager = AIManager();
+      final logicNodes = nodes.whereType<LogicUnitNode>().toList();
+      for (final node in logicNodes) {
+        final complexMethods =
+            node.methods.where((m) => m.callsNotifyListeners).toList();
+        for (final method in complexMethods) {
+          print('   Refactoring ${node.name}.${method.name}...');
+          await aiManager.refactorMethodBody(
+            className: node.name,
+            stateFields: node.stateVariables,
+            methodName: method.name,
+            methodBody: method.bodySnippet,
+          );
+          print('   \x1B[32m✓\x1B[0m ${node.name}.${method.name}');
+        }
       }
     }
 
