@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.0] - 2026-05-09
+
+### Added
+- **Universal Migrator**: Support for all major state libraries — Provider, BLoC/Cubit, GetX, and MobX.
+- **Interactive CLI Wizard**: Guided onboarding with auto-detection of installed state libraries (`--wizard`).
+- **Snapshot & Rollback**: Automatic project snapshots before aggressive migration with one-command rollback.
+- **Automated Dependency Management**: Auto-updates `pubspec.yaml` with Riverpod packages after migration.
+- **ROI & Analytics Engine**: Migration metrics including complexity scores and estimated engineering hours saved.
+- **AI-Assisted Refactoring**: Local LLM integration for complex method body transformation (`--ai`).
+- **Deep Body Refactoring**: Automatic rewriting of state mutations to `state.copyWith(...)`.
+- **Immutable State Generation**: Auto-generated immutable state classes for migrated notifiers.
+- **Flutter Web Dashboard**: Browser-based visual interface for migration reports.
+- **Cloud Report Sync**: Upload migration audits to a central dashboard (`--sync`).
+- **Custom Plugin System**: Registry-based extensibility via external Dart scripts.
+- **Lint-Aware Safety**: Project-level health checks before and after migration.
+
+### Changed
+- Description updated: tool now migrates from Provider, BLoC, GetX, and MobX — not just Provider.
+- CLI flags reorganised; wizard mode launched automatically when no path is provided.
+- `migration_report.json` now includes ROI metrics, node inventory, and modified file list.
+
+---
+
 ## [1.0.0] - 2026-05-09
 
 ### Added

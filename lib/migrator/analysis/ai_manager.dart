@@ -1,6 +1,3 @@
-import 'dart:convert';
-import 'dart:io';
-
 class AIManager {
   final String ollamaEndpoint = 'http://localhost:11434/api/generate';
 
@@ -11,7 +8,9 @@ class AIManager {
     required String methodBody,
   }) async {
     print('🤖 AI: Analyzing complex logic in $methodName...');
-    
+
+    // Prompt is built for a future Ollama/http integration; kept for reference.
+    // ignore: unused_local_variable
     final prompt = '''
 Refactor the following Dart method from a ChangeNotifier/GetX class into an immutable StateNotifier method for Riverpod.
 Class Name: $className

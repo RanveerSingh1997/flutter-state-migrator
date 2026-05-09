@@ -1,8 +1,4 @@
-import 'dart:convert';
-import 'dart:io';
-
 class CloudManager {
-  final String _mockEndpoint = 'https://api.migrator-cloud.io/v1/reports';
 
   Future<String?> uploadReport(Map<String, dynamic> reportData) async {
     print('☁️  Synchronizing report with cloud dashboard...');
