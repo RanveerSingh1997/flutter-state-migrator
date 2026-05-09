@@ -1,0 +1,53 @@
+{
+  "name": "flutter-state-migrator",
+  "displayName": "Flutter State Migrator",
+  "description": "Automated migration from Provider to Riverpod",
+  "version": "1.0.0",
+  "publisher": "ranveersingh",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "flutter-migrator.migrateFile",
+        "title": "Migrate File to Riverpod",
+        "category": "Flutter Migrator"
+      },
+      {
+        "command": "flutter-migrator.migrateProject",
+        "title": "Migrate Project to Riverpod",
+        "category": "Flutter Migrator"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "flutter-migrator.migrateFile",
+          "when": "resourceExtname == .dart",
+          "group": "7_modification"
+        },
+        {
+          "command": "flutter-migrator.migrateProject",
+          "when": "explorerResourceIsFolder",
+          "group": "7_modification"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.80.0",
+    "@types/node": "18.x",
+    "typescript": "^5.1.3"
+  }
+}
