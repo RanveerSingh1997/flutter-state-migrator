@@ -75,6 +75,20 @@ Future<void> main(List<String> arguments) async {
       abbr: 'w',
       negatable: false,
       help: 'Launch the interactive setup wizard',
+    )
+    ..addFlag(
+      'rollback',
+      negatable: false,
+      help: 'Restore the project from the latest snapshot',
+    )
+    ..addFlag(
+      'snapshots',
+      negatable: false,
+      help: 'List all available snapshots for the target path',
+    )
+    ..addOption(
+      'rollback-to',
+      help: 'Path to a specific snapshot directory to restore from',
     );
 
   final argResults = parser.parse(arguments);
@@ -122,15 +136,31 @@ Future<void> main(List<String> arguments) async {
   final snapshot = SnapshotManager(targetPath);
   final depManager = DependencyManager(targetPath);
 
-  if (arguments.contains('rollback')) {
-    await snapshot.rollback();
+  // Snapshot management commands — exit early, no migration needed.
+  if (argResults['rollback'] as bool) {
+    final specificPath = argResults['rollback-to'] as String?;
+    await snapshot.rollback(snapshotPath: specificPath);
+    return;
+  }
+
+  if (argResults['snapshots'] as bool) {
+    final snaps = snapshot.listSnapshots();
+    if (snaps.isEmpty) {
+      print('No snapshots found for $targetPath');
+    } else {
+      print('\n📸 Available snapshots for $targetPath:\n');
+      for (final s in snaps) {
+        print('  ${s['timestamp']}  (${s['fileCount']} files)');
+        print('  \x1B[90m${s['path']}\x1B[0m\n');
+      }
+    }
     return;
   }
 
   final monorepo = MonorepoManager(targetPath);
   final packages = monorepo.findPackages();
 
-  // Pre-migration safety rail
+  // Pre-migration safety rail: snapshot before any destructive rewrite.
   if (!dryRun && mode == 'aggressive') {
     await snapshot.createSnapshot();
   }
