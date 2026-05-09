@@ -1,5 +1,5 @@
 name: flutter_state_migrator
-description: "Automated CLI tool to migrate Flutter applications from Provider to Riverpod."
+description: "Automated CLI tool to migrate Flutter apps from Provider, BLoC, GetX, and MobX to Riverpod."
 # publish_to: 'none' # Ready for pub.dev
 
 # The following defines the version and build number for your application.
@@ -17,6 +17,9 @@ description: "Automated CLI tool to migrate Flutter applications from Provider t
 version: 2.0.0
 homepage: https://github.com/RanveerSingh1997/flutter-state-migrator
 repository: https://github.com/RanveerSingh1997/flutter-state-migrator
+
+executables:
+  migrator: migrator
 
 environment:
   sdk: ^3.9.2
@@ -44,6 +47,7 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  test: ^1.24.0
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is

@@ -1,10 +1,8 @@
 import '../models/ir_models.dart';
 import '../analysis/body_transformer.dart';
-import '../analysis/ai_manager.dart';
 
 class RiverpodGenerator {
   final _bodyTransformer = BodyTransformer();
-  final _aiManager = AIManager();
   String generateSuggestion(ProviderNode node) {
     if (node is LogicUnitNode) {
       return _generateStateNotifier(node);
