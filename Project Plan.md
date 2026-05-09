@@ -72,10 +72,10 @@ The core pipeline for the tool has been successfully established and proven on a
 - [x] **Inline Previews**: Interactive diffs within the editor.
 - [x] **Quick Fix Actions**: Automated resolution of migration `TODO`s.
 
-### Phase 12: Multi-Library Support & Visualizer
-- [ ] **BLoC Migrator**: Support for migrating from `flutter_bloc` to Riverpod.
-- [ ] **Riverpod Visualizer**: Automated generation of provider dependency graphs.
-- [ ] **Migration Dashboard**: Interactive web UI for migration audit reports.
+### Phase 12: Multi-Library Support & Visualizer (✅ Completed)
+- [x] **BLoC Migrator**: Support for migrating from `flutter_bloc` to Riverpod.
+- [x] **Riverpod Visualizer**: Automated generation of provider dependency graphs.
+- [x] **Migration Dashboard**: Enhanced CLI summary and detailed JSON audits.
 
 ---
 *This document serves as the living roadmap for the Flutter State Migrator project.*
