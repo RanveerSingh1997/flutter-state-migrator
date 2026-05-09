@@ -1,0 +1,11 @@
+name: test_project
+description: A test project for flutter_state_migrator
+publish_to: 'none'
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  provider: ^6.1.1
