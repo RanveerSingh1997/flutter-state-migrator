@@ -3,9 +3,7 @@ import 'package:provider/provider.dart';
 import 'counter_model.dart';
 
 void main() {
-  runApp(
-    const MyApp(),
-  );
+  runApp(ProviderScope(child: const MyApp()));
 }
 
 class MyApp extends ConsumerWidget {
@@ -13,19 +11,14 @@ class MyApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return MaterialApp(
-      home: Scaffold(
-        body: Center(
-          child: Consumer(
-            builder: (context, ref, child) => ref.watch(countermodelProvider.select((_, model) => model.count)) Text('$count'),
-          ),
-        ),
-      ),
+    return const MaterialApp(
+      home: Scaffold(body: Center(child: Text('Hello'))),
     );
   }
 }
 
 // TODO: Auto-migrated Riverpod Provider
-final countermodelProvider = StateNotifierProvider<CounterModelNotifier, CounterModelState>((ref) {
-  return CounterModelNotifier();
-});
+final countermodelProvider =
+    StateNotifierProvider<CounterModelNotifier, CounterModelState>((ref) {
+      return CounterModelNotifier();
+    });

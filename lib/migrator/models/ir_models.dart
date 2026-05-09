@@ -117,12 +117,38 @@ class AsyncProviderNode extends ProviderNode {
 
 class WidgetNode extends ProviderNode {
   final String widgetName;
-  final String widgetType; // e.g., StatelessWidget
-  final int buildMethodOffset; // Where to inject `WidgetRef ref`
+  final String widgetType; // e.g., StatelessWidget, StatefulWidget
+  final int? buildMethodOffset; // Where to inject `WidgetRef ref` (null for StatefulWidget)
 
   WidgetNode({
     required this.widgetName,
     required this.widgetType,
+    this.buildMethodOffset,
+    required super.filePath,
+    required super.offset,
+    required super.length,
+  });
+}
+
+class StateNode extends ProviderNode {
+  final String stateClassName;
+  final String widgetName;
+
+  StateNode({
+    required this.stateClassName,
+    required this.widgetName,
+    required super.filePath,
+    required super.offset,
+    required super.length,
+  });
+}
+
+class HookWidgetNode extends ProviderNode {
+  final String widgetName;
+  final int buildMethodOffset;
+
+  HookWidgetNode({
+    required this.widgetName,
     required this.buildMethodOffset,
     required super.filePath,
     required super.offset,
