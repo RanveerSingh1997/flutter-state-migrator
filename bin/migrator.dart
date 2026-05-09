@@ -12,6 +12,9 @@ import '../lib/migrator/analysis/monorepo_manager.dart';
 import '../lib/migrator/analysis/visualizer.dart';
 import '../lib/migrator/analysis/cloud_manager.dart';
 import '../lib/migrator/analysis/ai_manager.dart';
+import '../lib/migrator/analysis/snapshot_manager.dart';
+import '../lib/migrator/analysis/dependency_manager.dart';
+import '../lib/migrator/analysis/analytics_manager.dart';
 import 'dart:convert';
 
 Future<void> main(List<String> arguments) async {
@@ -246,12 +249,27 @@ Future<void> main(List<String> arguments) async {
     int modifiedFilesCount = 0;
     final startTime = DateTime.now();
     final complexityScore = nodes.length * 1.5;
+    final analyticsManager = AnalyticsManager();
+    final roiMetrics = analyticsManager.calculateMetrics(nodes, packages.length);
+
     final reportData = {
-      'timestamp': startTime.toIso8601String(),
-      'target': targetPath,
-      'complexity_score': complexityScore,
+      'timestamp': DateTime.now().toIso8601String(),
+      'targetPath': targetPath,
+      'mode': mode,
       'packages': packages.map((p) => {'name': p.name, 'root': p.rootPath}).toList(),
-      'modified_files': <String>[],
+      'metrics': roiMetrics,
+      'nodes': nodes.map((n) {
+        if (n is LogicUnitNode) {
+          return {
+            'type': 'LogicUnit',
+            'name': n.name,
+            'file': n.filePath,
+            'isNotifier': n.isNotifier,
+            'methods': n.methods.length,
+          };
+        }
+        return {'type': 'Unknown'};
+      }).toList(),
       'summary': {
         'total_nodes': nodes.length,
         'logic_units': nodes.whereType<LogicUnitNode>().length,
