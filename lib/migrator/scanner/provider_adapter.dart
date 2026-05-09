@@ -57,6 +57,50 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
         offset: node.offset,
         length: node.length,
       ));
+    } else if (extendsClause != null && extendsClause.superclass.name.lexeme == 'StatefulWidget') {
+      final className = node.name.lexeme;
+      int createStateOffset = -1;
+      for (final member in node.members) {
+        if (member is MethodDeclaration && member.name.lexeme == 'createState') {
+           createStateOffset = member.offset;
+        }
+      }
+      nodes.add(WidgetNode(
+        widgetName: className,
+        widgetType: 'StatefulWidget',
+        buildMethodOffset: createStateOffset, // Reuse this field for createState offset in StatefulWidget
+        filePath: filePath,
+        offset: node.offset,
+        length: node.length,
+      ));
+    } else if (extendsClause != null && extendsClause.superclass.name.lexeme == 'State') {
+      final className = node.name.lexeme;
+      final typeArguments = extendsClause.superclass.typeArguments;
+      if (typeArguments != null && typeArguments.arguments.isNotEmpty) {
+        final widgetName = typeArguments.arguments.first.toSource();
+        nodes.add(StateNode(
+          stateClassName: className,
+          widgetName: widgetName,
+          filePath: filePath,
+          offset: node.offset,
+          length: node.length,
+        ));
+      }
+    } else if (extendsClause != null && extendsClause.superclass.name.lexeme == 'HookWidget') {
+      final className = node.name.lexeme;
+      int buildMethodOffset = -1;
+      for (final member in node.members) {
+        if (member is MethodDeclaration && member.name.lexeme == 'build') {
+           buildMethodOffset = member.offset;
+        }
+      }
+      nodes.add(HookWidgetNode(
+        widgetName: className,
+        buildMethodOffset: buildMethodOffset,
+        filePath: filePath,
+        offset: node.offset,
+        length: node.length,
+      ));
     }
     super.visitClassDeclaration(node);
   }

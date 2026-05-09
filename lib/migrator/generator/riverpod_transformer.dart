@@ -26,6 +26,10 @@ class RiverpodTransformer {
       return _transformMultiProvider(node, originalSource);
     } else if (node is AsyncProviderNode) {
       return _transformAsyncProvider(node, originalSource);
+    } else if (node is StateNode) {
+      return _transformState(node, originalSource);
+    } else if (node is HookWidgetNode) {
+      return _transformHookWidget(node, originalSource);
     }
     return [];
   }
@@ -49,31 +53,28 @@ class RiverpodTransformer {
   }
 
   List<TextEdit> _transformProviderDeclaration(ProviderDeclarationNode node, String originalSource) {
-    final providerName = '${node.providedClass.toLowerCase()}Provider';
-    
     final edits = <TextEdit>[];
+    
+    // 1. Generate the global provider definition
+    final providerName = '${node.providedClass.toLowerCase()}Provider';
+    final globalDef = "\n// TODO: Auto-migrated Riverpod Provider\nfinal $providerName = StateNotifierProvider<${node.providedClass}Notifier, ${node.providedClass}State>((ref) {\n  return ${node.providedClass}Notifier();\n});\n";
+    edits.add(TextEdit(originalSource.length, 0, globalDef));
 
+    // 2. Unwrap if it has a child
     if (node.childOffset != null && node.childLength != null) {
-      final replacement = originalSource.substring(node.childOffset!, node.childOffset! + node.childLength!);
-      edits.add(TextEdit(node.offset, node.length, replacement));
+      final child = originalSource.substring(node.childOffset!, node.childOffset! + node.childLength!);
+      // If this was a top-level provider, it should probably be a ProviderScope now
+      edits.add(TextEdit(node.offset, node.length, 'ProviderScope(child: $child)'));
     }
-
-    final globalProviderDef = '''
-
-// TODO: Auto-migrated Riverpod Provider
-final $providerName = StateNotifierProvider<${node.providedClass}Notifier, ${node.providedClass}State>((ref) {
-  return ${node.providedClass}Notifier();
-});
-''';
-
-    edits.add(TextEdit(originalSource.length, 0, globalProviderDef));
+    
     return edits;
   }
 
   List<TextEdit> _transformMultiProvider(MultiProviderNode node, String originalSource) {
     if (node.childOffset != null && node.childLength != null) {
-      final replacement = originalSource.substring(node.childOffset!, node.childOffset! + node.childLength!);
-      return [TextEdit(node.offset, node.length, replacement)];
+      final child = originalSource.substring(node.childOffset!, node.childOffset! + node.childLength!);
+      // Wrap in ProviderScope to ensure Riverpod works
+      return [TextEdit(node.offset, node.length, 'ProviderScope(child: $child)')];
     }
     return [];
   }
@@ -183,19 +184,83 @@ final $providerName = ${node.providerType == 'FutureProvider' ? 'FutureProvider'
         ));
       }
 
-      if (node.buildMethodOffset != -1) {
+      if (node.buildMethodOffset != null) {
+        final buildOffset = node.buildMethodOffset!;
         // Find "Widget build(BuildContext context)" around buildMethodOffset
-        final buildEndSearch = (node.buildMethodOffset + 100 < originalSource.length) ? node.buildMethodOffset + 100 : originalSource.length;
-        final buildSearchArea = originalSource.substring(node.buildMethodOffset, buildEndSearch);
+        final buildEndSearch = (buildOffset + 100 < originalSource.length) ? buildOffset + 100 : originalSource.length;
+        final buildSearchArea = originalSource.substring(buildOffset, buildEndSearch);
         final buildIdx = buildSearchArea.indexOf('Widget build(BuildContext context)');
         if (buildIdx != -1) {
           edits.add(TextEdit(
-            node.buildMethodOffset + buildIdx,
+            buildOffset + buildIdx,
             'Widget build(BuildContext context)'.length,
             'Widget build(BuildContext context, WidgetRef ref)'
           ));
         }
       }
+    } else if (node.widgetType == 'StatefulWidget') {
+      final endSearch = (node.offset + 100 < originalSource.length) ? node.offset + 100 : originalSource.length;
+      final searchArea = originalSource.substring(node.offset, endSearch);
+      final extendsIdx = searchArea.indexOf('extends StatefulWidget');
+      if (extendsIdx != -1) {
+        edits.add(TextEdit(
+          node.offset + extendsIdx,
+          'extends StatefulWidget'.length,
+          'extends ConsumerStatefulWidget'
+        ));
+      }
+      
+      if (node.buildMethodOffset != null && node.buildMethodOffset != -1) {
+        final createOffset = node.buildMethodOffset!;
+        final createEndSearch = (createOffset + 100 < originalSource.length) ? createOffset + 100 : originalSource.length;
+        final createSearchArea = originalSource.substring(createOffset, createEndSearch);
+        final stateIdx = createSearchArea.indexOf('State<${node.widgetName}>');
+        if (stateIdx != -1) {
+           edits.add(TextEdit(
+             createOffset + stateIdx,
+             'State<${node.widgetName}>'.length,
+             'ConsumerState<${node.widgetName}>'
+           ));
+        }
+      }
+    }
+    return edits;
+  }
+
+  List<TextEdit> _transformState(StateNode node, String originalSource) {
+    final edits = <TextEdit>[];
+    final endSearch = (node.offset + 100 < originalSource.length) ? node.offset + 100 : originalSource.length;
+    final searchArea = originalSource.substring(node.offset, endSearch);
+    final target = 'extends State<${node.widgetName}>';
+    final extendsIdx = searchArea.indexOf(target);
+    if (extendsIdx != -1) {
+      edits.add(TextEdit(
+        node.offset + extendsIdx,
+        target.length,
+        'extends ConsumerState<${node.widgetName}>'
+      ));
+    }
+    return edits;
+  }
+
+  List<TextEdit> _transformHookWidget(HookWidgetNode node, String originalSource) {
+    final edits = <TextEdit>[];
+    final endSearch = (node.offset + 100 < originalSource.length) ? node.offset + 100 : originalSource.length;
+    final searchArea = originalSource.substring(node.offset, endSearch);
+    final extendsIdx = searchArea.indexOf('extends HookWidget');
+    if (extendsIdx != -1) {
+      edits.add(TextEdit(
+        node.offset + extendsIdx,
+        'extends HookWidget'.length,
+        'extends HookConsumerWidget'
+      ));
+    }
+
+    // Find (BuildContext context) and replace with (BuildContext context, WidgetRef ref)
+    final buildSnippet = originalSource.substring(node.buildMethodOffset, node.offset + node.length);
+    final match = RegExp(r'build\s*\(\s*BuildContext\s+context\s*\)').firstMatch(buildSnippet);
+    if (match != null) {
+      edits.add(TextEdit(node.buildMethodOffset + match.start, match.group(0)!.length, 'build(BuildContext context, WidgetRef ref)'));
     }
     return edits;
   }
