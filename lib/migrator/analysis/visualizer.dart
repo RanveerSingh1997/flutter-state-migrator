@@ -27,19 +27,16 @@ class ProviderVisualizer {
 
     // 2. Draw consumers
     for (final node in consumers) {
-      final safeConsumer = _sanitize(node.consumedClass);
       final providerName = _sanitize('${node.consumedClass}Provider');
       buffer.writeln('  $providerName -.-> ConsumerWidget');
     }
 
     for (final node in selectors) {
-      final safeConsumer = _sanitize(node.consumedClass);
       final providerName = _sanitize('${node.consumedClass}Provider');
       buffer.writeln('  $providerName -.-> SelectorWidget');
     }
 
     for (final node in providerOfs) {
-      final safeConsumer = _sanitize(node.consumedClass);
       final providerName = _sanitize('${node.consumedClass}Provider');
       buffer.writeln('  $providerName -.-> ContextReadWatch');
     }

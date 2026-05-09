@@ -1,7 +1,5 @@
 import 'dart:io';
 import 'package:analyzer/dart/analysis/utilities.dart';
-import 'package:analyzer/dart/ast/ast.dart';
-import 'package:analyzer/dart/ast/visitor.dart';
 
 import '../models/ir_models.dart';
 import 'provider_adapter.dart';

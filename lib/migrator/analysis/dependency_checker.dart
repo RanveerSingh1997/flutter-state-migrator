@@ -5,7 +5,6 @@ class DependencyChecker {
   List<String> checkCircularDependencies(List<ProviderNode> nodes) {
     final warnings = <String>[];
     // Map of ClassName -> Classes it depends on (via Provider.of/ref.watch)
-    final dependencyGraph = <String, Set<String>>{};
 
     // Build the graph
     // For simplicity, we look at which classes are in the same file or

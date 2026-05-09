@@ -1,5 +1,3 @@
-import 'dart:io';
-
 class ImportManager {
   /// Adds required Riverpod imports and optionally removes unused Provider imports.
   String processImports(String content, {bool cleanProvider = true}) {
