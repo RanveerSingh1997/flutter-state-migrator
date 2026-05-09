@@ -218,17 +218,37 @@ final $providerName = ${node.providerType == 'FutureProvider' ? 'FutureProvider'
     buffer.writeln(
       'import "package:riverpod_annotation/riverpod_annotation.dart";',
     );
-    // Assuming file name matches class name roughly, this is a heuristic
     final fileName = node.filePath.split('/').last.replaceAll('.dart', '');
-    buffer.writeln('part "${fileName}.g.dart";');
+    buffer.writeln('part "$fileName.g.dart";');
     buffer.writeln('');
+
+    final buildReturnType = switch (node.notifierType) {
+      NotifierType.asyncNotifier => 'Future<dynamic>',
+      NotifierType.streamNotifier => 'Stream<dynamic>',
+      _ => 'dynamic',
+    };
+
+    final buildBody = switch (node.notifierType) {
+      NotifierType.asyncNotifier =>
+        '    return null; // TODO: Return initial async state',
+      NotifierType.streamNotifier =>
+        '    return const Stream.empty(); // TODO: Return stream',
+      _ => '    return null; // TODO: Return initial state',
+    };
+
     buffer.writeln('@riverpod');
+    if (node.isFamilyCandidate) {
+      buffer.writeln('// ⚠️  Constructor params detected — add .family arg:');
+      buffer.writeln(
+        '// @Riverpod(keepAlive: true)',
+      );
+    }
     buffer.writeln(
       'class ${node.name}Notifier extends _\$${node.name}Notifier {',
     );
     buffer.writeln('  @override');
-    buffer.writeln('  dynamic build() {');
-    buffer.writeln('    return null; // TODO: Return initial state');
+    buffer.writeln('  $buildReturnType build() {');
+    buffer.writeln(buildBody);
     buffer.writeln('  }');
     buffer.writeln('');
     for (final method in node.methods) {
@@ -236,13 +256,13 @@ final $providerName = ${node.providerType == 'FutureProvider' ? 'FutureProvider'
         method.bodySnippet,
         node.stateVariables,
       );
-      
-      buffer.writeln('  void ${method.name}() $transformedBody');
+      final methodReturn = method.isAsync ? 'Future<void>' : 'void';
+      buffer.writeln('  $methodReturn ${method.name}() $transformedBody');
       buffer.writeln();
     }
     buffer.writeln('}');
     buffer.writeln('');
-    buffer.writeln('/* TODO: Original ChangeNotifier class:');
+    buffer.writeln('/* TODO: Original class:');
     buffer.writeln(snippet);
     buffer.writeln('*/');
 
