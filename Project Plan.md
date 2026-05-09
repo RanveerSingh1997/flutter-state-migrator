@@ -48,11 +48,17 @@ The core pipeline for the tool has been successfully established and proven on a
 - [x] **Automated Test Migration**: Refactor `testWidgets` to use Riverpod's `ProviderScope` and overrides.
 - [x] **Code Generation Polish**: Handle `dispose` logic and custom provider parameters.
 
-### Phase 8: Intelligent Refinement & Reporting (🚧 Next Steps)
-- [ ] **Intelligent Import Management**: Auto-add Riverpod imports and clean up unused Provider imports.
-- [ ] **Migration Audit Report**: Generate a detailed JSON/Markdown report of all changes made.
-- [ ] **Dependency Guard**: Detect and warn about circular dependencies between migrated providers.
-- [ ] **Enhanced CLI**: Add flags for report generation and import cleaning.
+### Phase 8: Intelligent Refinement & Reporting (✅ Completed)
+- [x] **Intelligent Import Management**: Auto-add Riverpod imports and clean up unused Provider imports.
+- [x] **Migration Audit Report**: Generate a detailed JSON/Markdown report of all changes made.
+- [x] **Dependency Guard**: Detect and warn about circular dependencies between migrated providers.
+- [x] **Enhanced CLI**: Add flags for report generation and import cleaning.
+
+### Phase 9: Interactive Dry-run & CI/CD Setup (🚧 Next Steps)
+- [ ] **Interactive Dry-run**: Show colorized diffs in the console before applying changes.
+- [ ] **GitHub Actions**: Automated testing on every push/PR.
+- [ ] **Comprehensive Example**: A multi-file example project for demonstration.
+- [ ] **CLI Visual Polish**: Refine console output for a premium experience.
 
 ---
 *This document serves as the living roadmap for the Flutter State Migrator project.*
