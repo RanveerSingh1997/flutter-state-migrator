@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.1.0] - 2026-05-10
+
+### Added
+- **Notifier Type Selector (Phase 26)**: Adapters now detect async methods and Stream return types to automatically select the correct Riverpod primitive — `AsyncNotifier`, `StreamNotifier`, or `StateNotifier`.
+- **Provider Family Detection (Phase 27)**: Constructor parameters (beyond `key`) are detected across all adapters; the generator emits `.family` scaffold with the appropriate provider type and `ArgType` placeholder.
+- **Real Dependency Graph (Phase 28)**: `DependencyChecker` now builds a true provider→consumer adjacency map from the IR and uses DFS with `visited`/`inStack` tracking to report all circular dependency chains.
+
+### Fixed
+- CI analysis no longer fails on `example/` and `test_project/` sub-projects (excluded via `analysis_options.yaml` and workflow scope).
+- All source files reformatted to pass `dart format` check.
+
 ## [2.0.0] - 2026-05-09
 
 ### Added

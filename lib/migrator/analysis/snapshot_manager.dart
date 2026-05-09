@@ -47,7 +47,9 @@ class SnapshotManager {
     final manifestFile = File('${backupDir.path}/$_manifestName');
     manifestFile.writeAsStringSync(
       JsonEncoder.withIndent('  ').convert({
-        'timestamp': DateTime.fromMillisecondsSinceEpoch(timestamp).toIso8601String(),
+        'timestamp': DateTime.fromMillisecondsSinceEpoch(
+          timestamp,
+        ).toIso8601String(),
         'projectPath': projectPath,
         'fileCount': files.length,
         'files': manifest,
@@ -75,7 +77,8 @@ class SnapshotManager {
       return;
     }
 
-    final data = jsonDecode(manifestFile.readAsStringSync()) as Map<String, dynamic>;
+    final data =
+        jsonDecode(manifestFile.readAsStringSync()) as Map<String, dynamic>;
     final files = data['files'] as Map<String, dynamic>;
     final ts = data['timestamp'] as String;
 
@@ -100,10 +103,7 @@ class SnapshotManager {
     final snapshotsRoot = Directory('$projectPath/$_snapshotDir');
     if (!snapshotsRoot.existsSync()) return [];
 
-    final dirs = snapshotsRoot
-        .listSync()
-        .whereType<Directory>()
-        .toList()
+    final dirs = snapshotsRoot.listSync().whereType<Directory>().toList()
       ..sort((a, b) => b.path.compareTo(a.path));
 
     final result = <Map<String, dynamic>>[];
@@ -147,10 +147,7 @@ class SnapshotManager {
   Directory? _latestSnapshot() {
     final snapshotsRoot = Directory('$projectPath/$_snapshotDir');
     if (!snapshotsRoot.existsSync()) return null;
-    final dirs = snapshotsRoot
-        .listSync()
-        .whereType<Directory>()
-        .toList()
+    final dirs = snapshotsRoot.listSync().whereType<Directory>().toList()
       ..sort((a, b) => b.path.compareTo(a.path));
     return dirs.isEmpty ? null : dirs.first;
   }

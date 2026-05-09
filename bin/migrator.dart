@@ -182,8 +182,11 @@ Future<void> main(List<String> arguments) async {
 
   // Load project-level config (migrator_config.yaml) if present.
   final projectConfig = ConfigurationManager.loadConfig(targetPath);
-  if (projectConfig.providerNaming != 'camelCase' || !projectConfig.autoMergeState) {
-    print('⚙️  Loaded project config: naming=${projectConfig.providerNaming}, autoMerge=${projectConfig.autoMergeState}');
+  if (projectConfig.providerNaming != 'camelCase' ||
+      !projectConfig.autoMergeState) {
+    print(
+      '⚙️  Loaded project config: naming=${projectConfig.providerNaming}, autoMerge=${projectConfig.autoMergeState}',
+    );
   }
 
   // Pipeline
@@ -210,7 +213,9 @@ Future<void> main(List<String> arguments) async {
   if (dashboard) {
     print('\n🌐 Launching Migration Dashboard...');
     print('📍 Access here: \x1B[34mhttp://localhost:8080\x1B[0m');
-    print('Note: Ensure the dashboard server is running in the /dashboard directory.');
+    print(
+      'Note: Ensure the dashboard server is running in the /dashboard directory.',
+    );
   }
   for (final node in nodes) {
     if (node is LogicUnitNode) {
@@ -335,13 +340,18 @@ Future<void> main(List<String> arguments) async {
     int modifiedFilesCount = 0;
     final startTime = DateTime.now();
     final analyticsManager = AnalyticsManager();
-    final roiMetrics = analyticsManager.calculateMetrics(nodes, packages.length);
+    final roiMetrics = analyticsManager.calculateMetrics(
+      nodes,
+      packages.length,
+    );
 
     final reportData = {
       'timestamp': DateTime.now().toIso8601String(),
       'targetPath': targetPath,
       'mode': mode,
-      'packages': packages.map((p) => {'name': p.name, 'root': p.rootPath}).toList(),
+      'packages': packages
+          .map((p) => {'name': p.name, 'root': p.rootPath})
+          .toList(),
       'metrics': roiMetrics,
       'modified_files': <String>[],
       'nodes': nodes.map((n) {
@@ -430,8 +440,9 @@ Future<void> main(List<String> arguments) async {
       final aiManager = AIManager();
       final logicNodes = nodes.whereType<LogicUnitNode>().toList();
       for (final node in logicNodes) {
-        final complexMethods =
-            node.methods.where((m) => m.callsNotifyListeners).toList();
+        final complexMethods = node.methods
+            .where((m) => m.callsNotifyListeners)
+            .toList();
         for (final method in complexMethods) {
           print('   Refactoring ${node.name}.${method.name}...');
           await aiManager.refactorMethodBody(

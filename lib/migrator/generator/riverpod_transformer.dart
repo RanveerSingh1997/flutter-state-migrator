@@ -239,9 +239,7 @@ final $providerName = ${node.providerType == 'FutureProvider' ? 'FutureProvider'
     buffer.writeln('@riverpod');
     if (node.isFamilyCandidate) {
       buffer.writeln('// ⚠️  Constructor params detected — add .family arg:');
-      buffer.writeln(
-        '// @Riverpod(keepAlive: true)',
-      );
+      buffer.writeln('// @Riverpod(keepAlive: true)');
     }
     buffer.writeln(
       'class ${node.name}Notifier extends _\$${node.name}Notifier {',

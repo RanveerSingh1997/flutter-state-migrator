@@ -11,7 +11,8 @@ class GetXAdapter extends RecursiveAstVisitor<void> {
   @override
   void visitClassDeclaration(ClassDeclaration node) {
     final extendsClause = node.extendsClause;
-    if (extendsClause != null && extendsClause.superclass.name.lexeme == 'GetxController') {
+    if (extendsClause != null &&
+        extendsClause.superclass.name.lexeme == 'GetxController') {
       final className = node.name.lexeme;
       final stateVariables = <String>[];
       final methods = <MethodInfo>[];
@@ -39,30 +40,34 @@ class GetXAdapter extends RecursiveAstVisitor<void> {
           final isAsync = member.body is BlockFunctionBody
               ? (member.body as BlockFunctionBody).keyword?.lexeme == 'async'
               : member.body is ExpressionFunctionBody
-                  ? (member.body as ExpressionFunctionBody).keyword?.lexeme ==
-                      'async'
-                  : false;
-          methods.add(MethodInfo(
-            name: member.name.lexeme,
-            callsNotifyListeners: body.contains('.value ='),
-            bodySnippet: body,
-            isAsync: isAsync,
-            returnType: returnType,
-          ));
+              ? (member.body as ExpressionFunctionBody).keyword?.lexeme ==
+                    'async'
+              : false;
+          methods.add(
+            MethodInfo(
+              name: member.name.lexeme,
+              callsNotifyListeners: body.contains('.value ='),
+              bodySnippet: body,
+              isAsync: isAsync,
+              returnType: returnType,
+            ),
+          );
         }
       }
 
-      nodes.add(LogicUnitNode(
-        name: className,
-        stateVariables: stateVariables,
-        methods: methods,
-        isNotifier: true,
-        notifierType: _detectNotifierType(methods),
-        isFamilyCandidate: isFamilyCandidate,
-        filePath: filePath,
-        offset: node.offset,
-        length: node.length,
-      ));
+      nodes.add(
+        LogicUnitNode(
+          name: className,
+          stateVariables: stateVariables,
+          methods: methods,
+          isNotifier: true,
+          notifierType: _detectNotifierType(methods),
+          isFamilyCandidate: isFamilyCandidate,
+          filePath: filePath,
+          offset: node.offset,
+          length: node.length,
+        ),
+      );
     }
     super.visitClassDeclaration(node);
   }
@@ -72,19 +77,22 @@ class GetXAdapter extends RecursiveAstVisitor<void> {
     if (node.methodName.name == 'find' && node.target?.toSource() == 'Get') {
       // Get.find<T>()
       final type = node.typeArguments?.arguments.first.toSource() ?? 'dynamic';
-      nodes.add(ProviderOfNode(
-        consumedClass: type,
-        filePath: filePath,
-        offset: node.offset,
-        length: node.length,
-      ));
+      nodes.add(
+        ProviderOfNode(
+          consumedClass: type,
+          filePath: filePath,
+          offset: node.offset,
+          length: node.length,
+        ),
+      );
     }
     super.visitMethodInvocation(node);
   }
 
   NotifierType _detectNotifierType(List<MethodInfo> methods) {
     for (final m in methods) {
-      if (m.returnType.startsWith('Stream<')) return NotifierType.streamNotifier;
+      if (m.returnType.startsWith('Stream<'))
+        return NotifierType.streamNotifier;
     }
     for (final m in methods) {
       if (m.isAsync || m.returnType.startsWith('Future<')) {

@@ -10,7 +10,7 @@ class PluginLoader {
     if (!pluginDir.existsSync()) return;
 
     print('🔌 Loading custom plugins from ${pluginDir.path}...');
-    
+
     // In a real implementation, we would use something like 'dart:isolate'
     // or a dynamic library loader to instantiate these from .dart files.
     // For this prototype, we'll look for registrations.

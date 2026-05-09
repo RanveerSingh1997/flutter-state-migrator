@@ -11,7 +11,8 @@ class AIManager {
 
     // Prompt is built for a future Ollama/http integration; kept for reference.
     // ignore: unused_local_variable
-    final prompt = '''
+    final prompt =
+        '''
 Refactor the following Dart method from a ChangeNotifier/GetX class into an immutable StateNotifier method for Riverpod.
 Class Name: $className
 State Fields: ${stateFields.join(', ')}
@@ -30,7 +31,7 @@ Rules:
       // In a real implementation, we would use http.post() to call Ollama.
       // For this prototype, we simulate a successful AI refactoring.
       await Future.delayed(const Duration(seconds: 1));
-      
+
       // Heuristic fallback if AI isn't reachable
       return '// AI-Refactored:\nstate = state.copyWith(\n  // TODO: Implement complex logic for $methodName\n);';
     } catch (e) {

@@ -11,7 +11,7 @@ import '../plugins/plugin_loader.dart';
 class AstScanner {
   final String targetPath;
   final _pluginLoader = PluginLoader();
-  
+
   AstScanner(this.targetPath) {
     _pluginLoader.loadPlugins(targetPath);
   }
@@ -52,19 +52,19 @@ class AstScanner {
       final blocAdapter = BlocAdapter(file.path);
       final getxAdapter = GetXAdapter(file.path);
       final mobxAdapter = MobXAdapter(file.path);
-      
+
       result.unit.visitChildren(adapter);
       result.unit.visitChildren(blocAdapter);
       result.unit.visitChildren(getxAdapter);
       result.unit.visitChildren(mobxAdapter);
-      
+
       final customNodes = <ProviderNode>[];
       for (final customAdapter in _pluginLoader.loadedAdapters) {
         customAdapter.reset();
         result.unit.visitChildren(customAdapter);
         customNodes.addAll(customAdapter.detectedNodes);
       }
-      
+
       return [
         ...adapter.nodes,
         ...blocAdapter.nodes,

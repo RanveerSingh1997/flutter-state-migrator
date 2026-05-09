@@ -5,7 +5,7 @@ class ProviderVisualizer {
   String generateMermaid(List<ProviderNode> nodes) {
     final buffer = StringBuffer();
     buffer.writeln('graph TD');
-    
+
     final logicUnits = nodes.whereType<LogicUnitNode>().toList();
     final declarations = nodes.whereType<ProviderDeclarationNode>().toList();
     final consumers = nodes.whereType<ConsumerNode>().toList();

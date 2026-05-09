@@ -28,8 +28,14 @@ class DependencyManager {
 
     // 2. Remove legacy dependencies (optional, but clean)
     // We'll comment them out instead of deleting to be safe
-    content = content.replaceAll(RegExp(r'^(\s+)(provider:)', multiLine: true), r'$1# $2');
-    content = content.replaceAll(RegExp(r'^(\s+)(flutter_bloc:)', multiLine: true), r'$1# $2');
+    content = content.replaceAll(
+      RegExp(r'^(\s+)(provider:)', multiLine: true),
+      r'$1# $2',
+    );
+    content = content.replaceAll(
+      RegExp(r'^(\s+)(flutter_bloc:)', multiLine: true),
+      r'$1# $2',
+    );
 
     pubspecFile.writeAsStringSync(content);
     print('✅ pubspec.yaml updated successfully.');
@@ -40,7 +46,11 @@ class DependencyManager {
     if (depIndex == -1) return content;
 
     final nextLineIndex = content.indexOf('\n', depIndex) + 1;
-    return content.replaceRange(nextLineIndex, nextLineIndex, '  $name: $version\n');
+    return content.replaceRange(
+      nextLineIndex,
+      nextLineIndex,
+      '  $name: $version\n',
+    );
   }
 
   String _addDevDependency(String content, String name, String version) {
@@ -48,6 +58,10 @@ class DependencyManager {
     if (depIndex == -1) return content;
 
     final nextLineIndex = content.indexOf('\n', depIndex) + 1;
-    return content.replaceRange(nextLineIndex, nextLineIndex, '  $name: $version\n');
+    return content.replaceRange(
+      nextLineIndex,
+      nextLineIndex,
+      '  $name: $version\n',
+    );
   }
 }

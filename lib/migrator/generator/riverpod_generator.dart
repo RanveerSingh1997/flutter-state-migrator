@@ -112,7 +112,9 @@ class MyWidget extends ConsumerWidget {
         );
         buffer.writeln('  @override');
         buffer.writeln('  Stream<dynamic> build() {');
-        buffer.writeln('    return const Stream.empty(); // TODO: Return stream');
+        buffer.writeln(
+          '    return const Stream.empty(); // TODO: Return stream',
+        );
         buffer.writeln('  }');
         for (final method in node.methods) {
           final transformedBody = _bodyTransformer.transformBody(
@@ -142,30 +144,34 @@ class MyWidget extends ConsumerWidget {
         );
         buffer.writeln('class $stateClassName {');
         for (final variable in node.stateVariables) {
-          final name =
-              variable.startsWith('_') ? variable.substring(1) : variable;
+          final name = variable.startsWith('_')
+              ? variable.substring(1)
+              : variable;
           buffer.writeln('  final dynamic $name;');
         }
         buffer.writeln();
         buffer.writeln('  $stateClassName({');
         for (final variable in node.stateVariables) {
-          final name =
-              variable.startsWith('_') ? variable.substring(1) : variable;
+          final name = variable.startsWith('_')
+              ? variable.substring(1)
+              : variable;
           buffer.writeln('    this.$name,');
         }
         buffer.writeln('  });');
         buffer.writeln();
         buffer.writeln('  $stateClassName copyWith({');
         for (final variable in node.stateVariables) {
-          final name =
-              variable.startsWith('_') ? variable.substring(1) : variable;
+          final name = variable.startsWith('_')
+              ? variable.substring(1)
+              : variable;
           buffer.writeln('    dynamic $name,');
         }
         buffer.writeln('  }) {');
         buffer.writeln('    return $stateClassName(');
         for (final variable in node.stateVariables) {
-          final name =
-              variable.startsWith('_') ? variable.substring(1) : variable;
+          final name = variable.startsWith('_')
+              ? variable.substring(1)
+              : variable;
           buffer.writeln('      $name: $name ?? this.$name,');
         }
         buffer.writeln('    );');
@@ -175,9 +181,7 @@ class MyWidget extends ConsumerWidget {
         buffer.writeln(
           'class ${node.name}Notifier extends StateNotifier<$stateClassName> {',
         );
-        buffer.writeln(
-          '  ${node.name}Notifier() : super($stateClassName());',
-        );
+        buffer.writeln('  ${node.name}Notifier() : super($stateClassName());');
         buffer.writeln('');
         for (final method in node.methods) {
           final transformedBody = _bodyTransformer.transformBody(

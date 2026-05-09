@@ -58,30 +58,34 @@ class MobXAdapter extends RecursiveAstVisitor<void> {
           final isAsync = member.body is BlockFunctionBody
               ? (member.body as BlockFunctionBody).keyword?.lexeme == 'async'
               : member.body is ExpressionFunctionBody
-                  ? (member.body as ExpressionFunctionBody).keyword?.lexeme ==
-                      'async'
-                  : false;
-          methods.add(MethodInfo(
-            name: member.name.lexeme,
-            callsNotifyListeners: isAction,
-            bodySnippet: body,
-            isAsync: isAsync,
-            returnType: returnType,
-          ));
+              ? (member.body as ExpressionFunctionBody).keyword?.lexeme ==
+                    'async'
+              : false;
+          methods.add(
+            MethodInfo(
+              name: member.name.lexeme,
+              callsNotifyListeners: isAction,
+              bodySnippet: body,
+              isAsync: isAsync,
+              returnType: returnType,
+            ),
+          );
         }
       }
 
-      nodes.add(LogicUnitNode(
-        name: className,
-        stateVariables: stateVariables,
-        methods: methods,
-        isNotifier: true,
-        notifierType: _detectNotifierType(methods),
-        isFamilyCandidate: isFamilyCandidate,
-        filePath: filePath,
-        offset: node.offset,
-        length: node.length,
-      ));
+      nodes.add(
+        LogicUnitNode(
+          name: className,
+          stateVariables: stateVariables,
+          methods: methods,
+          isNotifier: true,
+          notifierType: _detectNotifierType(methods),
+          isFamilyCandidate: isFamilyCandidate,
+          filePath: filePath,
+          offset: node.offset,
+          length: node.length,
+        ),
+      );
     }
     super.visitClassDeclaration(node);
   }
@@ -90,19 +94,22 @@ class MobXAdapter extends RecursiveAstVisitor<void> {
   void visitInstanceCreationExpression(InstanceCreationExpression node) {
     final typeName = node.constructorName.type.toSource();
     if (typeName == 'Observer') {
-      nodes.add(ConsumerNode(
-        consumedClass: 'MobXStore', // Heuristic for MobX Observer
-        filePath: filePath,
-        offset: node.offset,
-        length: node.length,
-      ));
+      nodes.add(
+        ConsumerNode(
+          consumedClass: 'MobXStore', // Heuristic for MobX Observer
+          filePath: filePath,
+          offset: node.offset,
+          length: node.length,
+        ),
+      );
     }
     super.visitInstanceCreationExpression(node);
   }
 
   NotifierType _detectNotifierType(List<MethodInfo> methods) {
     for (final m in methods) {
-      if (m.returnType.startsWith('Stream<')) return NotifierType.streamNotifier;
+      if (m.returnType.startsWith('Stream<'))
+        return NotifierType.streamNotifier;
     }
     for (final m in methods) {
       if (m.isAsync || m.returnType.startsWith('Future<')) {

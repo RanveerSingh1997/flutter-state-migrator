@@ -53,9 +53,9 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
             final isAsync = member.body is BlockFunctionBody
                 ? (member.body as BlockFunctionBody).keyword?.lexeme == 'async'
                 : member.body is ExpressionFunctionBody
-                    ? (member.body as ExpressionFunctionBody).keyword?.lexeme ==
-                        'async'
-                    : false;
+                ? (member.body as ExpressionFunctionBody).keyword?.lexeme ==
+                      'async'
+                : false;
             methods.add(
               MethodInfo(
                 name: member.name.lexeme,
@@ -488,7 +488,8 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
 
   NotifierType _detectNotifierType(List<MethodInfo> methods) {
     for (final m in methods) {
-      if (m.returnType.startsWith('Stream<')) return NotifierType.streamNotifier;
+      if (m.returnType.startsWith('Stream<'))
+        return NotifierType.streamNotifier;
     }
     for (final m in methods) {
       if (m.isAsync || m.returnType.startsWith('Future<')) {
