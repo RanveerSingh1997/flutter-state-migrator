@@ -38,7 +38,12 @@ Selector<MyModel, int>(
       final edits = transformer.transformNode(node, source);
       // Should have: Replace Selector with Consumer, Remove selector arg, Replace builder signature
       expect(edits.any((e) => e.replacement == 'Consumer'), true);
-      expect(edits.any((e) => e.replacement.contains('ref.watch(mymodelProvider.select')), true);
+      expect(
+        edits.any(
+          (e) => e.replacement.contains('ref.watch(mymodelProvider.select'),
+        ),
+        true,
+      );
     });
 
     test('Unwraps MultiProvider', () {

@@ -11,10 +11,7 @@ class TodoProvider extends ChangeNotifier {
   List<Todo> get todos => _todos;
 
   void addTodo(String title) {
-    _todos.add(Todo(
-      id: Random().nextDouble().toString(),
-      title: title,
-    ));
+    _todos.add(Todo(id: Random().nextDouble().toString(), title: title));
     notifyListeners();
   }
 

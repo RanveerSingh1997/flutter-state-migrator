@@ -7,9 +7,7 @@ import 'provider_version/todo_provider.dart';
 void main() {
   runApp(
     // Wrap with Riverpod's ProviderScope at the root
-    riverpod.ProviderScope(
-      child: const MyApp(),
-    ),
+    riverpod.ProviderScope(child: const MyApp()),
   );
 }
 
@@ -19,13 +17,13 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return // TODO(Migrator): Remove MultiProvider, Riverpod providers are global. Wrap app in ProviderScope.
-// TODO(Migrator): Remove MultiProvider, Riverpod providers are global. Wrap app in ProviderScope.
-MultiProvider(
+    // TODO(Migrator): Remove MultiProvider, Riverpod providers are global. Wrap app in ProviderScope.
+    MultiProvider(
       providers: [
         // TODO(Migrator): Replace ChangeNotifierProvider with StateNotifierProvider
-// TODO(Migrator): Replace ChangeNotifierProvider with StateNotifierProvider
-// TODO(Migrator): Replace ChangeNotifierProvider with StateNotifierProvider
-ChangeNotifierProvider(create: (_) => TodoProvider()),
+        // TODO(Migrator): Replace ChangeNotifierProvider with StateNotifierProvider
+        // TODO(Migrator): Replace ChangeNotifierProvider with StateNotifierProvider
+        ChangeNotifierProvider(create: (_) => TodoProvider()),
       ],
       child: MaterialApp(
         title: 'Flutter State Migrator',

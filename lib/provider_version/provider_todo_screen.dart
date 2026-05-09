@@ -24,9 +24,9 @@ class ProviderTodoScreen extends StatelessWidget {
                     onSubmitted: (value) {
                       if (value.isNotEmpty) {
                         // TODO(Migrator): Replace with ref.read or ref.watch
-// TODO(Migrator): Replace with ref.read or ref.watch
-// TODO(Migrator): Replace with ref.read or ref.watch
-context.read<TodoProvider>().addTodo(value);
+                        // TODO(Migrator): Replace with ref.read or ref.watch
+                        // TODO(Migrator): Replace with ref.read or ref.watch
+                        context.read<TodoProvider>().addTodo(value);
                         textController.clear();
                       }
                     },
@@ -37,52 +37,52 @@ context.read<TodoProvider>().addTodo(value);
                   onPressed: () {
                     if (textController.text.isNotEmpty) {
                       // TODO(Migrator): Replace with ref.read or ref.watch
-// TODO(Migrator): Replace with ref.read or ref.watch
-// TODO(Migrator): Replace with ref.read or ref.watch
-context.read<TodoProvider>().addTodo(textController.text);
+                      // TODO(Migrator): Replace with ref.read or ref.watch
+                      // TODO(Migrator): Replace with ref.read or ref.watch
+                      context.read<TodoProvider>().addTodo(textController.text);
                       textController.clear();
                     }
                   },
-                )
+                ),
               ],
             ),
           ),
           Expanded(
             child: // TODO(Migrator): Change to ConsumerWidget and use ref.watch
-// TODO(Migrator): Change to ConsumerWidget and use ref.watch
-// TODO(Migrator): Change to ConsumerWidget and use ref.watch
-Consumer<TodoProvider>(
-              builder: (context, provider, child) {
-                return ListView.builder(
-                  itemCount: provider.todos.length,
-                  itemBuilder: (context, index) {
-                    final todo = provider.todos[index];
-                    return ListTile(
-                      title: Text(
-                        todo.title,
-                        style: TextStyle(
-                          decoration: todo.isCompleted
-                              ? TextDecoration.lineThrough
-                              : null,
-                        ),
-                      ),
-                      leading: Checkbox(
-                        value: todo.isCompleted,
-                        onChanged: (_) {
-                          provider.toggleTodo(todo.id);
-                        },
-                      ),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.delete),
-                        onPressed: () {
-                          provider.removeTodo(todo.id);
-                        },
-                      ),
+                // TODO(Migrator): Change to ConsumerWidget and use ref.watch
+                // TODO(Migrator): Change to ConsumerWidget and use ref.watch
+                Consumer<TodoProvider>(
+                  builder: (context, provider, child) {
+                    return ListView.builder(
+                      itemCount: provider.todos.length,
+                      itemBuilder: (context, index) {
+                        final todo = provider.todos[index];
+                        return ListTile(
+                          title: Text(
+                            todo.title,
+                            style: TextStyle(
+                              decoration: todo.isCompleted
+                                  ? TextDecoration.lineThrough
+                                  : null,
+                            ),
+                          ),
+                          leading: Checkbox(
+                            value: todo.isCompleted,
+                            onChanged: (_) {
+                              provider.toggleTodo(todo.id);
+                            },
+                          ),
+                          trailing: IconButton(
+                            icon: const Icon(Icons.delete),
+                            onPressed: () {
+                              provider.removeTodo(todo.id);
+                            },
+                          ),
+                        );
+                      },
                     );
                   },
-                );
-              },
-            ),
+                ),
           ),
         ],
       ),

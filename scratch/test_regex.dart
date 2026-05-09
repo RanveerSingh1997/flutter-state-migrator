@@ -6,7 +6,10 @@ void main() {
                 },
               ),
 ''';
-  final builderRegex = RegExp(r'builder:\s*\(\s*([^,]+)\s*,\s*([^,]+)\s*,\s*([^)]+)\)\s*\{', multiLine: true);
+  final builderRegex = RegExp(
+    r'builder:\s*\(\s*([^,]+)\s*,\s*([^,]+)\s*,\s*([^)]+)\)\s*\{',
+    multiLine: true,
+  );
   final builderMatch = builderRegex.firstMatch(snippet);
   if (builderMatch != null) {
     print('Match found!');
