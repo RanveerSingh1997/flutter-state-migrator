@@ -42,6 +42,12 @@ void main(List<String> arguments) {
       help: 'Generate a dependency graph (Mermaid format)',
     )
     ..addFlag(
+      'dashboard',
+      abbr: 'D',
+      negatable: false,
+      help: 'Launch the interactive migration dashboard',
+    )
+    ..addFlag(
       'help',
       abbr: 'h',
       negatable: false,
@@ -63,6 +69,7 @@ void main(List<String> arguments) {
   final generateReport = argResults['report'] as bool;
   final dryRun = argResults['dry-run'] as bool;
   final visualize = argResults['visualize'] as bool;
+  final dashboard = argResults['dashboard'] as bool;
 
   final monorepo = MonorepoManager(targetPath);
   final packages = monorepo.findPackages();
@@ -93,6 +100,12 @@ void main(List<String> arguments) {
     final visualizer = ProviderVisualizer();
     final mmd = visualizer.generateMermaid(nodes);
     visualizer.saveGraph(targetPath, mmd);
+  }
+
+  if (dashboard) {
+    print('\n🌐 Launching Migration Dashboard...');
+    print('📍 Access here: \x1B[34mhttp://localhost:8080\x1B[0m');
+    print('Note: Ensure the dashboard server is running in the /dashboard directory.');
   }
   for (final node in nodes) {
     if (node is LogicUnitNode) {
