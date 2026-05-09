@@ -24,16 +24,12 @@ To ensure a stable and clean development history, we follow a feature-branch-bas
     ```bash
     git commit -m "feat: implement unit tests for transformer"
     ```
-4.  **Push and Review**: Push the branch to the remote repository.
+4.  **Push and Create Pull Request**: Push the branch and create a PR using the GitHub CLI.
     ```bash
-    git push -u origin feature/phase-6-polish
+    git push -u origin feature/phase-7-stateful
+    gh pr create --title "feat: implement phase 7" --body "Detailed description of changes"
     ```
-5.  **Merge to Main**: Once the feature is complete and verified, merge it back to `main`.
-    ```bash
-    git checkout main
-    git merge feature/phase-6-polish
-    git push origin main
-    ```
+5.  **Merge via PR**: Changes must be merged into `main` via the Pull Request interface (either on GitHub or via `gh pr merge`) after verification.
 
 ## Commit Message Standards
 
