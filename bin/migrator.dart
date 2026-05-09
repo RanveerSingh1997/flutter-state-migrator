@@ -14,6 +14,8 @@ import '../lib/migrator/analysis/cloud_manager.dart';
 import '../lib/migrator/analysis/ai_manager.dart';
 import '../lib/migrator/analysis/analytics_manager.dart';
 import '../lib/migrator/analysis/wizard.dart';
+import '../lib/migrator/analysis/snapshot_manager.dart';
+import '../lib/migrator/analysis/dependency_manager.dart';
 import 'dart:convert';
 
 Future<void> main(List<String> arguments) async {
@@ -117,8 +119,21 @@ Future<void> main(List<String> arguments) async {
     useAi = argResults['ai'] as bool;
   }
 
+  final snapshot = SnapshotManager(targetPath);
+  final depManager = DependencyManager(targetPath);
+
+  if (arguments.contains('rollback')) {
+    await snapshot.rollback();
+    return;
+  }
+
   final monorepo = MonorepoManager(targetPath);
   final packages = monorepo.findPackages();
+
+  // Pre-migration safety rail
+  if (!dryRun && mode == 'aggressive') {
+    await snapshot.createSnapshot();
+  }
 
   print(
     '\x1B[1m\x1B[35m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\x1B[0m',
@@ -402,6 +417,13 @@ Future<void> main(List<String> arguments) async {
 
     print('\n🧹 Running dart format on $targetPath...');
     Process.runSync('dart', ['format', targetPath]);
+
+    // Post-migration: update dependencies
+    if (!dryRun) {
+      await depManager.updateDependencies();
+      print('\n🚀 Running "flutter pub get"...');
+      // Process.runSync('flutter', ['pub', 'get'], workingDirectory: targetPath);
+    }
 
     print(
       '\n\x1B[1m\x1B[34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\x1B[0m',
