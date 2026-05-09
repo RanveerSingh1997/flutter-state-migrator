@@ -8,13 +8,13 @@ import 'provider_adapter.dart';
 
 class AstScanner {
   final String targetPath;
-  
+
   AstScanner(this.targetPath);
 
   List<ProviderNode> scanProject() {
     final irNodes = <ProviderNode>[];
     final directory = Directory(targetPath);
-    
+
     if (!directory.existsSync()) {
       print('Directory $targetPath does not exist.');
       return irNodes;
@@ -23,20 +23,23 @@ class AstScanner {
     final dartFiles = directory
         .listSync(recursive: true)
         .whereType<File>()
-        .where((file) => file.path.endsWith('.dart') && !file.path.contains('.g.dart'));
+        .where(
+          (file) =>
+              file.path.endsWith('.dart') && !file.path.contains('.g.dart'),
+        );
 
     for (final file in dartFiles) {
       final fileNodes = _scanFile(file);
       irNodes.addAll(fileNodes);
     }
-    
+
     return irNodes;
   }
 
   List<ProviderNode> _scanFile(File file) {
     try {
       final result = parseString(
-        content: file.readAsStringSync(), 
+        content: file.readAsStringSync(),
         path: file.path,
         throwIfDiagnostics: false,
       );

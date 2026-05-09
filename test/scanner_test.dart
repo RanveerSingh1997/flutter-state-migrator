@@ -41,7 +41,9 @@ final widget = MultiProvider(
 
       // MultiProvider node + ChangeNotifierProvider node
       expect(adapter.nodes.any((n) => n is MultiProviderNode), true);
-      final multiNode = adapter.nodes.firstWhere((n) => n is MultiProviderNode) as MultiProviderNode;
+      final multiNode =
+          adapter.nodes.firstWhere((n) => n is MultiProviderNode)
+              as MultiProviderNode;
       expect(multiNode.childOffset, isNotNull);
     });
 
@@ -57,7 +59,8 @@ final s = Selector<MyModel, int>(
       result.unit.accept(adapter);
 
       expect(adapter.nodes.any((n) => n is SelectorNode), true);
-      final selectorNode = adapter.nodes.firstWhere((n) => n is SelectorNode) as SelectorNode;
+      final selectorNode =
+          adapter.nodes.firstWhere((n) => n is SelectorNode) as SelectorNode;
       expect(selectorNode.consumedClass, 'MyModel');
       expect(selectorNode.selectedType, 'int');
       expect(selectorNode.selectorSnippet, '(_, model) => model.count');

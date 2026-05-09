@@ -21,7 +21,8 @@ class RiverpodGenerator {
   }
 
   String _generateAsyncProvider(AsyncProviderNode node) {
-    final providerName = '${node.providedType.toLowerCase()}${node.providerType}';
+    final providerName =
+        '${node.providedType.toLowerCase()}${node.providerType}';
     return '''// 🔄 Suggestion: ${node.providerType} in Riverpod exposes an AsyncValue<${node.providedType}>.
 // Define it globally:
 final $providerName = ${node.providerType}<${node.providedType}>((ref) async {
@@ -73,11 +74,16 @@ class MyWidget extends ConsumerWidget {
     }
     buffer.writeln('}');
     buffer.writeln('');
-    buffer.writeln('class ${node.name}Notifier extends StateNotifier<${node.name}State> {');
+    buffer.writeln(
+      'class ${node.name}Notifier extends StateNotifier<${node.name}State> {',
+    );
     buffer.writeln('  ${node.name}Notifier() : super(${node.name}State());');
     buffer.writeln('');
     for (final method in node.methods) {
-      buffer.writeln('  void $method(/* args */) {');
+      final notifyMsg = method.callsNotifyListeners
+          ? ' // (Original called notifyListeners)'
+          : '';
+      buffer.writeln('  void ${method.name}(/* args */) {$notifyMsg');
       buffer.writeln('    // state = newState;');
       buffer.writeln('  }');
     }
@@ -88,8 +94,12 @@ class MyWidget extends ConsumerWidget {
   String _generateProviderDeclaration(ProviderDeclarationNode node) {
     final buffer = StringBuffer();
     final providerName = '${node.providedClass.toLowerCase()}Provider';
-    buffer.writeln('// 🔄 Suggestion: Replace ${node.providerType} with StateNotifierProvider');
-    buffer.writeln('final $providerName = StateNotifierProvider<${node.providedClass}Notifier, ${node.providedClass}State>((ref) {');
+    buffer.writeln(
+      '// 🔄 Suggestion: Replace ${node.providerType} with StateNotifierProvider',
+    );
+    buffer.writeln(
+      'final $providerName = StateNotifierProvider<${node.providedClass}Notifier, ${node.providedClass}State>((ref) {',
+    );
     buffer.writeln('  return ${node.providedClass}Notifier();');
     buffer.writeln('});');
     return buffer.toString();
@@ -98,7 +108,9 @@ class MyWidget extends ConsumerWidget {
   String _generateConsumerWidget(ConsumerNode node) {
     final buffer = StringBuffer();
     final providerName = '${node.consumedClass.toLowerCase()}Provider';
-    buffer.writeln('// 🔄 Suggestion: Change Widget to ConsumerWidget and use ref.watch');
+    buffer.writeln(
+      '// 🔄 Suggestion: Change Widget to ConsumerWidget and use ref.watch',
+    );
     buffer.writeln('class MyWidget extends ConsumerWidget {');
     buffer.writeln('  @override');
     buffer.writeln('  Widget build(BuildContext context, WidgetRef ref) {');
@@ -112,7 +124,9 @@ class MyWidget extends ConsumerWidget {
   String _generateRefWatchRead(ProviderOfNode node) {
     final buffer = StringBuffer();
     final providerName = '${node.consumedClass.toLowerCase()}Provider';
-    buffer.writeln('// 🔄 Suggestion: Replace Provider.of / context.read with ref.read or ref.watch');
+    buffer.writeln(
+      '// 🔄 Suggestion: Replace Provider.of / context.read with ref.read or ref.watch',
+    );
     buffer.writeln('// Use for rebuilding UI:');
     buffer.writeln('final state = ref.watch($providerName);');
     buffer.writeln('// Use for events/callbacks:');

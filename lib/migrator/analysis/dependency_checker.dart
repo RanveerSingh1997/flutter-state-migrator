@@ -8,10 +8,10 @@ class DependencyChecker {
     final dependencyGraph = <String, Set<String>>{};
 
     // Build the graph
-    // For simplicity, we look at which classes are in the same file or 
+    // For simplicity, we look at which classes are in the same file or
     // which classes are being consumed by widgets that also define providers.
     // In a real analyzer, we would look at the constructor and build methods.
-    
+
     // For now, let's just warn if a class consumes itself.
     for (final node in nodes) {
       if (node is ProviderOfNode) {

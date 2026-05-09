@@ -11,10 +11,7 @@ class TodoNotifier extends Notifier<List<Todo>> {
   void addTodo(String title) {
     state = [
       ...state,
-      Todo(
-        id: Random().nextDouble().toString(),
-        title: title,
-      ),
+      Todo(id: Random().nextDouble().toString(), title: title),
     ];
   }
 
@@ -24,7 +21,7 @@ class TodoNotifier extends Notifier<List<Todo>> {
         if (todo.id == id)
           todo.copyWith(isCompleted: !todo.isCompleted)
         else
-          todo
+          todo,
     ];
   }
 

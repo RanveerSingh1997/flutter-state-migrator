@@ -34,11 +34,13 @@ class RiverpodTodoScreen extends ConsumerWidget {
                   icon: const Icon(Icons.add),
                   onPressed: () {
                     if (textController.text.isNotEmpty) {
-                      ref.read(todoProvider.notifier).addTodo(textController.text);
+                      ref
+                          .read(todoProvider.notifier)
+                          .addTodo(textController.text);
                       textController.clear();
                     }
                   },
-                )
+                ),
               ],
             ),
           ),

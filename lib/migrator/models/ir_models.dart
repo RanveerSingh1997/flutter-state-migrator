@@ -3,13 +3,29 @@ abstract class ProviderNode {
   final int offset;
   final int length;
 
-  ProviderNode({required this.filePath, required this.offset, required this.length});
+  ProviderNode({
+    required this.filePath,
+    required this.offset,
+    required this.length,
+  });
+}
+
+class MethodInfo {
+  final String name;
+  final bool callsNotifyListeners;
+  final String bodySnippet;
+
+  MethodInfo({
+    required this.name,
+    required this.callsNotifyListeners,
+    required this.bodySnippet,
+  });
 }
 
 class LogicUnitNode extends ProviderNode {
   final String name;
   final List<String> stateVariables;
-  final List<String> methods;
+  final List<MethodInfo> methods;
   final bool isNotifier;
 
   LogicUnitNode({
@@ -36,7 +52,7 @@ class ProviderDeclarationNode extends ProviderNode {
   final String providedClass; // e.g. Counter
   final int? childOffset;
   final int? childLength;
-  
+
   ProviderDeclarationNode({
     required this.providerType,
     required this.providedClass,
@@ -50,7 +66,7 @@ class ProviderDeclarationNode extends ProviderNode {
 
 class ConsumerNode extends ProviderNode {
   final String consumedClass;
-  
+
   ConsumerNode({
     required this.consumedClass,
     required super.filePath,
@@ -61,7 +77,7 @@ class ConsumerNode extends ProviderNode {
 
 class ProviderOfNode extends ProviderNode {
   final String consumedClass;
-  
+
   ProviderOfNode({
     required this.consumedClass,
     required super.filePath,
@@ -118,7 +134,8 @@ class AsyncProviderNode extends ProviderNode {
 class WidgetNode extends ProviderNode {
   final String widgetName;
   final String widgetType; // e.g., StatelessWidget, StatefulWidget
-  final int? buildMethodOffset; // Where to inject `WidgetRef ref` (null for StatefulWidget)
+  final int?
+  buildMethodOffset; // Where to inject `WidgetRef ref` (null for StatefulWidget)
 
   WidgetNode({
     required this.widgetName,

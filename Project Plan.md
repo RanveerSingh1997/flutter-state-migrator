@@ -60,5 +60,22 @@ The core pipeline for the tool has been successfully established and proven on a
 - [x] **Comprehensive Example**: A multi-file example project for demonstration.
 - [x] **CLI Visual Polish**: Refine console output for a premium experience.
 
+## Future Roadmap: Ecosystem Expansion
+
+### Phase 10: Intelligent Refactoring & Monorepos (🚧 Next Steps)
+- [ ] **Monorepo Support**: Handle cross-package dependencies in large workspaces.
+- [ ] **Intelligent Logic Mapping**: Refactor `notifyListeners()` to idiomatic state updates.
+- [ ] **Custom Rule Engine**: Support project-specific migration rules via YAML.
+
+### Phase 11: IDE Integration (VS Code Extension)
+- [ ] **VS Code Context Menu**: "Right-click to migrate" functionality.
+- [ ] **Inline Previews**: Interactive diffs within the editor.
+- [ ] **Quick Fix Actions**: Automated resolution of migration `TODO`s.
+
+### Phase 12: Multi-Library Support & Visualizer
+- [ ] **BLoC Migrator**: Support for migrating from `flutter_bloc` to Riverpod.
+- [ ] **Riverpod Visualizer**: Automated generation of provider dependency graphs.
+- [ ] **Migration Dashboard**: Interactive web UI for migration audit reports.
+
 ---
 *This document serves as the living roadmap for the Flutter State Migrator project.*

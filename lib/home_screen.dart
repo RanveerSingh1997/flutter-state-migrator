@@ -8,27 +8,25 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('State Migrator Demo'),
-      ),
+      appBar: AppBar(title: const Text('State Migrator Demo')),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             ElevatedButton(
               onPressed: () {
-                Navigator.of(context).push(MaterialPageRoute(
-                  builder: (_) => const ProviderTodoScreen(),
-                ));
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const ProviderTodoScreen()),
+                );
               },
               child: const Text('Open Provider Implementation'),
             ),
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: () {
-                Navigator.of(context).push(MaterialPageRoute(
-                  builder: (_) => const RiverpodTodoScreen(),
-                ));
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const RiverpodTodoScreen()),
+                );
               },
               child: const Text('Open Riverpod Implementation'),
             ),

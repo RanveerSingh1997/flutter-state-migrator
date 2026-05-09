@@ -34,8 +34,14 @@ class RiverpodTransformer {
     return [];
   }
 
-  List<TextEdit> _transformProviderOf(ProviderOfNode node, String originalSource) {
-    final snippet = originalSource.substring(node.offset, node.offset + node.length);
+  List<TextEdit> _transformProviderOf(
+    ProviderOfNode node,
+    String originalSource,
+  ) {
+    final snippet = originalSource.substring(
+      node.offset,
+      node.offset + node.length,
+    );
     final providerName = '${node.consumedClass.toLowerCase()}Provider';
 
     if (snippet.startsWith('Provider.of')) {
@@ -45,61 +51,100 @@ class RiverpodTransformer {
         return [TextEdit(node.offset, node.length, 'ref.watch($providerName)')];
       }
     } else if (snippet.startsWith('context.read')) {
-      return [TextEdit(node.offset, node.length, 'ref.read($providerName.notifier)')];
+      return [
+        TextEdit(node.offset, node.length, 'ref.read($providerName.notifier)'),
+      ];
     } else if (snippet.startsWith('context.watch')) {
       return [TextEdit(node.offset, node.length, 'ref.watch($providerName)')];
     }
     return [];
   }
 
-  List<TextEdit> _transformProviderDeclaration(ProviderDeclarationNode node, String originalSource) {
+  List<TextEdit> _transformProviderDeclaration(
+    ProviderDeclarationNode node,
+    String originalSource,
+  ) {
     final edits = <TextEdit>[];
-    
+
     // 1. Generate the global provider definition
     final providerName = '${node.providedClass.toLowerCase()}Provider';
-    final globalDef = "\n// TODO: Auto-migrated Riverpod Provider\nfinal $providerName = StateNotifierProvider<${node.providedClass}Notifier, ${node.providedClass}State>((ref) {\n  return ${node.providedClass}Notifier();\n});\n";
+    final globalDef =
+        "\n// TODO: Auto-migrated Riverpod Provider\nfinal $providerName = StateNotifierProvider<${node.providedClass}Notifier, ${node.providedClass}State>((ref) {\n  return ${node.providedClass}Notifier();\n});\n";
     edits.add(TextEdit(originalSource.length, 0, globalDef));
 
     // 2. Unwrap if it has a child
     if (node.childOffset != null && node.childLength != null) {
-      final child = originalSource.substring(node.childOffset!, node.childOffset! + node.childLength!);
+      final child = originalSource.substring(
+        node.childOffset!,
+        node.childOffset! + node.childLength!,
+      );
       // If this was a top-level provider, it should probably be a ProviderScope now
-      edits.add(TextEdit(node.offset, node.length, 'ProviderScope(child: $child)'));
+      edits.add(
+        TextEdit(node.offset, node.length, 'ProviderScope(child: $child)'),
+      );
     }
-    
+
     return edits;
   }
 
-  List<TextEdit> _transformMultiProvider(MultiProviderNode node, String originalSource) {
+  List<TextEdit> _transformMultiProvider(
+    MultiProviderNode node,
+    String originalSource,
+  ) {
     if (node.childOffset != null && node.childLength != null) {
-      final child = originalSource.substring(node.childOffset!, node.childOffset! + node.childLength!);
+      final child = originalSource.substring(
+        node.childOffset!,
+        node.childOffset! + node.childLength!,
+      );
       // Wrap in ProviderScope to ensure Riverpod works
-      return [TextEdit(node.offset, node.length, 'ProviderScope(child: $child)')];
+      return [
+        TextEdit(node.offset, node.length, 'ProviderScope(child: $child)'),
+      ];
     }
     return [];
   }
 
   List<TextEdit> _transformSelector(SelectorNode node, String originalSource) {
     final edits = <TextEdit>[];
-    final snippet = originalSource.substring(node.offset, node.offset + node.length);
+    final snippet = originalSource.substring(
+      node.offset,
+      node.offset + node.length,
+    );
 
     // 1. Replace Selector<A, B> with Consumer
     final selectorRegex = RegExp(r'Selector<\w+,\s*\w+>');
     final selectorMatch = selectorRegex.firstMatch(snippet);
     if (selectorMatch != null) {
-      edits.add(TextEdit(
-          node.offset + selectorMatch.start, selectorMatch.group(0)!.length, 'Consumer'));
+      edits.add(
+        TextEdit(
+          node.offset + selectorMatch.start,
+          selectorMatch.group(0)!.length,
+          'Consumer',
+        ),
+      );
     }
 
     // 2. Remove the selector: argument
-    final selectorArgRegex = RegExp(r'selector:\s*[\s\S]+?(?=builder:)', multiLine: true);
+    final selectorArgRegex = RegExp(
+      r'selector:\s*[\s\S]+?(?=builder:)',
+      multiLine: true,
+    );
     final selectorArgMatch = selectorArgRegex.firstMatch(snippet);
     if (selectorArgMatch != null) {
-      edits.add(TextEdit(node.offset + selectorArgMatch.start, selectorArgMatch.group(0)!.length, ''));
+      edits.add(
+        TextEdit(
+          node.offset + selectorArgMatch.start,
+          selectorArgMatch.group(0)!.length,
+          '',
+        ),
+      );
     }
 
     // 3. Find builder signature and replace
-    final builderRegex = RegExp(r'builder:\s*\(\s*([^,]+)\s*,\s*([^,]+)\s*,\s*([^)]+)\)\s*(?:\{|=>)', multiLine: true);
+    final builderRegex = RegExp(
+      r'builder:\s*\(\s*([^,]+)\s*,\s*([^,]+)\s*,\s*([^)]+)\)\s*(?:\{|=>)',
+      multiLine: true,
+    );
     final builderMatch = builderRegex.firstMatch(snippet);
     if (builderMatch != null) {
       final ctx = builderMatch.group(1)!.trim();
@@ -107,26 +152,43 @@ class RiverpodTransformer {
       final ch = builderMatch.group(3)!.trim();
       final providerName = '${node.consumedClass.toLowerCase()}Provider';
 
-      final isExpression = snippet.substring(builderMatch.end - 2, builderMatch.end) == '=>';
-      final newBuilder = "builder: ($ctx, ref, $ch) " + (isExpression ? "=> ref.watch($providerName.select(${node.selectorSnippet}))" : "{\n    final $val = ref.watch($providerName.select(${node.selectorSnippet}));");
+      final isExpression =
+          snippet.substring(builderMatch.end - 2, builderMatch.end) == '=>';
+      final newBuilder =
+          "builder: ($ctx, ref, $ch) " +
+          (isExpression
+              ? "=> ref.watch($providerName.select(${node.selectorSnippet}))"
+              : "{\n    final $val = ref.watch($providerName.select(${node.selectorSnippet}));");
 
-      edits.add(TextEdit(
-          node.offset + builderMatch.start, builderMatch.group(0)!.length, newBuilder));
+      edits.add(
+        TextEdit(
+          node.offset + builderMatch.start,
+          builderMatch.group(0)!.length,
+          newBuilder,
+        ),
+      );
     }
 
     return edits;
   }
 
-  List<TextEdit> _transformAsyncProvider(AsyncProviderNode node, String originalSource) {
+  List<TextEdit> _transformAsyncProvider(
+    AsyncProviderNode node,
+    String originalSource,
+  ) {
     final providerName = '${node.providedType.toLowerCase()}Provider';
     final edits = <TextEdit>[];
 
     if (node.childOffset != null && node.childLength != null) {
-      final replacement = originalSource.substring(node.childOffset!, node.childOffset! + node.childLength!);
+      final replacement = originalSource.substring(
+        node.childOffset!,
+        node.childOffset! + node.childLength!,
+      );
       edits.add(TextEdit(node.offset, node.length, replacement));
     }
 
-    final globalProviderDef = '''
+    final globalProviderDef =
+        '''
 
 // TODO: Auto-migrated Riverpod ${node.providerType}
 final $providerName = ${node.providerType == 'FutureProvider' ? 'FutureProvider' : 'StreamProvider'}<${node.providedType}>((ref) {
@@ -138,24 +200,34 @@ final $providerName = ${node.providerType == 'FutureProvider' ? 'FutureProvider'
     return edits;
   }
 
-  List<TextEdit> _transformLogicUnit(LogicUnitNode node, String originalSource) {
-    final snippet = originalSource.substring(node.offset, node.offset + node.length);
-    
+  List<TextEdit> _transformLogicUnit(
+    LogicUnitNode node,
+    String originalSource,
+  ) {
+    final snippet = originalSource.substring(
+      node.offset,
+      node.offset + node.length,
+    );
+
     final buffer = StringBuffer();
-    buffer.writeln('import "package:riverpod_annotation/riverpod_annotation.dart";');
+    buffer.writeln(
+      'import "package:riverpod_annotation/riverpod_annotation.dart";',
+    );
     // Assuming file name matches class name roughly, this is a heuristic
     final fileName = node.filePath.split('/').last.replaceAll('.dart', '');
     buffer.writeln('part "${fileName}.g.dart";');
     buffer.writeln('');
     buffer.writeln('@riverpod');
-    buffer.writeln('class ${node.name}Notifier extends _\$${node.name}Notifier {');
+    buffer.writeln(
+      'class ${node.name}Notifier extends _\$${node.name}Notifier {',
+    );
     buffer.writeln('  @override');
     buffer.writeln('  dynamic build() {');
     buffer.writeln('    return null; // TODO: Return initial state');
     buffer.writeln('  }');
     buffer.writeln('');
     for (final method in node.methods) {
-      buffer.writeln('  void $method(/* args */) {');
+      buffer.writeln('  void ${method.name}(/* args */) {');
       buffer.writeln('    // state = newState;');
       buffer.writeln('  }');
     }
@@ -173,54 +245,78 @@ final $providerName = ${node.providerType == 'FutureProvider' ? 'FutureProvider'
     if (node.widgetType == 'StatelessWidget') {
       // Find "extends StatelessWidget" in the class declaration
       // The offset is the start of the class. We can search forward.
-      final endSearch = (node.offset + 100 < originalSource.length) ? node.offset + 100 : originalSource.length;
+      final endSearch = (node.offset + 100 < originalSource.length)
+          ? node.offset + 100
+          : originalSource.length;
       final searchArea = originalSource.substring(node.offset, endSearch);
       final extendsIdx = searchArea.indexOf('extends StatelessWidget');
       if (extendsIdx != -1) {
-        edits.add(TextEdit(
-          node.offset + extendsIdx,
-          'extends StatelessWidget'.length,
-          'extends ConsumerWidget'
-        ));
+        edits.add(
+          TextEdit(
+            node.offset + extendsIdx,
+            'extends StatelessWidget'.length,
+            'extends ConsumerWidget',
+          ),
+        );
       }
 
       if (node.buildMethodOffset != null) {
         final buildOffset = node.buildMethodOffset!;
         // Find "Widget build(BuildContext context)" around buildMethodOffset
-        final buildEndSearch = (buildOffset + 100 < originalSource.length) ? buildOffset + 100 : originalSource.length;
-        final buildSearchArea = originalSource.substring(buildOffset, buildEndSearch);
-        final buildIdx = buildSearchArea.indexOf('Widget build(BuildContext context)');
+        final buildEndSearch = (buildOffset + 100 < originalSource.length)
+            ? buildOffset + 100
+            : originalSource.length;
+        final buildSearchArea = originalSource.substring(
+          buildOffset,
+          buildEndSearch,
+        );
+        final buildIdx = buildSearchArea.indexOf(
+          'Widget build(BuildContext context)',
+        );
         if (buildIdx != -1) {
-          edits.add(TextEdit(
-            buildOffset + buildIdx,
-            'Widget build(BuildContext context)'.length,
-            'Widget build(BuildContext context, WidgetRef ref)'
-          ));
+          edits.add(
+            TextEdit(
+              buildOffset + buildIdx,
+              'Widget build(BuildContext context)'.length,
+              'Widget build(BuildContext context, WidgetRef ref)',
+            ),
+          );
         }
       }
     } else if (node.widgetType == 'StatefulWidget') {
-      final endSearch = (node.offset + 100 < originalSource.length) ? node.offset + 100 : originalSource.length;
+      final endSearch = (node.offset + 100 < originalSource.length)
+          ? node.offset + 100
+          : originalSource.length;
       final searchArea = originalSource.substring(node.offset, endSearch);
       final extendsIdx = searchArea.indexOf('extends StatefulWidget');
       if (extendsIdx != -1) {
-        edits.add(TextEdit(
-          node.offset + extendsIdx,
-          'extends StatefulWidget'.length,
-          'extends ConsumerStatefulWidget'
-        ));
+        edits.add(
+          TextEdit(
+            node.offset + extendsIdx,
+            'extends StatefulWidget'.length,
+            'extends ConsumerStatefulWidget',
+          ),
+        );
       }
-      
+
       if (node.buildMethodOffset != null && node.buildMethodOffset != -1) {
         final createOffset = node.buildMethodOffset!;
-        final createEndSearch = (createOffset + 100 < originalSource.length) ? createOffset + 100 : originalSource.length;
-        final createSearchArea = originalSource.substring(createOffset, createEndSearch);
+        final createEndSearch = (createOffset + 100 < originalSource.length)
+            ? createOffset + 100
+            : originalSource.length;
+        final createSearchArea = originalSource.substring(
+          createOffset,
+          createEndSearch,
+        );
         final stateIdx = createSearchArea.indexOf('State<${node.widgetName}>');
         if (stateIdx != -1) {
-           edits.add(TextEdit(
-             createOffset + stateIdx,
-             'State<${node.widgetName}>'.length,
-             'ConsumerState<${node.widgetName}>'
-           ));
+          edits.add(
+            TextEdit(
+              createOffset + stateIdx,
+              'State<${node.widgetName}>'.length,
+              'ConsumerState<${node.widgetName}>',
+            ),
+          );
         }
       }
     }
@@ -229,56 +325,89 @@ final $providerName = ${node.providerType == 'FutureProvider' ? 'FutureProvider'
 
   List<TextEdit> _transformState(StateNode node, String originalSource) {
     final edits = <TextEdit>[];
-    final endSearch = (node.offset + 100 < originalSource.length) ? node.offset + 100 : originalSource.length;
+    final endSearch = (node.offset + 100 < originalSource.length)
+        ? node.offset + 100
+        : originalSource.length;
     final searchArea = originalSource.substring(node.offset, endSearch);
     final target = 'extends State<${node.widgetName}>';
     final extendsIdx = searchArea.indexOf(target);
     if (extendsIdx != -1) {
-      edits.add(TextEdit(
-        node.offset + extendsIdx,
-        target.length,
-        'extends ConsumerState<${node.widgetName}>'
-      ));
+      edits.add(
+        TextEdit(
+          node.offset + extendsIdx,
+          target.length,
+          'extends ConsumerState<${node.widgetName}>',
+        ),
+      );
     }
     return edits;
   }
 
-  List<TextEdit> _transformHookWidget(HookWidgetNode node, String originalSource) {
+  List<TextEdit> _transformHookWidget(
+    HookWidgetNode node,
+    String originalSource,
+  ) {
     final edits = <TextEdit>[];
-    final endSearch = (node.offset + 100 < originalSource.length) ? node.offset + 100 : originalSource.length;
+    final endSearch = (node.offset + 100 < originalSource.length)
+        ? node.offset + 100
+        : originalSource.length;
     final searchArea = originalSource.substring(node.offset, endSearch);
     final extendsIdx = searchArea.indexOf('extends HookWidget');
     if (extendsIdx != -1) {
-      edits.add(TextEdit(
-        node.offset + extendsIdx,
-        'extends HookWidget'.length,
-        'extends HookConsumerWidget'
-      ));
+      edits.add(
+        TextEdit(
+          node.offset + extendsIdx,
+          'extends HookWidget'.length,
+          'extends HookConsumerWidget',
+        ),
+      );
     }
 
     // Find (BuildContext context) and replace with (BuildContext context, WidgetRef ref)
-    final buildSnippet = originalSource.substring(node.buildMethodOffset, node.offset + node.length);
-    final match = RegExp(r'build\s*\(\s*BuildContext\s+context\s*\)').firstMatch(buildSnippet);
+    final buildSnippet = originalSource.substring(
+      node.buildMethodOffset,
+      node.offset + node.length,
+    );
+    final match = RegExp(
+      r'build\s*\(\s*BuildContext\s+context\s*\)',
+    ).firstMatch(buildSnippet);
     if (match != null) {
-      edits.add(TextEdit(node.buildMethodOffset + match.start, match.group(0)!.length, 'build(BuildContext context, WidgetRef ref)'));
+      edits.add(
+        TextEdit(
+          node.buildMethodOffset + match.start,
+          match.group(0)!.length,
+          'build(BuildContext context, WidgetRef ref)',
+        ),
+      );
     }
     return edits;
   }
 
   List<TextEdit> _transformConsumer(ConsumerNode node, String originalSource) {
     final edits = <TextEdit>[];
-    final snippet = originalSource.substring(node.offset, node.offset + node.length);
+    final snippet = originalSource.substring(
+      node.offset,
+      node.offset + node.length,
+    );
 
     // 1. Replace Consumer<Type> with Consumer
     final consumerRegex = RegExp(r'Consumer<\w+>');
     final consumerMatch = consumerRegex.firstMatch(snippet);
     if (consumerMatch != null) {
-      edits.add(TextEdit(
-          node.offset + consumerMatch.start, consumerMatch.group(0)!.length, 'Consumer'));
+      edits.add(
+        TextEdit(
+          node.offset + consumerMatch.start,
+          consumerMatch.group(0)!.length,
+          'Consumer',
+        ),
+      );
     }
 
     // 2. Find builder signature and replace
-    final builderRegex = RegExp(r'builder:\s*\(\s*([^,]+)\s*,\s*([^,]+)\s*,\s*([^)]+)\)\s*(?:\{|=>)', multiLine: true);
+    final builderRegex = RegExp(
+      r'builder:\s*\(\s*([^,]+)\s*,\s*([^,]+)\s*,\s*([^)]+)\)\s*(?:\{|=>)',
+      multiLine: true,
+    );
     final builderMatch = builderRegex.firstMatch(snippet);
     if (builderMatch != null) {
       final ctx = builderMatch.group(1)!.trim();
@@ -286,11 +415,21 @@ final $providerName = ${node.providerType == 'FutureProvider' ? 'FutureProvider'
       final ch = builderMatch.group(3)!.trim();
       final providerName = '${node.consumedClass.toLowerCase()}Provider';
 
-      final isExpression = snippet.substring(builderMatch.end - 2, builderMatch.end) == '=>';
-      final newBuilder = "builder: ($ctx, ref, $ch) " + (isExpression ? "=> ref.watch($providerName)" : "{\n    final $val = ref.watch($providerName);");
+      final isExpression =
+          snippet.substring(builderMatch.end - 2, builderMatch.end) == '=>';
+      final newBuilder =
+          "builder: ($ctx, ref, $ch) " +
+          (isExpression
+              ? "=> ref.watch($providerName)"
+              : "{\n    final $val = ref.watch($providerName);");
 
-      edits.add(TextEdit(
-          node.offset + builderMatch.start, builderMatch.group(0)!.length, newBuilder));
+      edits.add(
+        TextEdit(
+          node.offset + builderMatch.start,
+          builderMatch.group(0)!.length,
+          newBuilder,
+        ),
+      );
     }
 
     return edits;
