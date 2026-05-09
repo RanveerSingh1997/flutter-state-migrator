@@ -1,6 +1,8 @@
 import '../models/ir_models.dart';
+import '../analysis/body_transformer.dart';
 
 class RiverpodGenerator {
+  final _bodyTransformer = BodyTransformer();
   String generateSuggestion(ProviderNode node) {
     if (node is LogicUnitNode) {
       return _generateStateNotifier(node);
@@ -66,26 +68,49 @@ class MyWidget extends ConsumerWidget {
 
   String _generateStateNotifier(LogicUnitNode node) {
     final buffer = StringBuffer();
+    final stateClassName = '${node.name}State';
     buffer.writeln('// 🔄 Suggestion: Convert ${node.name} to StateNotifier');
     buffer.writeln('// Note: StateNotifier requires an immutable state class.');
-    buffer.writeln('class ${node.name}State {');
-    for (final state in node.stateVariables) {
-      buffer.writeln('  // final dynamic $state;');
+    buffer.writeln('class $stateClassName {');
+    for (final variable in node.stateVariables) {
+      final name = variable.startsWith('_') ? variable.substring(1) : variable;
+      buffer.writeln('  final dynamic $name;');
     }
+    buffer.writeln();
+    buffer.writeln('  $stateClassName({');
+    for (final variable in node.stateVariables) {
+      final name = variable.startsWith('_') ? variable.substring(1) : variable;
+      buffer.writeln('    this.$name,');
+    }
+    buffer.writeln('  });');
+    buffer.writeln();
+    buffer.writeln('  $stateClassName copyWith({');
+    for (final variable in node.stateVariables) {
+      final name = variable.startsWith('_') ? variable.substring(1) : variable;
+      buffer.writeln('    dynamic $name,');
+    }
+    buffer.writeln('  }) {');
+    buffer.writeln('    return $stateClassName(');
+    for (final variable in node.stateVariables) {
+      final name = variable.startsWith('_') ? variable.substring(1) : variable;
+      buffer.writeln('      $name: $name ?? this.$name,');
+    }
+    buffer.writeln('    );');
+    buffer.writeln('  }');
     buffer.writeln('}');
     buffer.writeln('');
     buffer.writeln(
-      'class ${node.name}Notifier extends StateNotifier<${node.name}State> {',
+      'class ${node.name}Notifier extends StateNotifier<$stateClassName> {',
     );
-    buffer.writeln('  ${node.name}Notifier() : super(${node.name}State());');
+    buffer.writeln('  ${node.name}Notifier() : super($stateClassName());');
     buffer.writeln('');
     for (final method in node.methods) {
-      final notifyMsg = method.callsNotifyListeners
-          ? ' // (Original called notifyListeners)'
-          : '';
-      buffer.writeln('  void ${method.name}(/* args */) {$notifyMsg');
-      buffer.writeln('    // state = newState;');
-      buffer.writeln('  }');
+      final transformedBody = _bodyTransformer.transformBody(
+        method.bodySnippet,
+        node.stateVariables,
+      );
+      buffer.writeln('  void ${method.name}() $transformedBody');
+      buffer.writeln();
     }
     buffer.writeln('}');
     return buffer.toString();

@@ -49,7 +49,7 @@ class GetXAdapter extends RecursiveAstVisitor<void> {
 
   @override
   void visitMethodInvocation(MethodInvocation node) {
-    if (node.methodName.lexeme == 'find' && node.target?.toSource() == 'Get') {
+    if (node.methodName.name == 'find' && node.target?.toSource() == 'Get') {
       // Get.find<T>()
       final type = node.typeArguments?.arguments.first.toSource() ?? 'dynamic';
       nodes.add(ProviderOfNode(

@@ -1,4 +1,5 @@
 import '../models/ir_models.dart';
+import '../analysis/body_transformer.dart';
 
 class TextEdit {
   final int offset;
@@ -8,6 +9,8 @@ class TextEdit {
 }
 
 class RiverpodTransformer {
+  final _bodyTransformer = BodyTransformer();
+
   /// Returns a list of specific text edits to apply.
   List<TextEdit> transformNode(ProviderNode node, String originalSource) {
     if (node is ProviderOfNode) {
@@ -227,9 +230,13 @@ final $providerName = ${node.providerType == 'FutureProvider' ? 'FutureProvider'
     buffer.writeln('  }');
     buffer.writeln('');
     for (final method in node.methods) {
-      buffer.writeln('  void ${method.name}(/* args */) {');
-      buffer.writeln('    // state = newState;');
-      buffer.writeln('  }');
+      final transformedBody = _bodyTransformer.transformBody(
+        method.bodySnippet,
+        node.stateVariables,
+      );
+      
+      buffer.writeln('  void ${method.name}() $transformedBody');
+      buffer.writeln();
     }
     buffer.writeln('}');
     buffer.writeln('');
