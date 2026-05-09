@@ -34,10 +34,14 @@ class LogicUnitNode extends ProviderNode {
 class ProviderDeclarationNode extends ProviderNode {
   final String providerType; // e.g. ChangeNotifierProvider
   final String providedClass; // e.g. Counter
+  final int? childOffset;
+  final int? childLength;
   
   ProviderDeclarationNode({
     required this.providerType,
     required this.providedClass,
+    this.childOffset,
+    this.childLength,
     required super.filePath,
     required super.offset,
     required super.length,

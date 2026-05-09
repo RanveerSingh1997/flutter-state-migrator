@@ -45,22 +45,25 @@ class RiverpodTransformer {
   }
 
   List<TextEdit> _transformProviderDeclaration(ProviderDeclarationNode node, String originalSource) {
-    // A full provider declaration (e.g., ChangeNotifierProvider(create: (_) => MyModel()))
-    // is hard to fully rewrite if it has child widgets inline.
-    // In a real migrator, we would use Dart formatters or Analysis Server fixes.
-    // For this prototype, we will just return a commented out version and the suggested Riverpod equivalent.
-    final snippet = originalSource.substring(node.offset, node.offset + node.length);
     final providerName = '${node.providedClass.toLowerCase()}Provider';
     
-    final suggestion = '''
-/* TODO: Replace with Riverpod ProviderScope and global provider:
+    String replacement = '/* TODO: Missing child for ${node.providedClass} */';
+    if (node.childOffset != null && node.childLength != null) {
+      replacement = originalSource.substring(node.childOffset!, node.childOffset! + node.childLength!);
+    }
+
+    final globalProviderDef = '''
+
+// TODO: Auto-migrated Riverpod Provider
 final $providerName = StateNotifierProvider<${node.providedClass}Notifier, ${node.providedClass}State>((ref) {
   return ${node.providedClass}Notifier();
 });
-Original Provider:
-$snippet
-*/''';
-    return [TextEdit(node.offset, node.length, suggestion)];
+''';
+
+    return [
+      TextEdit(node.offset, node.length, replacement),
+      TextEdit(originalSource.length, 0, globalProviderDef),
+    ];
   }
 
   List<TextEdit> _transformLogicUnit(LogicUnitNode node, String originalSource) {

@@ -4,16 +4,7 @@ import 'counter_model.dart';
 
 void main() {
   runApp(
-    /* TODO: Replace with Riverpod ProviderScope and global provider:
-final countermodelProvider = StateNotifierProvider<CounterModelNotifier, CounterModelState>((ref) {
-  return CounterModelNotifier();
-});
-Original Provider:
-ChangeNotifierProvider(
-      create: (context) => CounterModel(),
-      child: const MyApp(),
-    )
-*/,
+    const MyApp(),
   );
 }
 
@@ -30,8 +21,9 @@ class MyApp extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Text('You have pushed the button this many times:'),
-              Consumer<CounterModel>(
-                builder: (context, counter, child) {
+              Consumer(
+                builder: (context, ref, child) {
+    final counter = ref.watch(countermodelProvider);
                   return Text(
                     '${counter.count}',
                     style: Theme.of(context).textTheme.headlineMedium,
@@ -57,3 +49,8 @@ class MyApp extends ConsumerWidget {
     );
   }
 }
+
+// TODO: Auto-migrated Riverpod Provider
+final countermodelProvider = StateNotifierProvider<CounterModelNotifier, CounterModelState>((ref) {
+  return CounterModelNotifier();
+});

@@ -35,7 +35,11 @@ class AstScanner {
 
   List<ProviderNode> _scanFile(File file) {
     try {
-      final result = parseString(content: file.readAsStringSync(), path: file.path);
+      final result = parseString(
+        content: file.readAsStringSync(), 
+        path: file.path,
+        throwIfDiagnostics: false,
+      );
       final adapter = ProviderAdapter(file.path);
       result.unit.visitChildren(adapter);
       return adapter.nodes;

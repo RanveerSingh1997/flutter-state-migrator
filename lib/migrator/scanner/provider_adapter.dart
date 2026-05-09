@@ -69,22 +69,31 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
     // Detect ChangeNotifierProvider(...)
     if (typeName == 'ChangeNotifierProvider') {
        String? providedClass;
+       int? childOffset;
+       int? childLength;
        for (final arg in node.argumentList.arguments) {
-         if (arg is NamedExpression && arg.name.label.name == 'create') {
-           if (arg.expression is FunctionExpression) {
-             final func = arg.expression as FunctionExpression;
-             final body = func.body;
-             if (body is ExpressionFunctionBody) {
-                if (body.expression is InstanceCreationExpression) {
-                  providedClass = (body.expression as InstanceCreationExpression).constructorName.type.name2.lexeme;
-                }
+         if (arg is NamedExpression) {
+           if (arg.name.label.name == 'create') {
+             if (arg.expression is FunctionExpression) {
+               final func = arg.expression as FunctionExpression;
+               final body = func.body;
+               if (body is ExpressionFunctionBody) {
+                  if (body.expression is InstanceCreationExpression) {
+                    providedClass = (body.expression as InstanceCreationExpression).constructorName.type.name2.lexeme;
+                  }
+               }
              }
+           } else if (arg.name.label.name == 'child') {
+             childOffset = arg.expression.offset;
+             childLength = arg.expression.length;
            }
          }
        }
        nodes.add(ProviderDeclarationNode(
          providerType: typeName,
          providedClass: providedClass ?? 'Unknown',
+         childOffset: childOffset,
+         childLength: childLength,
          filePath: filePath,
          offset: node.offset,
          length: node.length,
@@ -147,25 +156,34 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
     // Detect ChangeNotifierProvider(...) as MethodInvocation
     if (methodName == 'ChangeNotifierProvider') {
        String? providedClass;
+       int? childOffset;
+       int? childLength;
        for (final arg in node.argumentList.arguments) {
-         if (arg is NamedExpression && arg.name.label.name == 'create') {
-           if (arg.expression is FunctionExpression) {
-             final func = arg.expression as FunctionExpression;
-             final body = func.body;
-             if (body is ExpressionFunctionBody) {
-                // Could be MethodInvocation or InstanceCreationExpression
-                if (body.expression is MethodInvocation) {
-                  providedClass = (body.expression as MethodInvocation).methodName.name;
-                } else if (body.expression is InstanceCreationExpression) {
-                  providedClass = (body.expression as InstanceCreationExpression).constructorName.type.name2.lexeme;
-                }
+         if (arg is NamedExpression) {
+           if (arg.name.label.name == 'create') {
+             if (arg.expression is FunctionExpression) {
+               final func = arg.expression as FunctionExpression;
+               final body = func.body;
+               if (body is ExpressionFunctionBody) {
+                  // Could be MethodInvocation or InstanceCreationExpression
+                  if (body.expression is MethodInvocation) {
+                    providedClass = (body.expression as MethodInvocation).methodName.name;
+                  } else if (body.expression is InstanceCreationExpression) {
+                    providedClass = (body.expression as InstanceCreationExpression).constructorName.type.name2.lexeme;
+                  }
+               }
              }
+           } else if (arg.name.label.name == 'child') {
+             childOffset = arg.expression.offset;
+             childLength = arg.expression.length;
            }
          }
        }
        nodes.add(ProviderDeclarationNode(
          providerType: methodName,
          providedClass: providedClass ?? 'Unknown',
+         childOffset: childOffset,
+         childLength: childLength,
          filePath: filePath,
          offset: node.offset,
          length: node.length,
