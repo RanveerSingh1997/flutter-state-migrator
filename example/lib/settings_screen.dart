@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'counter_model.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class SettingsScreen extends StatefulWidget {
+class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
   @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> {
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -18,15 +19,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Selector<CounterModel, int>(
-              selector: (_, model) => model.count,
-              builder: (context, count, child) =>
+            Consumer(
+              builder: (context, ref, child) => ref.watch(countermodelProvider.select((_, model) => model.count))
                   Text('Count from Selector: $count'),
             ),
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: () =>
-                  Provider.of<CounterModel>(context, listen: false).increment(),
+                  ref.read(countermodelProvider).increment(),
               child: const Text('Increment from Settings'),
             ),
           ],

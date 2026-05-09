@@ -77,6 +77,16 @@ class _DashboardHomeState extends State<DashboardHome> {
                   title: const Text('Audit Report'),
                   onTap: () {},
                 ),
+                ListTile(
+                  leading: const Icon(Icons.group),
+                  title: const Text('Team Reviews'),
+                  onTap: () {},
+                ),
+                ListTile(
+                  leading: const Icon(Icons.cloud_upload),
+                  title: const Text('Cloud Sync'),
+                  onTap: () {},
+                ),
               ],
             ),
           ),

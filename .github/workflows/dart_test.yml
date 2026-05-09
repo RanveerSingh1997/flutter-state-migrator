@@ -25,3 +25,13 @@ jobs:
 
       - name: Run tests
         run: dart test
+
+      - name: Run Migration Audit
+        run: |
+          dart run bin/migrator.dart --mode aggressive --dry-run --report example/lib
+          
+      - name: Upload Migration Report
+        uses: actions/upload-artifact@v3
+        with:
+          name: migration-report
+          path: example/lib/migration_report.json

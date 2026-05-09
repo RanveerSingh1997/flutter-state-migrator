@@ -10,9 +10,10 @@ import '../lib/migrator/analysis/dependency_checker.dart';
 import '../lib/migrator/analysis/config_manager.dart';
 import '../lib/migrator/analysis/monorepo_manager.dart';
 import '../lib/migrator/analysis/visualizer.dart';
+import '../lib/migrator/analysis/cloud_manager.dart';
 import 'dart:convert';
 
-void main(List<String> arguments) {
+Future<void> main(List<String> arguments) async {
   final parser = ArgParser()
     ..addOption(
       'mode',
@@ -48,6 +49,12 @@ void main(List<String> arguments) {
       help: 'Launch the interactive migration dashboard',
     )
     ..addFlag(
+      'sync',
+      abbr: 's',
+      negatable: false,
+      help: 'Synchronize report with the cloud dashboard',
+    )
+    ..addFlag(
       'help',
       abbr: 'h',
       negatable: false,
@@ -70,6 +77,7 @@ void main(List<String> arguments) {
   final dryRun = argResults['dry-run'] as bool;
   final visualize = argResults['visualize'] as bool;
   final dashboard = argResults['dashboard'] as bool;
+  final sync = argResults['sync'] as bool;
 
   final monorepo = MonorepoManager(targetPath);
   final packages = monorepo.findPackages();
@@ -295,10 +303,14 @@ void main(List<String> arguments) {
 
     if (generateReport && !dryRun) {
       final reportFile = File('$targetPath/migration_report.json');
-      reportFile.writeAsStringSync(
-        JsonEncoder.withIndent('  ').convert(reportData),
-      );
+      final reportJson = JsonEncoder.withIndent('  ').convert(reportData);
+      reportFile.writeAsStringSync(reportJson);
       print('\n📊 Report generated at: ${reportFile.path}');
+
+      if (sync) {
+        final cloudManager = CloudManager();
+        await cloudManager.uploadReport(reportData);
+      }
     }
 
     print('\n🧹 Running dart format on $targetPath...');
