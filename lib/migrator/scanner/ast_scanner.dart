@@ -6,6 +6,8 @@ import 'package:analyzer/dart/ast/visitor.dart';
 import '../models/ir_models.dart';
 import 'provider_adapter.dart';
 import 'bloc_adapter.dart';
+import 'getx_adapter.dart';
+import 'mobx_adapter.dart';
 
 class AstScanner {
   final String targetPath;
@@ -46,9 +48,18 @@ class AstScanner {
       );
       final adapter = ProviderAdapter(file.path);
       final blocAdapter = BlocAdapter(file.path);
+      final getxAdapter = GetXAdapter(file.path);
+      final mobxAdapter = MobXAdapter(file.path);
       result.unit.visitChildren(adapter);
       result.unit.visitChildren(blocAdapter);
-      return [...adapter.nodes, ...blocAdapter.nodes];
+      result.unit.visitChildren(getxAdapter);
+      result.unit.visitChildren(mobxAdapter);
+      return [
+        ...adapter.nodes,
+        ...blocAdapter.nodes,
+        ...getxAdapter.nodes,
+        ...mobxAdapter.nodes,
+      ];
     } catch (e) {
       print('Error parsing ${file.path}: $e');
       return [];
