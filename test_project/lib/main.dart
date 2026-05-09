@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'counter_model.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 void main() {
   runApp(ProviderScope(child: const MyApp()));
@@ -11,8 +11,9 @@ class MyApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return const MaterialApp(
-      home: Scaffold(body: Center(child: Text('Hello'))),
+    final counter = ref.watch(countermodelProvider);
+    return MaterialApp(
+      home: Scaffold(body: Center(child: Text('Count: ${counter.count}'))),
     );
   }
 }

@@ -42,11 +42,17 @@ The core pipeline for the tool has been successfully established and proven on a
 - [x] Extensive project documentation (`README.md`, `CONTRIBUTING.md`).
 - [x] Publish the tool to `pub.dev` (Prepared).
 
-### Phase 7: Advanced Features & Ecosystem (🚧 Next Steps)
-- [ ] **StatefulWidget Migration**: Automatically convert `StatefulWidget` and `State` to `ConsumerStatefulWidget` and `ConsumerState`.
-- [ ] **Flutter Hooks Support**: Support migrating `HookWidget` + `Provider` to `HookConsumerWidget`.
-- [ ] **Automated Test Migration**: Refactor `testWidgets` to use Riverpod's `ProviderScope` and overrides.
-- [ ] **Code Generation Polish**: Handle `dispose` logic and custom provider parameters.
+### Phase 7: Advanced Features & Ecosystem (✅ Completed)
+- [x] **StatefulWidget Migration**: Automatically convert `StatefulWidget` and `State` to `ConsumerStatefulWidget` and `ConsumerState`.
+- [x] **Flutter Hooks Support**: Support migrating `HookWidget` + `Provider` to `HookConsumerWidget`.
+- [x] **Automated Test Migration**: Refactor `testWidgets` to use Riverpod's `ProviderScope` and overrides.
+- [x] **Code Generation Polish**: Handle `dispose` logic and custom provider parameters.
+
+### Phase 8: Intelligent Refinement & Reporting (🚧 Next Steps)
+- [ ] **Intelligent Import Management**: Auto-add Riverpod imports and clean up unused Provider imports.
+- [ ] **Migration Audit Report**: Generate a detailed JSON/Markdown report of all changes made.
+- [ ] **Dependency Guard**: Detect and warn about circular dependencies between migrated providers.
+- [ ] **Enhanced CLI**: Add flags for report generation and import cleaning.
 
 ---
 *This document serves as the living roadmap for the Flutter State Migrator project.*

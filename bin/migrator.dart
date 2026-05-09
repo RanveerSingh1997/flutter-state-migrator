@@ -5,11 +5,16 @@ import '../lib/migrator/scanner/ast_scanner.dart';
 import '../lib/migrator/models/ir_models.dart';
 import '../lib/migrator/generator/riverpod_generator.dart';
 import '../lib/migrator/generator/riverpod_transformer.dart';
+import '../lib/migrator/analysis/import_manager.dart';
+import '../lib/migrator/analysis/dependency_checker.dart';
+import 'dart:convert';
 
 
 void main(List<String> arguments) {
   final parser = ArgParser()
     ..addOption('mode', allowed: ['safe', 'assisted', 'aggressive'], defaultsTo: 'safe', help: 'Migration mode')
+    ..addFlag('clean-imports', defaultsTo: true, help: 'Remove unused provider imports in aggressive mode')
+    ..addFlag('report', defaultsTo: true, help: 'Generate migration_report.json')
     ..addFlag('help', abbr: 'h', negatable: false, help: 'Show usage information');
 
   final argResults = parser.parse(arguments);
@@ -22,6 +27,8 @@ void main(List<String> arguments) {
 
   final targetPath = argResults.rest.first;
   final mode = argResults['mode'] as String;
+  final cleanImports = argResults['clean-imports'] as bool;
+  final generateReport = argResults['report'] as bool;
 
   print('🚀 Starting Flutter State Migrator...');
   print('Target: $targetPath');
@@ -132,7 +139,18 @@ void main(List<String> arguments) {
   } else if (mode == 'aggressive') {
     print('🔥 Running in Aggressive Mode: Rewriting source files...');
     final transformer = RiverpodTransformer();
+    final importManager = ImportManager();
     int modifiedFilesCount = 0;
+    final reportData = {
+      'timestamp': DateTime.now().toIso8601String(),
+      'target': targetPath,
+      'modified_files': <String>[],
+      'summary': {
+        'total_nodes': nodes.length,
+        'logic_units': nodes.whereType<LogicUnitNode>().length,
+        'widgets': nodes.whereType<WidgetNode>().length,
+      }
+    };
     
     final nodesByFile = <String, List<ProviderNode>>{};
     for (final node in nodes) {
@@ -160,12 +178,22 @@ void main(List<String> arguments) {
       }
       
       if (modified) {
+        // Post-process imports
+        content = importManager.processImports(content, cleanProvider: cleanImports);
+        
         file.writeAsStringSync(content);
         print('  ✅ Rewrote ${entry.key}');
         modifiedFilesCount++;
+        (reportData['modified_files'] as List).add(entry.key);
       }
     }
     
+    if (generateReport) {
+      final reportFile = File('$targetPath/migration_report.json');
+      reportFile.writeAsStringSync(JsonEncoder.withIndent('  ').convert(reportData));
+      print('\n📊 Report generated at: ${reportFile.path}');
+    }
+
     print('\n🧹 Running dart format on $targetPath...');
     Process.runSync('dart', ['format', targetPath]);
     
