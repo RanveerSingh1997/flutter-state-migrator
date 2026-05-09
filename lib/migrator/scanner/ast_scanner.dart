@@ -5,6 +5,7 @@ import 'package:analyzer/dart/ast/visitor.dart';
 
 import '../models/ir_models.dart';
 import 'provider_adapter.dart';
+import 'bloc_adapter.dart';
 
 class AstScanner {
   final String targetPath;
@@ -44,8 +45,10 @@ class AstScanner {
         throwIfDiagnostics: false,
       );
       final adapter = ProviderAdapter(file.path);
+      final blocAdapter = BlocAdapter(file.path);
       result.unit.visitChildren(adapter);
-      return adapter.nodes;
+      result.unit.visitChildren(blocAdapter);
+      return [...adapter.nodes, ...blocAdapter.nodes];
     } catch (e) {
       print('Error parsing ${file.path}: $e');
       return [];

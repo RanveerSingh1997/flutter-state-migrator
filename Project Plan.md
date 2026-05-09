@@ -67,10 +67,10 @@ The core pipeline for the tool has been successfully established and proven on a
 - [x] **Intelligent Logic Mapping**: Refactor `notifyListeners()` to idiomatic state updates.
 - [x] **Custom Rule Engine**: Support project-specific migration rules via YAML.
 
-### Phase 11: IDE Integration (VS Code Extension)
-- [ ] **VS Code Context Menu**: "Right-click to migrate" functionality.
-- [ ] **Inline Previews**: Interactive diffs within the editor.
-- [ ] **Quick Fix Actions**: Automated resolution of migration `TODO`s.
+### Phase 11: IDE Integration (VS Code Extension) (✅ Completed)
+- [x] **VS Code Context Menu**: "Right-click to migrate" functionality.
+- [x] **Inline Previews**: Interactive diffs within the editor.
+- [x] **Quick Fix Actions**: Automated resolution of migration `TODO`s.
 
 ### Phase 12: Multi-Library Support & Visualizer
 - [ ] **BLoC Migrator**: Support for migrating from `flutter_bloc` to Riverpod.

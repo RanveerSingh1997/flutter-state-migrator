@@ -9,6 +9,7 @@ import '../lib/migrator/analysis/import_manager.dart';
 import '../lib/migrator/analysis/dependency_checker.dart';
 import '../lib/migrator/analysis/config_manager.dart';
 import '../lib/migrator/analysis/monorepo_manager.dart';
+import '../lib/migrator/analysis/visualizer.dart';
 import 'dart:convert';
 
 void main(List<String> arguments) {
@@ -35,6 +36,12 @@ void main(List<String> arguments) {
       help: 'Preview changes without modifying files',
     )
     ..addFlag(
+      'visualize',
+      abbr: 'v',
+      negatable: false,
+      help: 'Generate a dependency graph (Mermaid format)',
+    )
+    ..addFlag(
       'help',
       abbr: 'h',
       negatable: false,
@@ -55,6 +62,7 @@ void main(List<String> arguments) {
   final cleanImports = argResults['clean-imports'] as bool;
   final generateReport = argResults['report'] as bool;
   final dryRun = argResults['dry-run'] as bool;
+  final visualize = argResults['visualize'] as bool;
 
   final monorepo = MonorepoManager(targetPath);
   final packages = monorepo.findPackages();
@@ -81,6 +89,11 @@ void main(List<String> arguments) {
   final nodes = scanner.scanProject();
 
   print('\n📊 Found ${nodes.length} Provider-related elements:');
+  if (visualize) {
+    final visualizer = ProviderVisualizer();
+    final mmd = visualizer.generateMermaid(nodes);
+    visualizer.saveGraph(targetPath, mmd);
+  }
   for (final node in nodes) {
     if (node is LogicUnitNode) {
       print(
@@ -202,15 +215,19 @@ void main(List<String> arguments) {
     final transformer = RiverpodTransformer();
     final importManager = ImportManager();
     int modifiedFilesCount = 0;
+    final startTime = DateTime.now();
+    final complexityScore = nodes.length * 1.5;
     final reportData = {
-      'timestamp': DateTime.now().toIso8601String(),
+      'timestamp': startTime.toIso8601String(),
       'target': targetPath,
+      'complexity_score': complexityScore,
       'packages': packages.map((p) => {'name': p.name, 'root': p.rootPath}).toList(),
       'modified_files': <String>[],
       'summary': {
         'total_nodes': nodes.length,
         'logic_units': nodes.whereType<LogicUnitNode>().length,
         'widgets': nodes.whereType<WidgetNode>().length,
+        'duration_ms': DateTime.now().difference(startTime).inMilliseconds,
       },
     };
 
