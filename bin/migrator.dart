@@ -15,6 +15,7 @@ void main(List<String> arguments) {
     ..addOption('mode', allowed: ['safe', 'assisted', 'aggressive'], defaultsTo: 'safe', help: 'Migration mode')
     ..addFlag('clean-imports', defaultsTo: true, help: 'Remove unused provider imports in aggressive mode')
     ..addFlag('report', defaultsTo: true, help: 'Generate migration_report.json')
+    ..addFlag('dry-run', defaultsTo: false, help: 'Preview changes without modifying files')
     ..addFlag('help', abbr: 'h', negatable: false, help: 'Show usage information');
 
   final argResults = parser.parse(arguments);
@@ -29,10 +30,13 @@ void main(List<String> arguments) {
   final mode = argResults['mode'] as String;
   final cleanImports = argResults['clean-imports'] as bool;
   final generateReport = argResults['report'] as bool;
+  final dryRun = argResults['dry-run'] as bool;
 
-  print('🚀 Starting Flutter State Migrator...');
-  print('Target: $targetPath');
-  print('Mode: $mode');
+  print('\x1B[1m\x1B[34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\x1B[0m');
+  print('🚀 Starting \x1B[1mFlutter State Migrator\x1B[0m...');
+  print('📍 Target: \x1B[33m$targetPath\x1B[0m');
+  print('🛠️  Mode:   \x1B[33m$mode\x1B[0m');
+  print('\x1B[1m\x1B[34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\x1B[0m');
   
   // Pipeline
   // 1. Scan targetPath for Dart files
@@ -181,14 +185,20 @@ void main(List<String> arguments) {
         // Post-process imports
         content = importManager.processImports(content, cleanProvider: cleanImports);
         
-        file.writeAsStringSync(content);
-        print('  ✅ Rewrote ${entry.key}');
-        modifiedFilesCount++;
-        (reportData['modified_files'] as List).add(entry.key);
+        if (dryRun) {
+          print('\n👀 Dry Run: Proposed changes for ${entry.key}:');
+          final original = File(entry.key).readAsStringSync();
+          _printSimpleDiff(original, content);
+        } else {
+          file.writeAsStringSync(content);
+          print('  ✅ Rewrote ${entry.key}');
+          modifiedFilesCount++;
+          (reportData['modified_files'] as List).add(entry.key);
+        }
       }
     }
     
-    if (generateReport) {
+    if (generateReport && !dryRun) {
       final reportFile = File('$targetPath/migration_report.json');
       reportFile.writeAsStringSync(JsonEncoder.withIndent('  ').convert(reportData));
       print('\n📊 Report generated at: ${reportFile.path}');
@@ -197,11 +207,31 @@ void main(List<String> arguments) {
     print('\n🧹 Running dart format on $targetPath...');
     Process.runSync('dart', ['format', targetPath]);
     
-    print('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    print('✨ Migration Complete!');
-    print('📝 Files modified: $modifiedFilesCount');
-    print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+    print('\n\x1B[1m\x1B[34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\x1B[0m');
+    print('✨ \x1B[1m\x1B[32mMigration Complete!\x1B[0m');
+    print('📝 Files modified: \x1B[1m$modifiedFilesCount\x1B[0m');
+    if (!dryRun) {
+      print('📊 Audit log saved to migration_report.json');
+    }
+    print('\x1B[1m\x1B[34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\x1B[0m\n');
   } else {
     print('❌ Unknown mode: $mode');
+  }
+}
+
+void _printSimpleDiff(String original, String modified) {
+  final originalLines = original.split('\n');
+  final modifiedLines = modified.split('\n');
+  
+  // Very simple line-based diff for console
+  for (int i = 0; i < modifiedLines.length; i++) {
+    if (i < originalLines.length) {
+      if (originalLines[i] != modifiedLines[i]) {
+        print('\x1B[31m- ${originalLines[i]}\x1B[0m');
+        print('\x1B[32m+ ${modifiedLines[i]}\x1B[0m');
+      }
+    } else {
+      print('\x1B[32m+ ${modifiedLines[i]}\x1B[0m');
+    }
   }
 }
