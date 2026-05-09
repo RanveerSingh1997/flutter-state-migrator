@@ -42,5 +42,11 @@ The core pipeline for the tool has been successfully established and proven on a
 - [x] Extensive project documentation (`README.md`, `CONTRIBUTING.md`).
 - [x] Publish the tool to `pub.dev` (Prepared).
 
+### Phase 7: Advanced Features & Ecosystem (🚧 Next Steps)
+- [ ] **StatefulWidget Migration**: Automatically convert `StatefulWidget` and `State` to `ConsumerStatefulWidget` and `ConsumerState`.
+- [ ] **Flutter Hooks Support**: Support migrating `HookWidget` + `Provider` to `HookConsumerWidget`.
+- [ ] **Automated Test Migration**: Refactor `testWidgets` to use Riverpod's `ProviderScope` and overrides.
+- [ ] **Code Generation Polish**: Handle `dispose` logic and custom provider parameters.
+
 ---
 *This document serves as the living roadmap for the Flutter State Migrator project.*
