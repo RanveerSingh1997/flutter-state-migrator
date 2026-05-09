@@ -78,6 +78,16 @@ class _DashboardHomeState extends State<DashboardHome> {
                   onTap: () {},
                 ),
                 ListTile(
+                  leading: const Icon(Icons.analytics),
+                  title: const Text('ROI Analytics'),
+                  onTap: () {},
+                ),
+                ListTile(
+                  leading: const Icon(Icons.group),
+                  title: const Text('Team Reviews'),
+                  onTap: () {},
+                ),
+                ListTile(
                   leading: const Icon(Icons.group),
                   title: const Text('Team Reviews'),
                   onTap: () {},
