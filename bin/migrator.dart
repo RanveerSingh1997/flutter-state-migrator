@@ -11,6 +11,7 @@ import '../lib/migrator/analysis/config_manager.dart';
 import '../lib/migrator/analysis/monorepo_manager.dart';
 import '../lib/migrator/analysis/visualizer.dart';
 import '../lib/migrator/analysis/cloud_manager.dart';
+import '../lib/migrator/analysis/ai_manager.dart';
 import 'dart:convert';
 
 Future<void> main(List<String> arguments) async {
@@ -55,6 +56,11 @@ Future<void> main(List<String> arguments) async {
       help: 'Synchronize report with the cloud dashboard',
     )
     ..addFlag(
+      'ai',
+      negatable: false,
+      help: 'Enable AI-assisted logic refactoring (requires local LLM)',
+    )
+    ..addFlag(
       'help',
       abbr: 'h',
       negatable: false,
@@ -78,6 +84,7 @@ Future<void> main(List<String> arguments) async {
   final visualize = argResults['visualize'] as bool;
   final dashboard = argResults['dashboard'] as bool;
   final sync = argResults['sync'] as bool;
+  final useAi = argResults['ai'] as bool;
 
   final monorepo = MonorepoManager(targetPath);
   final packages = monorepo.findPackages();
