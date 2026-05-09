@@ -98,7 +98,7 @@ final $providerName = StateNotifierProvider<${node.providedClass}Notifier, ${nod
     }
 
     // 3. Find builder signature and replace
-    final builderRegex = RegExp(r'builder:\s*\(\s*([^,]+)\s*,\s*([^,]+)\s*,\s*([^)]+)\)\s*\{', multiLine: true);
+    final builderRegex = RegExp(r'builder:\s*\(\s*([^,]+)\s*,\s*([^,]+)\s*,\s*([^)]+)\)\s*(?:\{|=>)', multiLine: true);
     final builderMatch = builderRegex.firstMatch(snippet);
     if (builderMatch != null) {
       final ctx = builderMatch.group(1)!.trim();
@@ -106,8 +106,8 @@ final $providerName = StateNotifierProvider<${node.providedClass}Notifier, ${nod
       final ch = builderMatch.group(3)!.trim();
       final providerName = '${node.consumedClass.toLowerCase()}Provider';
 
-      final newBuilder =
-          "builder: ($ctx, ref, $ch) {\n    final $val = ref.watch($providerName.select(${node.selectorSnippet}));";
+      final isExpression = snippet.substring(builderMatch.end - 2, builderMatch.end) == '=>';
+      final newBuilder = "builder: ($ctx, ref, $ch) " + (isExpression ? "=> ref.watch($providerName.select(${node.selectorSnippet}))" : "{\n    final $val = ref.watch($providerName.select(${node.selectorSnippet}));");
 
       edits.add(TextEdit(
           node.offset + builderMatch.start, builderMatch.group(0)!.length, newBuilder));
@@ -213,7 +213,7 @@ final $providerName = ${node.providerType == 'FutureProvider' ? 'FutureProvider'
     }
 
     // 2. Find builder signature and replace
-    final builderRegex = RegExp(r'builder:\s*\(\s*([^,]+)\s*,\s*([^,]+)\s*,\s*([^)]+)\)\s*\{', multiLine: true);
+    final builderRegex = RegExp(r'builder:\s*\(\s*([^,]+)\s*,\s*([^,]+)\s*,\s*([^)]+)\)\s*(?:\{|=>)', multiLine: true);
     final builderMatch = builderRegex.firstMatch(snippet);
     if (builderMatch != null) {
       final ctx = builderMatch.group(1)!.trim();
@@ -221,7 +221,8 @@ final $providerName = ${node.providerType == 'FutureProvider' ? 'FutureProvider'
       final ch = builderMatch.group(3)!.trim();
       final providerName = '${node.consumedClass.toLowerCase()}Provider';
 
-      final newBuilder = "builder: ($ctx, ref, $ch) {\n    final $val = ref.watch($providerName);";
+      final isExpression = snippet.substring(builderMatch.end - 2, builderMatch.end) == '=>';
+      final newBuilder = "builder: ($ctx, ref, $ch) " + (isExpression ? "=> ref.watch($providerName)" : "{\n    final $val = ref.watch($providerName);");
 
       edits.add(TextEdit(
           node.offset + builderMatch.start, builderMatch.group(0)!.length, newBuilder));

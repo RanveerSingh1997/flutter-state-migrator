@@ -1,8 +1,6 @@
 name: flutter_state_migrator
-description: "A new Flutter project."
-# The following line prevents the package from being accidentally published to
-# pub.dev using `flutter pub publish`. This is preferred for private packages.
-publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+description: "Automated CLI tool to migrate Flutter applications from Provider to Riverpod."
+# publish_to: 'none' # Ready for pub.dev
 
 # The following defines the version and build number for your application.
 # A version number is three numbers separated by dots, like 1.2.43
@@ -36,7 +34,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   provider: ^6.1.5+1
   flutter_riverpod: ^3.3.1
-  analyzer: ^7.7.1
+  analyzer: ^10.0.1
   args: ^2.7.0
   path: ^1.9.1
 

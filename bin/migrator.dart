@@ -132,6 +132,7 @@ void main(List<String> arguments) {
   } else if (mode == 'aggressive') {
     print('🔥 Running in Aggressive Mode: Rewriting source files...');
     final transformer = RiverpodTransformer();
+    int modifiedFilesCount = 0;
     
     final nodesByFile = <String, List<ProviderNode>>{};
     for (final node in nodes) {
@@ -160,13 +161,18 @@ void main(List<String> arguments) {
       
       if (modified) {
         file.writeAsStringSync(content);
-        print('✅ Rewrote ${entry.key}');
+        print('  ✅ Rewrote ${entry.key}');
+        modifiedFilesCount++;
       }
     }
     
-    print('\n🧹 Running dart format...');
+    print('\n🧹 Running dart format on $targetPath...');
     Process.runSync('dart', ['format', targetPath]);
-    print('✨ Done!');
+    
+    print('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    print('✨ Migration Complete!');
+    print('📝 Files modified: $modifiedFilesCount');
+    print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
   } else {
     print('❌ Unknown mode: $mode');
   }

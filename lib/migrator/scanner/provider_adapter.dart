@@ -13,7 +13,7 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
   void visitClassDeclaration(ClassDeclaration node) {
     // Detect ChangeNotifier classes
     final extendsClause = node.extendsClause;
-    if (extendsClause != null && extendsClause.superclass.name2.lexeme == 'ChangeNotifier') {
+    if (extendsClause != null && extendsClause.superclass.name.lexeme == 'ChangeNotifier') {
       final className = node.name.lexeme;
       final stateVariables = <String>[];
       final methods = <String>[];
@@ -39,7 +39,7 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
         offset: node.offset,
         length: node.length,
       ));
-    } else if (extendsClause != null && extendsClause.superclass.name2.lexeme == 'StatelessWidget') {
+    } else if (extendsClause != null && extendsClause.superclass.name.lexeme == 'StatelessWidget') {
       final className = node.name.lexeme;
       int buildMethodOffset = -1;
       
@@ -63,7 +63,7 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
 
   @override
   void visitInstanceCreationExpression(InstanceCreationExpression node) {
-    final typeName = node.constructorName.type.name2.lexeme;
+    final typeName = node.constructorName.type.name.lexeme;
     print('InstanceCreation: \$typeName | Source: \${node.constructorName.type.toSource()}');
     
     // Detect ChangeNotifierProvider(...)
@@ -79,7 +79,7 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
                final body = func.body;
                if (body is ExpressionFunctionBody) {
                   if (body.expression is InstanceCreationExpression) {
-                    providedClass = (body.expression as InstanceCreationExpression).constructorName.type.name2.lexeme;
+                    providedClass = (body.expression as InstanceCreationExpression).constructorName.type.name.lexeme;
                   }
                }
              }
@@ -200,7 +200,7 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
                   if (body.expression is MethodInvocation) {
                     providedClass = (body.expression as MethodInvocation).methodName.name;
                   } else if (body.expression is InstanceCreationExpression) {
-                    providedClass = (body.expression as InstanceCreationExpression).constructorName.type.name2.lexeme;
+                    providedClass = (body.expression as InstanceCreationExpression).constructorName.type.name.lexeme;
                   }
                }
              }
