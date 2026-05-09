@@ -142,6 +142,39 @@ The **Flutter State Migrator** is now the premier modernization engine for the F
 - [x] **Smart Prompts**: Ask questions based on detected libraries (e.g. "Provider detected. Proceed?").
 - [x] **Configuration Generation**: Allow users to save their wizard answers to a `migrator.yaml` file.
 
+### Phase 24: Real Snapshot & Rollback Engine (✅ Completed)
+- [x] **Actual file copy**: `createSnapshot()` copies every `.dart`, `pubspec.yaml`, and `pubspec.lock` file into a timestamped `.migrator_snapshots/<ts>/` directory, preserving relative paths.
+- [x] **Manifest-based rollback**: A `manifest.json` records every backed-up file; `rollback()` restores from the manifest, making recovery deterministic even across large monorepos.
+- [x] **Snapshot listing**: `listSnapshots()` returns all available snapshots sorted newest-first with timestamp and file-count metadata.
+- [x] **CLI flags**: `--rollback`, `--rollback-to <path>`, `--snapshots` replace the fragile `arguments.contains('rollback')` string check.
+
+---
+
+## Upcoming: Closing the AI Tool Gap
+
+### Phase 25: `ref.watch` / `ref.read` Placement Intelligence
+- [ ] Detect consumption context (inside `build()` vs callback vs listener)
+- [ ] Emit `ref.watch`, `ref.read`, or `ref.listen` accordingly
+
+### Phase 26: Notifier Type Selector
+- [ ] Choose `Notifier`, `AsyncNotifier`, `StreamNotifier`, or `StateNotifier` based on class shape
+- [ ] Detect `async`/`Stream` return types in state-mutating methods
+
+### Phase 27: Provider Family Auto-Detection
+- [ ] Detect parameterized providers (consumed with different IDs per call-site)
+- [ ] Generate `.family` providers automatically
+
+### Phase 28: Real Dependency Graph
+- [ ] Complete `DependencyChecker` — build the provider graph and detect A→B→A cycles
+- [ ] Surface warnings in the CLI and include in the migration report
+
+### Phase 29: Deep Body Transformation
+- [ ] Extend `BodyTransformer` beyond `++`/`--`/`=` to handle spread operators, conditional mutations, `List.add/remove`, and multi-step state updates
+
+### Phase 30: Riverpod Generator 2.0 (Code-Gen Style)
+- [ ] Generate `@riverpod` annotation style (`riverpod_generator`) instead of manual `StateNotifierProvider`
+- [ ] Emit `part` file directives and `build_runner` instructions
+
 ---
 
 ## 🚀 The Journey Continues
