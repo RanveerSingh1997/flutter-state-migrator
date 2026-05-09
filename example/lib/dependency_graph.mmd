@@ -1,0 +1,8 @@
+graph TD
+  CounterModel[CounterModel Logic]
+  CounterModelProvider((CounterModelProvider))
+  CounterModel --> CounterModelProvider
+  CounterModelProvider -.-> ConsumerWidget
+  CounterModelProvider -.-> SelectorWidget
+  CounterModelProvider -.-> ContextReadWatch
+  CounterModelProvider -.-> ContextReadWatch
