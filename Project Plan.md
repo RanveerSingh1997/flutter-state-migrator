@@ -87,6 +87,16 @@ The core pipeline for the tool has been successfully established and proven on a
 - [x] **MobX Support**: Migrate observables and actions to Riverpod.
 - [x] **Auto-Library Detection**: Intelligent detection of the source library.
 
+### Phase 15: Deep Transformation & Advanced Refactoring (✅ Completed)
+- [x] **Deep Body Refactoring**: Automated rewriting of `count++` into `state.copyWith`.
+- [x] **Intelligent State Classes**: Automatic generation of immutable state objects.
+- [x] **Build Runner Integration**: Automated `part` file and `@riverpod` management.
+
+### Phase 16: Interactive Migration Dashboard (🚧 Next Steps)
+- [ ] **Flutter Web UI**: A browser-based dashboard to visualize migration reports.
+- [ ] **Interactive Diff Viewer**: Side-by-side comparison of proposed changes.
+- [ ] **Selective Migration**: Toggle individual files or classes for transformation.
+
 ---
 
 ## 🚀 The Journey Continues
