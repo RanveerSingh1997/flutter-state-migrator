@@ -7,7 +7,18 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
   final String filePath;
   final List<ProviderNode> nodes = [];
 
+  /// Tracks whether the visitor is currently inside a `build()` method body.
+  bool _inBuildMethod = false;
+
   ProviderAdapter(this.filePath);
+
+  @override
+  void visitMethodDeclaration(MethodDeclaration node) {
+    final wasBuild = _inBuildMethod;
+    if (node.name.lexeme == 'build') _inBuildMethod = true;
+    super.visitMethodDeclaration(node);
+    _inBuildMethod = wasBuild;
+  }
 
   @override
   void visitClassDeclaration(ClassDeclaration node) {
@@ -327,9 +338,12 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
       final typeArgs = node.typeArguments;
       if (typeArgs != null && typeArgs.arguments.isNotEmpty) {
         final consumedType = typeArgs.arguments.first.beginToken.lexeme;
+        // `listen: false` overrides build-context — that's always a ref.read.
+        final hasListenFalse = node.toSource().contains('listen: false');
         nodes.add(
           ProviderOfNode(
             consumedClass: consumedType,
+            isInBuildMethod: _inBuildMethod && !hasListenFalse,
             filePath: filePath,
             offset: node.offset,
             length: node.length,
@@ -345,14 +359,17 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
       final typeArgs = node.typeArguments;
       if (typeArgs != null && typeArgs.arguments.isNotEmpty) {
         final consumedType = typeArgs.arguments.first.beginToken.lexeme;
+        // context.watch is always reactive; context.read is always one-shot.
+        final isWatch = node.methodName.name == 'watch';
         nodes.add(
           ProviderOfNode(
             consumedClass: consumedType,
+            isInBuildMethod: isWatch || _inBuildMethod,
             filePath: filePath,
             offset: node.offset,
             length: node.length,
           ),
-        ); // Can reuse ProviderOfNode or create new one
+        );
       }
     }
     // Detect Consumer<T>(...) as MethodInvocation (happens without full type resolution)

@@ -149,15 +149,13 @@ class MyWidget extends ConsumerWidget {
   }
 
   String _generateRefWatchRead(ProviderOfNode node) {
-    final buffer = StringBuffer();
     final providerName = '${node.consumedClass.toLowerCase()}Provider';
-    buffer.writeln(
-      '// 🔄 Suggestion: Replace Provider.of / context.read / Get.find with ref.read or ref.watch',
-    );
-    buffer.writeln('// Use for rebuilding UI:');
-    buffer.writeln('final state = ref.watch($providerName);');
-    buffer.writeln('// Use for events/callbacks:');
-    buffer.writeln('ref.read($providerName.notifier).someMethod();');
-    return buffer.toString();
+    if (node.isInBuildMethod) {
+      return '// 🔄 Inside build() — use ref.watch for reactive rebuilds\n'
+          'final state = ref.watch($providerName);';
+    } else {
+      return '// 🔄 Outside build() — use ref.read for one-shot access in callbacks\n'
+          'ref.read($providerName.notifier).someMethod();';
+    }
   }
 }

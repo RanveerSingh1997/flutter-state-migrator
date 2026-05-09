@@ -152,9 +152,13 @@ The **Flutter State Migrator** is now the premier modernization engine for the F
 
 ## Upcoming: Closing the AI Tool Gap
 
-### Phase 25: `ref.watch` / `ref.read` Placement Intelligence
-- [ ] Detect consumption context (inside `build()` vs callback vs listener)
-- [ ] Emit `ref.watch`, `ref.read`, or `ref.listen` accordingly
+### Phase 25: `ref.watch` / `ref.read` Placement Intelligence (✅ Completed)
+- [x] Add `isInBuildMethod` field to `ProviderOfNode` IR model
+- [x] `ProviderAdapter` tracks build context via `_inBuildMethod` flag, toggled on `visitMethodDeclaration` for `build()` methods
+- [x] `Provider.of<T>(context)` inside `build()` → `ref.watch`; outside (callbacks, initState) → `ref.read`
+- [x] `Provider.of<T>(context, listen: false)` always → `ref.read` regardless of location
+- [x] `context.watch<T>()` → `ref.watch`; `context.read<T>()` → `ref.read(.notifier)`
+- [x] Generator suggestions are now context-aware (explain reactive vs one-shot in comments)
 
 ### Phase 26: Notifier Type Selector
 - [ ] Choose `Notifier`, `AsyncNotifier`, `StreamNotifier`, or `StateNotifier` based on class shape

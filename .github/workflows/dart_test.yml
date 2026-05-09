@@ -12,26 +12,29 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      - uses: dart-lang/setup-dart@v1
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
 
       - name: Install dependencies
-        run: dart pub get
+        run: flutter pub get
 
       - name: Verify formatting
-        run: dart format --output=none --set-exit-if-changed .
+        run: dart format --output=none --set-exit-if-changed lib/migrator bin
 
       - name: Analyze project source
         run: dart analyze
 
       - name: Run tests
-        run: dart test
+        run: flutter test
 
-      - name: Run Migration Audit
-        run: |
-          dart run bin/migrator.dart --mode aggressive --dry-run --report example/lib
-          
+      - name: Run Migration Audit (dry-run)
+        run: dart run bin/migrator.dart --mode aggressive --dry-run example/lib
+
       - name: Upload Migration Report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: migration-report
           path: example/lib/migration_report.json
+          if-no-files-found: ignore
