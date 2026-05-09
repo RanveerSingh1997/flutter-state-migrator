@@ -48,7 +48,9 @@ class RiverpodTransformer {
     final providerName = '${node.consumedClass.toLowerCase()}Provider';
 
     if (snippet.startsWith('Provider.of')) {
-      if (snippet.contains('listen: false')) {
+      // `listen: false` always maps to ref.read regardless of location.
+      // Otherwise use build-method context: ref.watch in build(), ref.read in callbacks.
+      if (snippet.contains('listen: false') || !node.isInBuildMethod) {
         return [TextEdit(node.offset, node.length, 'ref.read($providerName)')];
       } else {
         return [TextEdit(node.offset, node.length, 'ref.watch($providerName)')];

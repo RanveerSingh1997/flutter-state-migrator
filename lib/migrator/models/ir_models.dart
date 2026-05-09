@@ -78,8 +78,13 @@ class ConsumerNode extends ProviderNode {
 class ProviderOfNode extends ProviderNode {
   final String consumedClass;
 
+  /// True when this consumption occurs inside a `build()` method.
+  /// Used to select `ref.watch` (reactive, in build) vs `ref.read` (one-shot, in callbacks).
+  final bool isInBuildMethod;
+
   ProviderOfNode({
     required this.consumedClass,
+    this.isInBuildMethod = false,
     required super.filePath,
     required super.offset,
     required super.length,
