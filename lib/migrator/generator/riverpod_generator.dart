@@ -125,7 +125,7 @@ class MyWidget extends ConsumerWidget {
     final buffer = StringBuffer();
     final providerName = '${node.consumedClass.toLowerCase()}Provider';
     buffer.writeln(
-      '// 🔄 Suggestion: Replace Provider.of / context.read with ref.read or ref.watch',
+      '// 🔄 Suggestion: Replace Provider.of / context.read / Get.find with ref.read or ref.watch',
     );
     buffer.writeln('// Use for rebuilding UI:');
     buffer.writeln('final state = ref.watch($providerName);');
