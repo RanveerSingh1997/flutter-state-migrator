@@ -134,6 +134,38 @@ class MyWidget extends ConsumerWidget {
           );
         }
 
+      case NotifierType.notifier:
+        buffer.writeln(
+          '// 🔄 Suggestion: Convert ${node.name} to Notifier (Riverpod 2.0+)',
+        );
+        buffer.writeln('@riverpod');
+        buffer.writeln(
+          'class ${node.name}Notifier extends ${node.isFamilyCandidate ? '_\$${node.name}Notifier' : 'Notifier<dynamic>'} {',
+        );
+        buffer.writeln('  @override');
+        buffer.writeln('  dynamic build() {');
+        buffer.writeln('    return null; // TODO: Return initial state');
+        buffer.writeln('  }');
+        for (final method in node.methods) {
+          final transformedBody = _bodyTransformer.transformBody(
+            method.bodySnippet,
+            node.stateVariables,
+          );
+          buffer.writeln(
+            '  void ${method.name}() $transformedBody',
+          );
+          buffer.writeln();
+        }
+        buffer.writeln('}');
+        if (node.isFamilyCandidate) {
+          buffer.writeln(
+            '// ⚠️  This class has constructor parameters — use .family modifier:',
+          );
+          buffer.writeln(
+            '// final ${node.name.toLowerCase()}Provider = NotifierProvider.family<${node.name}Notifier, dynamic, ArgType>(...);',
+          );
+        }
+
       case NotifierType.stateNotifier:
         final stateClassName = '${node.name}State';
         buffer.writeln(
