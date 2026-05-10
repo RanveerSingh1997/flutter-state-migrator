@@ -160,9 +160,9 @@ The **Flutter State Migrator** is now the premier modernization engine for the F
 - [x] `context.watch<T>()` → `ref.watch`; `context.read<T>()` → `ref.read(.notifier)`
 - [x] Generator suggestions are now context-aware (explain reactive vs one-shot in comments)
 
-### Phase 26: Notifier Type Selector
-- [ ] Choose `Notifier`, `AsyncNotifier`, `StreamNotifier`, or `StateNotifier` based on class shape
-- [ ] Detect `async`/`Stream` return types in state-mutating methods
+### Phase 26: Notifier Type Selector (✅ Completed)
+- [x] Choose `Notifier`, `AsyncNotifier`, `StreamNotifier`, or `StateNotifier` based on class shape
+- [x] Detect `async`/`Stream` return types in state-mutating methods
 
 ### Phase 27: Provider Family Auto-Detection
 - [ ] Detect parameterized providers (consumed with different IDs per call-site)
