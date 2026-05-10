@@ -99,6 +99,6 @@ class GetXAdapter extends RecursiveAstVisitor<void> {
         return NotifierType.asyncNotifier;
       }
     }
-    return NotifierType.stateNotifier;
+    return NotifierType.notifier;
   }
 }

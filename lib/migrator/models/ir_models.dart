@@ -11,7 +11,7 @@ abstract class ProviderNode {
 }
 
 /// Which Riverpod notifier primitive best fits the detected class shape.
-enum NotifierType { stateNotifier, asyncNotifier, streamNotifier }
+enum NotifierType { stateNotifier, notifier, asyncNotifier, streamNotifier }
 
 class MethodInfo {
   final String name;
