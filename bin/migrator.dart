@@ -372,6 +372,7 @@ Future<void> main(List<String> arguments) async {
         'widgets': nodes.whereType<WidgetNode>().length,
         'duration_ms': DateTime.now().difference(startTime).inMilliseconds,
       },
+      'warnings': depWarnings,
     };
 
     final nodesByFile = <String, List<ProviderNode>>{};

@@ -164,9 +164,9 @@ The **Flutter State Migrator** is now the premier modernization engine for the F
 - [x] Choose `Notifier`, `AsyncNotifier`, `StreamNotifier`, or `StateNotifier` based on class shape
 - [x] Detect `async`/`Stream` return types in state-mutating methods
 
-### Phase 27: Provider Family Auto-Detection
-- [ ] Detect parameterized providers (consumed with different IDs per call-site)
-- [ ] Generate `.family` providers automatically
+### Phase 27: Provider Family Auto-Detection (✅ Completed)
+- [x] Detect parameterized providers (consumed with different IDs per call-site)
+- [x] Generate `.family` providers automatically
 
 ### Phase 28: Real Dependency Graph
 - [ ] Complete `DependencyChecker` — build the provider graph and detect A→B→A cycles
