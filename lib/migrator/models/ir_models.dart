@@ -155,9 +155,15 @@ class ProviderOfNode extends ProviderNode {
   /// Used to select `ref.watch` (reactive, in build) vs `ref.read` (one-shot, in callbacks).
   final bool isInBuildMethod;
 
+  /// True if the `Provider.of<T>(context)` or `context.read<T>()` call is
+  /// immediately followed by a method invocation, e.g., `.increment()`.
+  /// This signals we should use `ref.read(provider.notifier)` instead of the value.
+  final bool isMethodCall;
+
   ProviderOfNode({
     required this.consumedClass,
     this.isInBuildMethod = false,
+    this.isMethodCall = false,
     required super.filePath,
     required super.offset,
     required super.length,

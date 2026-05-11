@@ -1,5 +1,6 @@
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/ast/visitor.dart';
+
 import '../models/ir_models.dart';
 import 'scanner_utils.dart';
 
@@ -68,7 +69,7 @@ class GetXAdapter extends RecursiveAstVisitor<void> {
           stateFields: stateFields,
           methods: methods,
           isNotifier: true,
-          notifierType: _detectNotifierType(methods),
+          notifierType: detectNotifierType(methods),
           isFamilyCandidate: isFamilyCandidate,
           filePath: filePath,
           offset: node.offset,
@@ -94,20 +95,6 @@ class GetXAdapter extends RecursiveAstVisitor<void> {
       );
     }
     super.visitMethodInvocation(node);
-  }
-
-  NotifierType _detectNotifierType(List<MethodInfo> methods) {
-    for (final m in methods) {
-      if (m.returnType.startsWith('Stream<')) {
-        return NotifierType.streamNotifier;
-      }
-    }
-    for (final m in methods) {
-      if (m.isAsync || m.returnType.startsWith('Future<')) {
-        return NotifierType.asyncNotifier;
-      }
-    }
-    return NotifierType.notifier;
   }
 
   String _inferObservableType(String? declaredType, String? initializer) {

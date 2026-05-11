@@ -44,3 +44,20 @@ MethodInfo buildMethodInfo(
     parameters: params,
   );
 }
+
+/// Infers the best Riverpod [NotifierType] based on the methods found in a logic unit.
+NotifierType detectNotifierType(List<MethodInfo> methods) {
+  for (final m in methods) {
+    if (m.isGetter) continue;
+    if (m.returnType.startsWith('Stream<')) {
+      return NotifierType.streamNotifier;
+    }
+  }
+  for (final m in methods) {
+    if (m.isGetter) continue;
+    if (m.isAsync || m.returnType.startsWith('Future<')) {
+      return NotifierType.asyncNotifier;
+    }
+  }
+  return NotifierType.notifier;
+}

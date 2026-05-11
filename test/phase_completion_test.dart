@@ -167,30 +167,31 @@ class CounterModel extends ChangeNotifier {
       );
 
       final logicEdits = transformer.transformNode(node, source);
-      expect(logicEdits, hasLength(1));
+      // Two edits: file-level header insert (offset 0, length 0) + class replacement.
+      expect(logicEdits, hasLength(2));
+      final headerEdit = logicEdits.firstWhere((e) => e.length == 0);
+      final classEdit = logicEdits.firstWhere((e) => e.length > 0);
+      final allReplacement = logicEdits.map((e) => e.replacement).join('\n');
       expect(
-        logicEdits.single.replacement,
+        headerEdit.replacement,
         contains(
           'import "package:riverpod_annotation/riverpod_annotation.dart";',
         ),
       );
       expect(
         'import "package:riverpod_annotation/riverpod_annotation.dart";'
-            .allMatches(logicEdits.single.replacement)
+            .allMatches(allReplacement)
             .length,
         1,
       );
       expect(
-        logicEdits.single.replacement,
+        headerEdit.replacement,
         contains('part "counter_model.g.dart";'),
       );
-      expect(logicEdits.single.replacement, contains('return 0;'));
+      expect(classEdit.replacement, contains('return 0;'));
+      expect(classEdit.replacement, contains('void increment(int delta)'));
       expect(
-        logicEdits.single.replacement,
-        contains('void increment(int delta)'),
-      );
-      expect(
-        logicEdits.single.replacement,
+        classEdit.replacement,
         contains('state = state.copyWith(count: state.count + delta);'),
       );
 

@@ -1,5 +1,6 @@
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/ast/visitor.dart';
+
 import '../models/ir_models.dart';
 import 'scanner_utils.dart';
 
@@ -53,7 +54,7 @@ class BlocAdapter extends RecursiveAstVisitor<void> {
             stateFields: [FieldInfo(rawName: 'state', type: stateType)],
             methods: methods,
             isNotifier: true,
-            notifierType: _detectNotifierType(methods),
+            notifierType: detectNotifierType(methods),
             isFamilyCandidate: isFamilyCandidate,
             filePath: filePath,
             offset: node.offset,
@@ -63,19 +64,5 @@ class BlocAdapter extends RecursiveAstVisitor<void> {
       }
     }
     super.visitClassDeclaration(node);
-  }
-
-  NotifierType _detectNotifierType(List<MethodInfo> methods) {
-    for (final m in methods) {
-      if (m.returnType.startsWith('Stream<')) {
-        return NotifierType.streamNotifier;
-      }
-    }
-    for (final m in methods) {
-      if (m.isAsync || m.returnType.startsWith('Future<')) {
-        return NotifierType.asyncNotifier;
-      }
-    }
-    return NotifierType.notifier;
   }
 }

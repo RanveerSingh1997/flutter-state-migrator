@@ -1,5 +1,5 @@
-import '../models/ir_models.dart';
 import '../analysis/body_transformer.dart';
+import '../models/ir_models.dart';
 import '../utils/naming.dart';
 
 class TextEdit {
@@ -51,10 +51,13 @@ class RiverpodTransformer {
       node.offset + node.length,
     );
     final providerName = providerNameForType(node.consumedClass);
-    final isMethodCall = _isFollowedByMethodCall(
-      originalSource,
-      node.offset + node.length,
-    );
+
+    // Prefer IR-detected flag; fall back to text heuristic for cases where the
+    // scanner hasn't populated the field (e.g. unit tests, external callers).
+    final isMethodCall =
+        node.isMethodCall ||
+        _isFollowedByMethodCall(originalSource, node.offset + node.length);
+
     final imperativeValueRead = 'ref.read($providerName)';
     final imperativeNotifierRead = 'ref.read($providerName.notifier)';
     final reactiveWatch = 'ref.watch($providerName)';
@@ -91,27 +94,21 @@ class RiverpodTransformer {
   }
 
   bool _isFollowedByMethodCall(String source, int endOffset) {
-    var index = endOffset;
-    while (index < source.length && RegExp(r'\s').hasMatch(source[index])) {
-      index++;
+    var i = endOffset;
+    while (i < source.length && source[i] == ' ') {
+      i++;
     }
-    if (index >= source.length || source[index] != '.') {
-      return false;
+    if (i >= source.length || source[i] != '.') return false;
+    i++;
+    final identStart = i;
+    while (i < source.length && RegExp(r'[A-Za-z0-9_]').hasMatch(source[i])) {
+      i++;
     }
-
-    index++;
-    while (index < source.length && RegExp(r'\s').hasMatch(source[index])) {
-      index++;
+    if (i == identStart) return false;
+    while (i < source.length && source[i] == ' ') {
+      i++;
     }
-    while (index < source.length &&
-        RegExp(r'[A-Za-z0-9_]').hasMatch(source[index])) {
-      index++;
-    }
-    while (index < source.length && RegExp(r'\s').hasMatch(source[index])) {
-      index++;
-    }
-
-    return index < source.length && source[index] == '(';
+    return i < source.length && source[i] == '(';
   }
 
   List<TextEdit> _transformProviderDeclaration(
@@ -120,8 +117,6 @@ class RiverpodTransformer {
   ) {
     final edits = <TextEdit>[];
 
-    // Remove the legacy Provider widget wrapper; replace with ProviderScope if
-    // there is a child widget, otherwise remove entirely.
     if (node.childOffset != null && node.childLength != null) {
       final child = originalSource.substring(
         node.childOffset!,
@@ -131,7 +126,6 @@ class RiverpodTransformer {
         TextEdit(node.offset, node.length, 'ProviderScope(child: $child)'),
       );
     } else {
-      // No child captured — just delete the legacy wrapper expression.
       edits.add(TextEdit(node.offset, node.length, ''));
     }
 
@@ -161,7 +155,6 @@ class RiverpodTransformer {
       node.offset + node.length,
     );
 
-    // 1. Replace Selector<A, B> with Consumer
     final selectorRegex = RegExp(r'Selector<[^>]+,\s*[^>]+>');
     final selectorMatch = selectorRegex.firstMatch(snippet);
     if (selectorMatch != null) {
@@ -174,7 +167,6 @@ class RiverpodTransformer {
       );
     }
 
-    // 2. Remove the selector: argument
     final selectorArgRegex = RegExp(
       r'selector:\s*[\s\S]+?(?=builder:)',
       multiLine: true,
@@ -235,10 +227,7 @@ class RiverpodTransformer {
     return edits;
   }
 
-  /// Converts the legacy `(ctx, model) => model.name` selector lambda to the
-  /// Riverpod `(state) => state.name` form.
   String _normaliseSelectorSnippet(String snippet) {
-    // Match `(ctx, model) => expr` or `(ctx, model) { ... }`
     final trimmed = snippet.trim();
     final expressionMatch = RegExp(
       r'\(\s*\w+\s*,\s*(\w+)\s*\)\s*=>\s*([\s\S]+)',
@@ -312,27 +301,24 @@ final $providerName = ${node.providerType == 'FutureProvider' ? 'FutureProvider'
     );
 
     final buffer = StringBuffer();
+    final edits = <TextEdit>[];
 
-    // ── Bug 5 fix: only emit file-level header once per file ──────────────────
-    final isFirstInFile = !_fileHeaderInjected.contains(node.filePath);
-    if (isFirstInFile) {
+    // File-level header: Prepended to top of file instead of injected at node offset
+    if (!_fileHeaderInjected.contains(node.filePath)) {
       _fileHeaderInjected.add(node.filePath);
-      buffer.writeln(
-        'import "package:riverpod_annotation/riverpod_annotation.dart";',
-      );
       final fileName = node.filePath.split('/').last.replaceAll('.dart', '');
-      buffer.writeln('part "$fileName.g.dart";');
-      buffer.writeln(
-        '// Run: dart run build_runner build --delete-conflicting-outputs',
-      );
-      buffer.writeln('');
+      final header =
+          '''
+import "package:riverpod_annotation/riverpod_annotation.dart";
+part "$fileName.g.dart";
+// Run: dart run build_runner build --delete-conflicting-outputs
+
+''';
+      edits.add(TextEdit(0, 0, header));
     }
 
-    // ── Bug 8 + 9 fix: infer build() return type and initial value ─────────────
     final (buildReturnType, buildBody) = _inferBuildSignature(node);
 
-    // ── State class: only generated for multi-field notifiers ──────────────────
-    // For single-field classes, we use the field type directly as the state.
     if (node.stateFields.length > 1) {
       _emitStateClass(buffer, node);
     }
@@ -350,17 +336,14 @@ final $providerName = ${node.providerType == 'FutureProvider' ? 'FutureProvider'
     buffer.writeln('  }');
     buffer.writeln('');
 
-    // ── Bug 1 fix: skip getter methods ────────────────────────────────────────
-    // ── Bug 2 fix: emit method parameters ────────────────────────────────────
     for (final method in node.methods) {
-      if (method.isGetter) continue; // Bug 1: skip getters
+      if (method.isGetter) continue;
 
       final transformedBody = _bodyTransformer.transformBody(
         method.bodySnippet,
         node.stateFields,
       );
       final methodReturn = method.isAsync ? 'Future<void>' : 'void';
-      // Bug 2: include parameters in signature
       buffer.writeln(
         '  $methodReturn ${method.name}(${method.paramSource}) $transformedBody',
       );
@@ -372,19 +355,10 @@ final $providerName = ${node.providerType == 'FutureProvider' ? 'FutureProvider'
     buffer.writeln(snippet);
     buffer.writeln('*/');
 
-    // ── Bug 7 fix: no manual StateNotifierProvider — @riverpod + build_runner
-    //    generates the provider automatically. Nothing appended.
-
-    return [TextEdit(node.offset, node.length, buffer.toString())];
+    edits.add(TextEdit(node.offset, node.length, buffer.toString()));
+    return edits;
   }
 
-  /// Infers the `build()` return type and initial body expression from the
-  /// detected [FieldInfo] list.
-  ///
-  /// Rules:
-  ///   - 0 fields → `void build()` (practically unused, Notifier with no state)
-  ///   - 1 field  → use the field's declared type + initializer directly
-  ///   - >1 fields → generate a `${ClassName}State` class
   (String, String) _inferBuildSignature(LogicUnitNode node) {
     switch (node.notifierType) {
       case NotifierType.asyncNotifier:
@@ -415,12 +389,10 @@ final $providerName = ${node.providerType == 'FutureProvider' ? 'FutureProvider'
       return (type, 'return ${_defaultForType(type)};');
     }
 
-    // Multi-field → use generated state class
     final stateClass = '${node.name}State';
     return (stateClass, 'return $stateClass();');
   }
 
-  /// Returns a sensible Dart default for common types.
   String _defaultForType(String type) {
     switch (type.trim()) {
       case 'int':
@@ -447,7 +419,6 @@ final $providerName = ${node.providerType == 'FutureProvider' ? 'FutureProvider'
     }
     buffer.writeln('');
 
-    // Constructor
     buffer.writeln('  const $stateClassName({');
     for (final field in node.stateFields) {
       final init = field.initializer;
@@ -460,7 +431,6 @@ final $providerName = ${node.providerType == 'FutureProvider' ? 'FutureProvider'
     buffer.writeln('  });');
     buffer.writeln('');
 
-    // copyWith
     buffer.writeln('  $stateClassName copyWith({');
     for (final field in node.stateFields) {
       buffer.writeln('    ${field.type}? ${field.publicName},');
@@ -624,7 +594,6 @@ final $providerName = ${node.providerType == 'FutureProvider' ? 'FutureProvider'
       node.offset + node.length,
     );
 
-    // 1. Replace Consumer<Type> with Consumer
     final consumerRegex = RegExp(r'Consumer<[^>]+>');
     final consumerMatch = consumerRegex.firstMatch(snippet);
     if (consumerMatch != null) {

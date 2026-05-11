@@ -1,9 +1,11 @@
-import '../models/ir_models.dart';
 import '../analysis/body_transformer.dart';
+import '../models/ir_models.dart';
+import '../scanner/scanner_utils.dart';
 import '../utils/naming.dart';
 
 class RiverpodGenerator {
   final _bodyTransformer = BodyTransformer();
+
   String generateSuggestion(ProviderNode node) {
     if (node is LogicUnitNode) {
       return _generateStateNotifier(node);
@@ -71,7 +73,11 @@ class MyWidget extends ConsumerWidget {
     final buffer = StringBuffer();
     final fileName = node.filePath.split('/').last.replaceAll('.dart', '');
     final (buildReturnType, buildBody) = _inferBuildSignature(node);
-    final header = switch (node.notifierType) {
+
+    // Use the shared detectNotifierType logic for consistent headers
+    final inferredType = detectNotifierType(node.methods);
+
+    final header = switch (inferredType) {
       NotifierType.asyncNotifier =>
         '// 🔄 Suggestion: Convert ${node.name} to an @riverpod AsyncNotifier',
       NotifierType.streamNotifier =>
@@ -92,7 +98,7 @@ class MyWidget extends ConsumerWidget {
     );
     buffer.writeln();
 
-    if (node.notifierType == NotifierType.stateNotifier &&
+    if (inferredType == NotifierType.stateNotifier &&
         node.stateFields.length > 1) {
       _emitStateClass(buffer, node);
     }
@@ -129,7 +135,8 @@ class MyWidget extends ConsumerWidget {
   }
 
   (String, String) _inferBuildSignature(LogicUnitNode node) {
-    switch (node.notifierType) {
+    final inferredType = detectNotifierType(node.methods);
+    switch (inferredType) {
       case NotifierType.asyncNotifier:
         return (
           'Future<dynamic>',
@@ -243,12 +250,16 @@ class MyWidget extends ConsumerWidget {
 
   String _generateRefWatchRead(ProviderOfNode node) {
     final providerName = providerNameForType(node.consumedClass);
+    if (node.isMethodCall) {
+      return '// 🔄 Use ref.read(...notifier) for method calls\n'
+          'ref.read($providerName.notifier).someMethod();';
+    }
     if (node.isInBuildMethod) {
       return '// 🔄 Inside build() — use ref.watch for reactive rebuilds\n'
           'final state = ref.watch($providerName);';
     } else {
       return '// 🔄 Outside build() — use ref.read for one-shot access in callbacks\n'
-          'ref.read($providerName.notifier).someMethod();';
+          'final state = ref.read($providerName);';
     }
   }
 }
