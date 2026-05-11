@@ -24,7 +24,7 @@ class MobXAdapter extends RecursiveAstVisitor<void> {
 
     if (isMobXStore) {
       final className = node.name.lexeme;
-      final stateVariables = <String>[];
+      final stateFields = <FieldInfo>[];
       final methods = <MethodInfo>[];
 
       bool isFamilyCandidate = false;
@@ -33,7 +33,13 @@ class MobXAdapter extends RecursiveAstVisitor<void> {
           for (final metadata in member.metadata) {
             if (metadata.name.name == 'observable') {
               for (final variable in member.fields.variables) {
-                stateVariables.add(variable.name.lexeme);
+                stateFields.add(
+                  FieldInfo(
+                    rawName: variable.name.lexeme,
+                    type: member.fields.type?.toSource() ?? 'dynamic',
+                    initializer: variable.initializer?.toSource(),
+                  ),
+                );
               }
             }
           }
@@ -76,7 +82,7 @@ class MobXAdapter extends RecursiveAstVisitor<void> {
       nodes.add(
         LogicUnitNode(
           name: className,
-          stateVariables: stateVariables,
+          stateFields: stateFields,
           methods: methods,
           isNotifier: true,
           notifierType: _detectNotifierType(methods),

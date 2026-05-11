@@ -1,9 +1,16 @@
+import '../models/ir_models.dart';
+
 class BodyTransformer {
-  String transformBody(String body, List<String> stateFields) {
+  /// Transform a method body from ChangeNotifier mutation style to Riverpod
+  /// state-update style.
+  ///
+  /// Accepts either a [List<FieldInfo>] (preferred) or a legacy
+  /// [List<String>] of raw field names via [transformBodyRaw].
+  String transformBody(String body, List<FieldInfo> stateFields) {
     var transformed = body;
-    final fieldMap = {
-      for (final field in stateFields) field: _stripLeadingUnderscore(field),
-    };
+
+    // Build a mapping rawName -> publicName for all state fields.
+    final fieldMap = {for (final f in stateFields) f.rawName: f.publicName};
 
     for (final entry in fieldMap.entries) {
       transformed = _rewriteListMutation(
@@ -28,6 +35,14 @@ class BodyTransformer {
     transformed = _mergeAdjacentCopyWithStatements(transformed);
 
     return transformed.replaceAll(RegExp(r'\n{3,}'), '\n\n').trimRight();
+  }
+
+  /// Backwards-compatible entry point for code paths that still pass raw names.
+  String transformBodyRaw(String body, List<String> rawNames) {
+    final fields = rawNames
+        .map((n) => FieldInfo(rawName: n, type: 'dynamic'))
+        .toList();
+    return transformBody(body, fields);
   }
 
   String _rewriteListMutation(
@@ -188,9 +203,5 @@ class BodyTransformer {
 
     flushPending();
     return merged.join('\n');
-  }
-
-  String _stripLeadingUnderscore(String name) {
-    return name.startsWith('_') ? name.substring(1) : name;
   }
 }

@@ -168,16 +168,16 @@ The **Flutter State Migrator** is now the premier modernization engine for the F
 - [x] Detect parameterized providers (consumed with different IDs per call-site)
 - [x] Generate `.family` providers automatically
 
-### Phase 28: Real Dependency Graph
-- [ ] Complete `DependencyChecker` — build the provider graph and detect A→B→A cycles
-- [ ] Surface warnings in the CLI and include in the migration report
+### Phase 28: Real Dependency Graph (✅ Completed)
+- [x] Complete `DependencyChecker` — build the provider graph and detect A→B→A cycles
+- [x] Surface warnings in the CLI and include in the migration report
 
-### Phase 29: Deep Body Transformation
-- [ ] Extend `BodyTransformer` beyond `++`/`--`/`=` to handle spread operators, conditional mutations, `List.add/remove`, and multi-step state updates
+### Phase 29: Deep Body Transformation (✅ Completed)
+- [x] Extend `BodyTransformer` beyond `++`/`--`/`=` to handle spread operators, conditional mutations, `List.add/remove`, and multi-step state updates
 
-### Phase 30: Riverpod Generator 2.0 (Code-Gen Style)
-- [ ] Generate `@riverpod` annotation style (`riverpod_generator`) instead of manual `StateNotifierProvider`
-- [ ] Emit `part` file directives and `build_runner` instructions
+### Phase 30: Riverpod Generator 2.0 (Code-Gen Style) (✅ Completed)
+- [x] Generate `@riverpod` annotation style (`riverpod_generator`) instead of manual `StateNotifierProvider`
+- [x] Emit `part` file directives and `build_runner` instructions
 
 ---
 

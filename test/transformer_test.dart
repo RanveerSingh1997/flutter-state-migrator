@@ -10,6 +10,7 @@ void main() {
       const source = 'Provider.of<Counter>(context)';
       final node = ProviderOfNode(
         consumedClass: 'Counter',
+        isInBuildMethod: true,
         filePath: 'test.dart',
         offset: 0,
         length: source.length,
@@ -40,7 +41,7 @@ Selector<MyModel, int>(
       expect(edits.any((e) => e.replacement == 'Consumer'), true);
       expect(
         edits.any(
-          (e) => e.replacement.contains('ref.watch(mymodelProvider.select'),
+          (e) => e.replacement.contains('ref.watch(myModelProvider.select'),
         ),
         true,
       );
@@ -59,7 +60,7 @@ Selector<MyModel, int>(
 
       final edits = transformer.transformNode(node, source);
       expect(edits.length, 1);
-      expect(edits.first.replacement, childSource);
+      expect(edits.first.replacement, 'ProviderScope(child: $childSource)');
     });
   });
 }
