@@ -1,6 +1,12 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
+import 'package:path/path.dart' as p;
 import 'package:flutter_state_migrator/migrator/analysis/body_transformer.dart';
 import 'package:flutter_state_migrator/migrator/analysis/dependency_checker.dart';
+import 'package:flutter_state_migrator/migrator/analysis/dependency_manager.dart';
+import 'package:flutter_state_migrator/migrator/analysis/generated_file_manager.dart';
+import 'package:flutter_state_migrator/migrator/analysis/monorepo_manager.dart';
 import 'package:flutter_state_migrator/migrator/generator/riverpod_generator.dart';
 import 'package:flutter_state_migrator/migrator/generator/riverpod_transformer.dart';
 import 'package:flutter_state_migrator/migrator/models/ir_models.dart';
@@ -259,6 +265,169 @@ class CounterModel extends ChangeNotifier {
         ),
         isTrue,
       );
+    });
+  });
+
+  group('Phase 33 project-level integration', () {
+    late Directory tmpDir;
+
+    setUp(() => tmpDir = Directory.systemTemp.createTempSync('migrator_p33_'));
+    tearDown(() => tmpDir.deleteSync(recursive: true));
+
+    // ── DependencyManager ───────────────────────────────────────────────────
+
+    test('DependencyManager adds Riverpod deps and fixes capture-group bug',
+        () async {
+      final pubspec = File(p.join(tmpDir.path, 'pubspec.yaml'))
+        ..writeAsStringSync('''
+name: my_app
+dependencies:
+  flutter:
+    sdk: flutter
+  provider: ^6.0.0
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+''');
+
+      final result =
+          await DependencyManager(tmpDir.path).updateDependencies();
+
+      final content = pubspec.readAsStringSync();
+      expect(result.added, containsAll(['flutter_riverpod', 'riverpod_annotation']));
+      expect(result.commented, contains('provider'));
+      expect(content, contains('flutter_riverpod:'));
+      expect(content, contains('riverpod_annotation:'));
+      // Capture-group replacement must produce `# provider:`, not literal `$1# $2`.
+      expect(content, contains('# provider:'));
+      expect(content, isNot(contains(r'$1# $2')));
+    });
+
+    test('DependencyManager creates dev_dependencies section when absent',
+        () async {
+      File(p.join(tmpDir.path, 'pubspec.yaml')).writeAsStringSync('''
+name: no_dev
+dependencies:
+  flutter:
+    sdk: flutter
+''');
+
+      await DependencyManager(tmpDir.path).updateDependencies();
+
+      final content =
+          File(p.join(tmpDir.path, 'pubspec.yaml')).readAsStringSync();
+      expect(content, contains('dev_dependencies:'));
+      expect(content, contains('riverpod_generator:'));
+      expect(content, contains('build_runner:'));
+    });
+
+    test('DependencyManager is idempotent on a second run', () async {
+      File(p.join(tmpDir.path, 'pubspec.yaml')).writeAsStringSync('''
+name: app
+dependencies:
+  flutter_riverpod: ^2.6.1
+  riverpod_annotation: ^2.6.1
+dev_dependencies:
+  riverpod_generator: ^2.6.1
+  build_runner: ^2.4.0
+''');
+
+      final result =
+          await DependencyManager(tmpDir.path).updateDependencies();
+      expect(result.added, isEmpty);
+      expect(result.commented, isEmpty);
+    });
+
+    // ── GeneratedFileManager ─────────────────────────────────────────────────
+
+    test('GeneratedFileManager finds stale .g.dart files', () {
+      // Source with no part directive → stale
+      File(p.join(tmpDir.path, 'stale.dart'))
+          .writeAsStringSync('void main() {}');
+      File(p.join(tmpDir.path, 'stale.g.dart'))
+          .writeAsStringSync('// generated');
+
+      // Source with matching part directive → live
+      File(p.join(tmpDir.path, 'live.dart'))
+          .writeAsStringSync("part 'live.g.dart';");
+      File(p.join(tmpDir.path, 'live.g.dart'))
+          .writeAsStringSync('// generated');
+
+      final mgr = GeneratedFileManager(tmpDir.path);
+      final stale = mgr.findStaleGeneratedFiles();
+
+      expect(stale.map((f) => p.basename(f.path)), contains('stale.g.dart'));
+      expect(stale.map((f) => p.basename(f.path)),
+          isNot(contains('live.g.dart')));
+    });
+
+    test('GeneratedFileManager cleans stale files', () {
+      File(p.join(tmpDir.path, 'orphan.dart'))
+          .writeAsStringSync('void f() {}');
+      final gFile = File(p.join(tmpDir.path, 'orphan.g.dart'))
+        ..writeAsStringSync('// generated');
+
+      final mgr = GeneratedFileManager(tmpDir.path);
+      final count = mgr.cleanStaleFiles();
+
+      expect(count, 1);
+      expect(gFile.existsSync(), isFalse);
+    });
+
+    test('GeneratedFileManager reports files needing build_runner', () {
+      final src = File(p.join(tmpDir.path, 'counter.dart'))
+        ..writeAsStringSync("part 'counter.g.dart';\nvoid f() {}");
+
+      final mgr = GeneratedFileManager(tmpDir.path);
+      final pending = mgr.pendingBuildRunnerFiles([src.path]);
+
+      expect(pending, contains(src.path));
+    });
+
+    // ── MonorepoManager ──────────────────────────────────────────────────────
+
+    test('MonorepoManager finds packages and skips excluded dirs', () {
+      // Root package
+      File(p.join(tmpDir.path, 'pubspec.yaml'))
+          .writeAsStringSync('name: root\n');
+      // Sub-package
+      final sub = Directory(p.join(tmpDir.path, 'packages', 'sub_pkg'))
+        ..createSync(recursive: true);
+      File(p.join(sub.path, 'pubspec.yaml'))
+          .writeAsStringSync('name: sub_pkg\n');
+      // Should be ignored
+      final buildDir = Directory(p.join(tmpDir.path, 'build', 'pkg'))
+        ..createSync(recursive: true);
+      File(p.join(buildDir.path, 'pubspec.yaml'))
+          .writeAsStringSync('name: should_be_excluded\n');
+
+      final mgr = MonorepoManager(tmpDir.path);
+      final names = mgr.findPackages().map((p) => p.name).toSet();
+
+      expect(names, containsAll(['root', 'sub_pkg']));
+      expect(names, isNot(contains('should_be_excluded')));
+      expect(mgr.isMonorepo, isTrue);
+    });
+
+    test('MonorepoManager.migrateablePackages filters by node file paths', () {
+      File(p.join(tmpDir.path, 'pubspec.yaml'))
+          .writeAsStringSync('name: root\n');
+      final pkgA = Directory(p.join(tmpDir.path, 'packages', 'pkg_a'))
+        ..createSync(recursive: true);
+      File(p.join(pkgA.path, 'pubspec.yaml'))
+          .writeAsStringSync('name: pkg_a\n');
+      final pkgB = Directory(p.join(tmpDir.path, 'packages', 'pkg_b'))
+        ..createSync(recursive: true);
+      File(p.join(pkgB.path, 'pubspec.yaml'))
+          .writeAsStringSync('name: pkg_b\n');
+
+      final mgr = MonorepoManager(tmpDir.path);
+      final relevant = mgr.migrateablePackages([
+        p.join(pkgA.path, 'lib', 'counter.dart'),
+      ]);
+
+      expect(relevant.map((p) => p.name), contains('pkg_a'));
+      expect(relevant.map((p) => p.name), isNot(contains('pkg_b')));
     });
   });
 }

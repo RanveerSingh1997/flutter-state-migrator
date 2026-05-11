@@ -8,6 +8,7 @@ import 'package:flutter_state_migrator/migrator/analysis/cloud_manager.dart';
 import 'package:flutter_state_migrator/migrator/analysis/config_manager.dart';
 import 'package:flutter_state_migrator/migrator/analysis/dependency_checker.dart';
 import 'package:flutter_state_migrator/migrator/analysis/dependency_manager.dart';
+import 'package:flutter_state_migrator/migrator/analysis/generated_file_manager.dart';
 import 'package:flutter_state_migrator/migrator/analysis/import_manager.dart';
 import 'package:flutter_state_migrator/migrator/analysis/monorepo_manager.dart';
 import 'package:flutter_state_migrator/migrator/analysis/snapshot_manager.dart';
@@ -134,7 +135,6 @@ Future<void> main(List<String> arguments) async {
   }
 
   final snapshot = SnapshotManager(targetPath);
-  final depManager = DependencyManager(targetPath);
 
   // Snapshot management commands — exit early, no migration needed.
   if (argResults['rollback'] as bool) {
@@ -159,6 +159,7 @@ Future<void> main(List<String> arguments) async {
 
   final monorepo = MonorepoManager(targetPath);
   final packages = monorepo.findPackages();
+  final isMonorepo = packages.length > 1;
 
   // Pre-migration safety rail: snapshot before any destructive rewrite.
   if (!dryRun && mode == 'aggressive') {
@@ -171,7 +172,10 @@ Future<void> main(List<String> arguments) async {
   print('✨ \x1B[1mFlutter State Migrator v2.0.0\x1B[0m ✨');
   print('🚀 \x1B[1mThe Universal Modernization Suite\x1B[0m');
   print('📍 Target: \x1B[33m$targetPath\x1B[0m');
-  print('📦 Packages found: \x1B[33m${packages.length}\x1B[0m');
+  print(
+    '📦 Packages found: \x1B[33m${packages.length}\x1B[0m'
+    '${isMonorepo ? "  \x1B[90m(monorepo)\x1B[0m" : ""}',
+  );
   for (final pkg in packages) {
     print('   - ${pkg.name} (\x1B[33m${pkg.rootPath}\x1B[0m)');
   }
@@ -463,9 +467,57 @@ Future<void> main(List<String> arguments) async {
     print('\n🧹 Running dart format on $targetPath...');
     Process.runSync('dart', ['format', targetPath]);
 
-    // Post-migration: update dependencies
+    // Post-migration: update pubspec.yaml for every affected package.
     if (!dryRun) {
-      await depManager.updateDependencies();
+      final affectedPkgs = isMonorepo
+          ? monorepo.migrateablePackages(
+              (reportData['modified_files'] as List).cast<String>(),
+            )
+          : [PackageInfo(name: 'root', rootPath: targetPath)];
+
+      for (final pkg in affectedPkgs) {
+        final pkgDep = DependencyManager(pkg.rootPath);
+        final result = await pkgDep.updateDependencies();
+        if (result.hasChanges) {
+          if (result.added.isNotEmpty) {
+            print(
+              '📦 [${pkg.name}] Added deps: ${result.added.join(", ")}',
+            );
+          }
+          if (result.commented.isNotEmpty) {
+            print(
+              '🧹 [${pkg.name}] Commented out: ${result.commented.join(", ")}',
+            );
+          }
+        }
+      }
+
+      // Report files that now need build_runner.
+      final genManager = GeneratedFileManager(targetPath);
+      final modifiedFiles =
+          (reportData['modified_files'] as List).cast<String>();
+      final needsBuildRunner = genManager.pendingBuildRunnerFiles(
+        modifiedFiles,
+      );
+      if (needsBuildRunner.isNotEmpty) {
+        print(
+          '\n⚙️  Run build_runner to generate .g.dart files for '
+          '${needsBuildRunner.length} file(s):',
+        );
+        for (final f in needsBuildRunner) {
+          print('   $f');
+        }
+        print(
+          '   dart run build_runner build --delete-conflicting-outputs',
+        );
+      }
+
+      // Clean up stale .g.dart files from previous runs.
+      final staleCleaned = genManager.cleanStaleFiles();
+      if (staleCleaned > 0) {
+        print('🗑️  Removed $staleCleaned stale .g.dart file(s).');
+      }
+
       print('\n🚀 Running "flutter pub get"...');
       // Process.runSync('flutter', ['pub', 'get'], workingDirectory: targetPath);
     }
