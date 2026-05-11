@@ -100,7 +100,7 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
           stateFields: stateFields,
           methods: methods,
           isNotifier: true,
-          notifierType: _detectNotifierType(methods),
+          notifierType: detectNotifierType(methods),
           isFamilyCandidate: isFamilyCandidate,
           filePath: filePath,
           offset: node.offset,
@@ -387,6 +387,7 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
           ProviderOfNode(
             consumedClass: consumedType,
             isInBuildMethod: isReactiveBuildContext && !hasListenFalse,
+            isMethodCall: _isFollowedByMethodCall(node),
             filePath: filePath,
             offset: node.offset,
             length: node.length,
@@ -408,6 +409,7 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
           ProviderOfNode(
             consumedClass: consumedType,
             isInBuildMethod: isWatch && isReactiveBuildContext,
+            isMethodCall: _isFollowedByMethodCall(node),
             filePath: filePath,
             offset: node.offset,
             length: node.length,
@@ -509,23 +511,18 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
     super.visitMethodInvocation(node);
   }
 
-  NotifierType _detectNotifierType(List<MethodInfo> methods) {
-    for (final m in methods) {
-      if (m.isGetter) {
-        continue;
-      }
-      if (m.returnType.startsWith('Stream<')) {
-        return NotifierType.streamNotifier;
+  bool _isFollowedByMethodCall(MethodInvocation node) {
+    final parent = node.parent;
+    if (parent is MethodInvocation && parent.target == node) {
+      return true;
+    }
+    if (parent is PropertyAccess && parent.target == node) {
+      // Could be a getter or a method call on the result
+      final grandParent = parent.parent;
+      if (grandParent is MethodInvocation && grandParent.target == parent) {
+        return true;
       }
     }
-    for (final m in methods) {
-      if (m.isGetter) {
-        continue;
-      }
-      if (m.isAsync || m.returnType.startsWith('Future<')) {
-        return NotifierType.asyncNotifier;
-      }
-    }
-    return NotifierType.notifier;
+    return false;
   }
 }
