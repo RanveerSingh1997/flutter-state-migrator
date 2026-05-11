@@ -1,5 +1,6 @@
 import '../models/ir_models.dart';
 import '../analysis/body_transformer.dart';
+import '../utils/naming.dart';
 
 class TextEdit {
   final int offset;
@@ -45,7 +46,7 @@ class RiverpodTransformer {
       node.offset,
       node.offset + node.length,
     );
-    final providerName = '${node.consumedClass.toLowerCase()}Provider';
+    final providerName = providerNameForType(node.consumedClass);
 
     if (snippet.startsWith('Provider.of')) {
       // `listen: false` always maps to ref.read regardless of location.
@@ -71,13 +72,8 @@ class RiverpodTransformer {
   ) {
     final edits = <TextEdit>[];
 
-    // 1. Generate the global provider definition
-    final providerName = '${node.providedClass.toLowerCase()}Provider';
-    final globalDef =
-        "\n// TODO: Auto-migrated Riverpod Provider\nfinal $providerName = StateNotifierProvider<${node.providedClass}Notifier, ${node.providedClass}State>((ref) {\n  return ${node.providedClass}Notifier();\n});\n";
-    edits.add(TextEdit(originalSource.length, 0, globalDef));
-
-    // 2. Unwrap if it has a child
+    // Remove the legacy Provider widget wrapper. The annotated class migration now
+    // generates the Riverpod provider via build_runner instead of a manual provider.
     if (node.childOffset != null && node.childLength != null) {
       final child = originalSource.substring(
         node.childOffset!,
@@ -155,7 +151,7 @@ class RiverpodTransformer {
       final ctx = builderMatch.group(1)!.trim();
       final val = builderMatch.group(2)!.trim();
       final ch = builderMatch.group(3)!.trim();
-      final providerName = '${node.consumedClass.toLowerCase()}Provider';
+      final providerName = providerNameForType(node.consumedClass);
 
       final isExpression =
           snippet.substring(builderMatch.end - 2, builderMatch.end) == '=>';
@@ -181,7 +177,7 @@ class RiverpodTransformer {
     AsyncProviderNode node,
     String originalSource,
   ) {
-    final providerName = '${node.providedType.toLowerCase()}Provider';
+    final providerName = providerNameForType(node.providedType);
     final edits = <TextEdit>[];
 
     if (node.childOffset != null && node.childLength != null) {
@@ -220,11 +216,15 @@ final $providerName = ${node.providerType == 'FutureProvider' ? 'FutureProvider'
     );
     final fileName = node.filePath.split('/').last.replaceAll('.dart', '');
     buffer.writeln('part "$fileName.g.dart";');
+    buffer.writeln(
+      '// Run: dart run build_runner build --delete-conflicting-outputs',
+    );
     buffer.writeln('');
 
     final buildReturnType = switch (node.notifierType) {
       NotifierType.asyncNotifier => 'Future<dynamic>',
       NotifierType.streamNotifier => 'Stream<dynamic>',
+      NotifierType.stateNotifier => '${node.name}State',
       _ => 'dynamic',
     };
 
@@ -233,17 +233,57 @@ final $providerName = ${node.providerType == 'FutureProvider' ? 'FutureProvider'
         '    return null; // TODO: Return initial async state',
       NotifierType.streamNotifier =>
         '    return const Stream.empty(); // TODO: Return stream',
+      NotifierType.stateNotifier => '    return ${node.name}State();',
       _ => '    return null; // TODO: Return initial state',
     };
 
+    if (node.notifierType == NotifierType.stateNotifier) {
+      final stateClassName = '${node.name}State';
+      buffer.writeln('class $stateClassName {');
+      for (final variable in node.stateVariables) {
+        final name = variable.startsWith('_')
+            ? variable.substring(1)
+            : variable;
+        buffer.writeln('  final dynamic $name;');
+      }
+      buffer.writeln('');
+      buffer.writeln('  $stateClassName({');
+      for (final variable in node.stateVariables) {
+        final name = variable.startsWith('_')
+            ? variable.substring(1)
+            : variable;
+        buffer.writeln('    this.$name,');
+      }
+      buffer.writeln('  });');
+      buffer.writeln('');
+      buffer.writeln('  $stateClassName copyWith({');
+      for (final variable in node.stateVariables) {
+        final name = variable.startsWith('_')
+            ? variable.substring(1)
+            : variable;
+        buffer.writeln('    dynamic $name,');
+      }
+      buffer.writeln('  }) {');
+      buffer.writeln('    return $stateClassName(');
+      for (final variable in node.stateVariables) {
+        final name = variable.startsWith('_')
+            ? variable.substring(1)
+            : variable;
+        buffer.writeln('      $name: $name ?? this.$name,');
+      }
+      buffer.writeln('    );');
+      buffer.writeln('  }');
+      buffer.writeln('}');
+      buffer.writeln('');
+    }
+
     buffer.writeln('@riverpod');
     if (node.isFamilyCandidate) {
-      buffer.writeln('// ⚠️  Constructor params detected — add .family arg:');
-      buffer.writeln('// @Riverpod(keepAlive: true)');
+      buffer.writeln(
+        '// ⚠️  Constructor parameters detected — move them to build(...) to generate a family provider.',
+      );
     }
-    buffer.writeln(
-      'class ${node.name}Notifier extends _\$${node.name}Notifier {',
-    );
+    buffer.writeln('class ${node.name} extends _\$${node.name} {');
     buffer.writeln('  @override');
     buffer.writeln('  $buildReturnType build() {');
     buffer.writeln(buildBody);
@@ -440,7 +480,7 @@ final $providerName = ${node.providerType == 'FutureProvider' ? 'FutureProvider'
       final ctx = builderMatch.group(1)!.trim();
       final val = builderMatch.group(2)!.trim();
       final ch = builderMatch.group(3)!.trim();
-      final providerName = '${node.consumedClass.toLowerCase()}Provider';
+      final providerName = providerNameForType(node.consumedClass);
 
       final isExpression =
           snippet.substring(builderMatch.end - 2, builderMatch.end) == '=>';
