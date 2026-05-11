@@ -33,19 +33,21 @@ Install the migrator globally via pub.dev:
 dart pub global activate flutter_state_migrator
 ```
 
+The package is published as `flutter_state_migrator`, but the installed CLI command is `migrator`.
+
 ### Usage
 
 Run the migrator on your project directory:
 
 ```bash
 # Preview changes (Dry Run)
-flutter_state_migrator --mode aggressive --dry-run .
+migrator --mode aggressive --dry-run .
 
 # Apply changes directly
-flutter_state_migrator --mode aggressive .
+migrator --mode aggressive .
 
 # Generate a dependency visualization graph
-flutter_state_migrator --visualize .
+migrator --visualize .
 ```
 
 ---
