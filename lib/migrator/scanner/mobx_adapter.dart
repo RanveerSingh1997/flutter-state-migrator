@@ -11,11 +11,17 @@ class MobXAdapter extends RecursiveAstVisitor<void> {
 
   @override
   void visitClassDeclaration(ClassDeclaration node) {
+    final classBody = node.body;
+    if (classBody is! BlockClassBody) {
+      super.visitClassDeclaration(node);
+      return;
+    }
+
     bool isMobXStore = false;
-    for (final member in node.members) {
+    for (final member in classBody.members) {
       if (member is FieldDeclaration) {
         for (final metadata in member.metadata) {
-          if (metadata.name.name == 'observable') {
+          if (metadata.name.toSource() == 'observable') {
             isMobXStore = true;
             break;
           }
@@ -24,15 +30,15 @@ class MobXAdapter extends RecursiveAstVisitor<void> {
     }
 
     if (isMobXStore) {
-      final className = node.name.lexeme;
+      final className = node.namePart.typeName.lexeme;
       final stateFields = <FieldInfo>[];
       final methods = <MethodInfo>[];
 
       bool isFamilyCandidate = false;
-      for (final member in node.members) {
+      for (final member in classBody.members) {
         if (member is FieldDeclaration) {
           for (final metadata in member.metadata) {
-            if (metadata.name.name == 'observable') {
+            if (metadata.name.toSource() == 'observable') {
               for (final variable in member.fields.variables) {
                 stateFields.add(
                   FieldInfo(
@@ -55,7 +61,7 @@ class MobXAdapter extends RecursiveAstVisitor<void> {
         } else if (member is MethodDeclaration) {
           bool isAction = false;
           for (final metadata in member.metadata) {
-            if (metadata.name.name == 'action') {
+            if (metadata.name.toSource() == 'action') {
               isAction = true;
               break;
             }
@@ -99,8 +105,9 @@ class MobXAdapter extends RecursiveAstVisitor<void> {
 
   NotifierType _detectNotifierType(List<MethodInfo> methods) {
     for (final m in methods) {
-      if (m.returnType.startsWith('Stream<'))
+      if (m.returnType.startsWith('Stream<')) {
         return NotifierType.streamNotifier;
+      }
     }
     for (final m in methods) {
       if (m.isAsync || m.returnType.startsWith('Future<')) {

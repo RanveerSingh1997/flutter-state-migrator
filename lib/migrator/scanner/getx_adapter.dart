@@ -11,15 +11,21 @@ class GetXAdapter extends RecursiveAstVisitor<void> {
 
   @override
   void visitClassDeclaration(ClassDeclaration node) {
+    final classBody = node.body;
+    if (classBody is! BlockClassBody) {
+      super.visitClassDeclaration(node);
+      return;
+    }
+
     final extendsClause = node.extendsClause;
     if (extendsClause != null &&
         extendsClause.superclass.name.lexeme == 'GetxController') {
-      final className = node.name.lexeme;
+      final className = node.namePart.typeName.lexeme;
       final stateFields = <FieldInfo>[];
       final methods = <MethodInfo>[];
 
       bool isFamilyCandidate = false;
-      for (final member in node.members) {
+      for (final member in classBody.members) {
         if (member is FieldDeclaration) {
           for (final variable in member.fields.variables) {
             final source = variable.toSource();
@@ -92,8 +98,9 @@ class GetXAdapter extends RecursiveAstVisitor<void> {
 
   NotifierType _detectNotifierType(List<MethodInfo> methods) {
     for (final m in methods) {
-      if (m.returnType.startsWith('Stream<'))
+      if (m.returnType.startsWith('Stream<')) {
         return NotifierType.streamNotifier;
+      }
     }
     for (final m in methods) {
       if (m.isAsync || m.returnType.startsWith('Future<')) {

@@ -30,8 +30,8 @@ class ImportManager {
       } else {
         // No imports found, prepend to top
         newContent =
-            "import 'package:flutter_riverpod/flutter_riverpod.dart';\n" +
-            newContent;
+            "import 'package:flutter_riverpod/flutter_riverpod.dart';\n"
+            '$newContent';
       }
     }
 
