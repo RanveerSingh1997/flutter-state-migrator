@@ -1,6 +1,7 @@
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/ast/visitor.dart';
 import '../models/ir_models.dart';
+import 'scanner_utils.dart';
 
 class MobXAdapter extends RecursiveAstVisitor<void> {
   final String filePath;
@@ -59,23 +60,7 @@ class MobXAdapter extends RecursiveAstVisitor<void> {
               break;
             }
           }
-          final body = member.body.toSource();
-          final returnType = member.returnType?.toSource() ?? 'void';
-          final isAsync = member.body is BlockFunctionBody
-              ? (member.body as BlockFunctionBody).keyword?.lexeme == 'async'
-              : member.body is ExpressionFunctionBody
-              ? (member.body as ExpressionFunctionBody).keyword?.lexeme ==
-                    'async'
-              : false;
-          methods.add(
-            MethodInfo(
-              name: member.name.lexeme,
-              callsNotifyListeners: isAction,
-              bodySnippet: body,
-              isAsync: isAsync,
-              returnType: returnType,
-            ),
-          );
+          methods.add(buildMethodInfo(member, callsNotifyListeners: isAction));
         }
       }
 

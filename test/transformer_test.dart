@@ -21,6 +21,39 @@ void main() {
       expect(edits.first.replacement, 'ref.watch(counterProvider)');
     });
 
+    test(
+      'Transforms Provider.of listen false method chain to notifier read',
+      () {
+        const source =
+            'Provider.of<Counter>(context, listen: false).increment()';
+        final node = ProviderOfNode(
+          consumedClass: 'Counter',
+          filePath: 'test.dart',
+          offset: 0,
+          length: 'Provider.of<Counter>(context, listen: false)'.length,
+        );
+
+        final edits = transformer.transformNode(node, source);
+        expect(edits.single.replacement, 'ref.read(counterProvider.notifier)');
+      },
+    );
+
+    test(
+      'Transforms Provider.of listen false property chain to value read',
+      () {
+        const source = 'Provider.of<Counter>(context, listen: false).count';
+        final node = ProviderOfNode(
+          consumedClass: 'Counter',
+          filePath: 'test.dart',
+          offset: 0,
+          length: 'Provider.of<Counter>(context, listen: false)'.length,
+        );
+
+        final edits = transformer.transformNode(node, source);
+        expect(edits.single.replacement, 'ref.read(counterProvider)');
+      },
+    );
+
     test('Transforms Selector to Consumer', () {
       const source = '''
 Selector<MyModel, int>(

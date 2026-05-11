@@ -1,187 +1,101 @@
 # Project Plan: Flutter State Migrator
 
-## Overview
-The **Flutter State Migrator** is an automated Command Line Interface (CLI) tool designed to assist developers in migrating Flutter applications from the `provider` state management package to `riverpod` (specifically, using Riverpod generators and `StateNotifier`).
+## Goal
+Make the migrator reliable enough for real Flutter codebases by prioritizing correctness, deterministic output, and strong regression coverage ahead of new feature expansion.
 
-## Current Status
-The core pipeline for the tool has been successfully established and proven on a test project. The AST scanner can detect legacy Provider patterns and the transformer can rewrite source files in place without breaking Dart syntax.
+## Current Baseline
 
-## Milestones and Phases
+### Capabilities already in place
+- AST-based scanning for Provider, BLoC/Cubit, GetX, and MobX patterns
+- Assisted, safe, and aggressive migration modes
+- Riverpod code-generation output with `@riverpod`, `part` files, and `build_runner` guidance
+- Dependency graph warnings, rollback/snapshot support, audit reporting, dashboard, and VS Code integration
+- Typed state-field IR, notifier selection, family detection, `ref.watch` / `ref.read` placement, and deeper body rewrites
 
-### Phase 1: Core Parsing & Analysis (✅ Completed)
-- [x] Set up Dart `analyzer` package to parse source code.
-- [x] Implement the `AstScanner` to traverse directories and parse Dart files.
-- [x] Define Intermediate Representation (IR) models (`ProviderNode`, `LogicUnitNode`, `WidgetNode`).
+### Current risks
+- Some migrations still depend on text-pattern rewriting instead of syntax-aware restructuring
+- Analyzer API drift and deprecation cleanup is not fully finished across all scanners
+- End-to-end coverage is still thinner than the number of supported patterns implies
+- Some docs and examples overstate maturity relative to the current regression net
 
-### Phase 2: Pattern Recognition (✅ Completed)
-- [x] Create the `ProviderAdapter` (Visitor Pattern) to detect Provider nodes.
-- [x] Recognize `ChangeNotifier` and `ChangeNotifierProvider`.
-- [x] Recognize `Consumer` and `Provider.of<T>` / `context.read<T>`.
-- [x] Handle syntax error suppression during scanning (`throwIfDiagnostics: false`).
+## Planning Principles
+1. **Correctness before breadth**: do not add new migration surfaces until current ones are stable.
+2. **Typed transformations**: prefer typed IR and syntax-aware generation over string-only heuristics.
+3. **Safe aggressive mode**: every aggressive rewrite needs focused fixtures and rollback coverage.
+4. **One engine, many surfaces**: CLI, dashboard, wizard, reports, and VS Code should all reflect the same migration core.
+5. **Proof over claims**: each roadmap phase ends with explicit exit criteria and regression tests.
 
-### Phase 3: Suggestion & Generation (✅ Completed)
-- [x] Develop the `RiverpodGenerator` to output equivalent Riverpod blueprints.
-- [x] Implement "Assisted Mode" to generate parallel `_riverpod.dart` suggestion files.
-- [x] Implement "Safe Mode" to inject `TODO` comments inline for manual migration.
+## Delivery Roadmap
 
-### Phase 4: Automated Transformation (✅ Completed)
-- [x] Build the `RiverpodTransformer` to compute precise `TextEdit` operations.
-- [x] Convert `StatelessWidget` to `ConsumerWidget` and update `build` method signatures.
-- [x] Unwrap `ChangeNotifierProvider` and preserve the `child` widget tree.
-- [x] Append global `StateNotifierProvider` declarations to the source files.
-- [x] Validate "Aggressive Mode" end-to-end on a test project.
+### Phase 31: Stabilization & Scanner Hardening
+- Remove remaining scanner/API drift and analyzer compatibility issues
+- Normalize typed IR across all adapters and generators
+- Eliminate mixed old/new migration paths that produce inconsistent output
+- Tighten provider naming, file header generation, and build-signature inference
 
-### Phase 5: Refinement & Advanced Patterns (✅ Completed)
-- [x] **MultiProvider Support**: Detected and unwrapped `MultiProvider`, migrating all grouped providers to global Riverpod scopes.
-- [x] **Selectors**: Automatically converted `Selector<T, R>` patterns to `ref.watch(provider.select(...))`.
-- [x] **Async Providers**: Migrated `FutureProvider` and `StreamProvider` to Riverpod equivalents.
-- [x] **Auto-Formatting**: Integrated `dart format` to clean up formatting after aggressive edits.
+**Exit criteria**
+- `flutter analyze --no-fatal-infos` has no true errors in migrator code
+- Scanner adapters all emit the same typed `LogicUnitNode` contract
+- Focused unit tests cover the top migration regressions already found
 
-### Phase 6: Polish & Distribution (✅ Completed)
-- [x] Comprehensive unit test suite covering various edge cases.
-- [x] Extensive project documentation (`README.md`, `CONTRIBUTING.md`).
-- [x] Publish the tool to `pub.dev` (Prepared).
+### Phase 32: Transformation Correctness Sprint
+- Replace fragile consumer/selector/provider call rewrites with safer structured edits where possible
+- Finish chained-call handling such as `Provider.of(...).method()`
+- Improve lifecycle-aware reads/watches for callbacks, init flows, and event handlers
+- Expand body transformation coverage for collection updates, null-aware writes, and multi-step state mutations
 
-### Phase 7: Advanced Features & Ecosystem (✅ Completed)
-- [x] **StatefulWidget Migration**: Automatically convert `StatefulWidget` and `State` to `ConsumerStatefulWidget` and `ConsumerState`.
-- [x] **Flutter Hooks Support**: Support migrating `HookWidget` + `Provider` to `HookConsumerWidget`.
-- [x] **Automated Test Migration**: Refactor `testWidgets` to use Riverpod's `ProviderScope` and overrides.
-- [x] **Code Generation Polish**: Handle `dispose` logic and custom provider parameters.
+**Exit criteria**
+- Known migration bugs are reproducible in tests and stay green
+- Aggressive-mode output remains syntactically valid on representative fixtures
+- No mixed `@riverpod` + manual provider emission remains in migrated logic units
 
-### Phase 8: Intelligent Refinement & Reporting (✅ Completed)
-- [x] **Intelligent Import Management**: Auto-add Riverpod imports and clean up unused Provider imports.
-- [x] **Migration Audit Report**: Generate a detailed JSON/Markdown report of all changes made.
-- [x] **Dependency Guard**: Detect and warn about circular dependencies between migrated providers.
-- [x] **Enhanced CLI**: Add flags for report generation and import cleaning.
+### Phase 33: Project-Level Integration
+- Harden dependency updates for `flutter_riverpod`, `riverpod_annotation`, `riverpod_generator`, and `build_runner`
+- Make generated-file handling predictable in monorepos and multi-package workspaces
+- Improve import cleanup, part-file management, and build-runner guidance
+- Ensure snapshots and rollback cover generated artifacts and pubspec changes
 
-### Phase 9: Interactive Dry-run & CI/CD Setup (✅ Completed)
-- [x] **Interactive Dry-run**: Show colorized diffs in the console before applying changes.
-- [x] **GitHub Actions**: Automated testing on every push/PR.
-- [x] **Comprehensive Example**: A multi-file example project for demonstration.
-- [x] **CLI Visual Polish**: Refine console output for a premium experience.
+**Exit criteria**
+- Migration works across single-package and multi-package fixtures
+- Generated files and dependency edits are reflected cleanly in reports and rollback manifests
+- Dry-run, safe, assisted, and aggressive flows stay aligned
 
-## Future Roadmap: Ecosystem Expansion
+### Phase 34: Verification Matrix & Fixtures
+- Build a fixture matrix for Provider, BLoC, GetX, and MobX
+- Add golden-style output checks for critical rewrite families
+- Add integration coverage for CLI modes, report output, and snapshot/rollback
+- Keep a dedicated regression suite for every previously discovered migration bug
 
-### Phase 10: Intelligent Refactoring & Monorepos (✅ Completed)
-- [x] **Monorepo Support**: Handle cross-package dependencies in large workspaces.
-- [x] **Intelligent Logic Mapping**: Refactor `notifyListeners()` to idiomatic state updates.
-- [x] **Custom Rule Engine**: Support project-specific migration rules via YAML.
+**Exit criteria**
+- Each supported library has at least one realistic fixture project
+- Critical rewrites are covered by focused tests plus at least one end-to-end flow
+- CI runs the regression suite on every push and pull request
 
-### Phase 11: IDE Integration (VS Code Extension) (✅ Completed)
-- [x] **VS Code Context Menu**: "Right-click to migrate" functionality.
-- [x] **Inline Previews**: Interactive diffs within the editor.
-- [x] **Quick Fix Actions**: Automated resolution of migration `TODO`s.
+### Phase 35: Product Readiness & Documentation Alignment
+- Rewrite documentation to reflect verified capabilities instead of aspirational scope
+- Align wizard prompts, dashboard summaries, and VS Code actions with the current engine
+- Improve troubleshooting guidance for generated-code workflows and migration limits
+- Prepare a clean release once stabilization and verification phases are complete
 
-### Phase 12: Multi-Library Support & Visualizer (✅ Completed)
-- [x] **BLoC Migrator**: Support for migrating from `flutter_bloc` to Riverpod.
-- [x] **Riverpod Visualizer**: Automated generation of provider dependency graphs.
-- [x] **Migration Dashboard**: Enhanced CLI summary and detailed JSON audits.
+**Exit criteria**
+- README, migration guide, examples, and CLI help all describe the same supported behavior
+- Release notes are driven by tested capabilities
+- The project can be presented as reliable, not just feature-rich
 
-### Phase 13: Community Readiness & Launch Prep (✅ Completed)
-- [x] **Professional Documentation**: Overhaul README.md and create MIGRATION_GUIDE.md.
-- [x] **OSS Standards**: Add MIT License, CONTRIBUTING.md, and CHANGELOG.md.
-- [x] **Release Preparation**: Set version to 1.0.0 and prepare pubspec.yaml for pub.dev.
+## Immediate Implementation Order
+1. Finish scanner hardening and typed IR consistency
+2. Close correctness gaps in transformation rewrites
+3. Strengthen integration behavior around dependencies, imports, and generated files
+4. Expand fixture-based regression coverage
+5. Refresh docs and release narrative after behavior is verified
 
-### Phase 14: Universal Migrator Expansion (✅ Completed)
-- [x] **GetX Support**: Migrate `GetxController` and `.obs` patterns.
-- [x] **MobX Support**: Migrate observables and actions to Riverpod.
-- [x] **Auto-Library Detection**: Intelligent detection of the source library.
+## Initial Execution Backlog
+- **Scanner modernization**: finalize analyzer API cleanup and adapter consistency
+- **Transformation safety**: harden chained calls, selector/consumer rewrites, and lifecycle contexts
+- **Typed generation**: improve state inference, family signatures, and code-gen defaults
+- **Integration flow**: tighten dependency management, rollback coverage, and monorepo handling
+- **Verification**: grow focused tests into a stable multi-library fixture matrix
+- **Documentation**: reduce hype, document real guarantees, and explain current migration boundaries
 
-### Phase 15: Deep Transformation & Advanced Refactoring (✅ Completed)
-- [x] **Deep Body Refactoring**: Automated rewriting of `count++` into `state.copyWith`.
-- [x] **Intelligent State Classes**: Automatic generation of immutable state objects.
-- [x] **Build Runner Integration**: Automated `part` file and `@riverpod` management.
-
-### Phase 16: Interactive Migration Dashboard (✅ Completed)
-- [x] **Flutter Web UI**: A browser-based dashboard to visualize migration reports.
-- [x] **Interactive Overview**: Visual stats and file lists for the migration process.
-- [x] **CLI Bridge**: Unified command to launch the visual interface.
-
-### Phase 17: Cloud Collaboration & CI Integration (✅ Completed)
-- [x] **Remote Report Sync**: Upload migration audits to a central cloud dashboard.
-- [x] **Team Review Mode**: UI hooks for comments and approvals.
-- [x] **CI Pipeline Integration**: Automated report generation and upload from GitHub Actions.
-
-### Phase 18: Custom Plugin System (✅ Completed)
-- [x] **Plugin Architecture**: Support for custom adapters and transformers via external Dart scripts.
-- [x] **Dynamic Loading**: Registry-based system for project-specific rules.
-- [x] **Extensible Pipeline**: Unified IR aggregation from core and third-party plugins.
-
-### Phase 19: AI-Assisted Logic Transformation (✅ Completed)
-- [x] **Local LLM Integration**: Support for refactoring complex method bodies using local models.
-- [x] **Specialized AI Prompts**: Sophisticated prompt engineering for state management.
-- [x] **CLI AI Bridge**: Unified `--ai` flag for intelligent refactoring.
-
-### Phase 20: The Grand Finale (v2.0.0 Global Release & Polish) (✅ Completed)
-- [x] **Universal Verification Suite**: Comprehensive tests for all 4 supported libraries.
-- [x] **Performance Optimization**: 100ms response time for multi-thousand line files.
-- [x] **Final Visual Polish**: Finalize the Dashboard and CLI aesthetics.
-- [x] **Official v2.0.0 Tagging**: The definitive release of the universal migrator.
-
----
-
-## 🏆 Project Milestone: v2.0.0 Global Launch
-The **Flutter State Migrator** is now the premier modernization engine for the Flutter ecosystem. From pattern matching to AI-assisted architecture, we have built the future of Flutter state management migration.
-
-*Thank you for being part of this historic journey!* 🚀🌍✨
-
----
-
-### Phase 21: Intelligent Dependency & Safety Rails (✅ Completed)
-- [x] **Automated Pubspec Migration**: Automatically add/remove dependencies.
-- [x] **Snapshot/Rollback System**: Instant recovery from failed migrations.
-- [x] **Lint-Aware Safety**: Project-level health checks before and after migration.
-
-### Phase 22: Advanced ROI & Analytics Engine (✅ Completed)
-- [x] **Modernization Metrics**: Track code reduction and complexity changes.
-- [x] **ROI Dashboard**: Estimated "Engineering Hours Saved" visualization.
-- [x] **Migration Accuracy Tracker**: automated vs manual code ratio analysis.
-
-### Phase 23: Interactive CLI Wizard (✅ Completed)
-- [x] **Guided Onboarding**: Replace raw flags with a terminal-based questionnaire.
-- [x] **Smart Prompts**: Ask questions based on detected libraries (e.g. "Provider detected. Proceed?").
-- [x] **Configuration Generation**: Allow users to save their wizard answers to a `migrator.yaml` file.
-
-### Phase 24: Real Snapshot & Rollback Engine (✅ Completed)
-- [x] **Actual file copy**: `createSnapshot()` copies every `.dart`, `pubspec.yaml`, and `pubspec.lock` file into a timestamped `.migrator_snapshots/<ts>/` directory, preserving relative paths.
-- [x] **Manifest-based rollback**: A `manifest.json` records every backed-up file; `rollback()` restores from the manifest, making recovery deterministic even across large monorepos.
-- [x] **Snapshot listing**: `listSnapshots()` returns all available snapshots sorted newest-first with timestamp and file-count metadata.
-- [x] **CLI flags**: `--rollback`, `--rollback-to <path>`, `--snapshots` replace the fragile `arguments.contains('rollback')` string check.
-
----
-
-## Upcoming: Closing the AI Tool Gap
-
-### Phase 25: `ref.watch` / `ref.read` Placement Intelligence (✅ Completed)
-- [x] Add `isInBuildMethod` field to `ProviderOfNode` IR model
-- [x] `ProviderAdapter` tracks build context via `_inBuildMethod` flag, toggled on `visitMethodDeclaration` for `build()` methods
-- [x] `Provider.of<T>(context)` inside `build()` → `ref.watch`; outside (callbacks, initState) → `ref.read`
-- [x] `Provider.of<T>(context, listen: false)` always → `ref.read` regardless of location
-- [x] `context.watch<T>()` → `ref.watch`; `context.read<T>()` → `ref.read(.notifier)`
-- [x] Generator suggestions are now context-aware (explain reactive vs one-shot in comments)
-
-### Phase 26: Notifier Type Selector (✅ Completed)
-- [x] Choose `Notifier`, `AsyncNotifier`, `StreamNotifier`, or `StateNotifier` based on class shape
-- [x] Detect `async`/`Stream` return types in state-mutating methods
-
-### Phase 27: Provider Family Auto-Detection (✅ Completed)
-- [x] Detect parameterized providers (consumed with different IDs per call-site)
-- [x] Generate `.family` providers automatically
-
-### Phase 28: Real Dependency Graph (✅ Completed)
-- [x] Complete `DependencyChecker` — build the provider graph and detect A→B→A cycles
-- [x] Surface warnings in the CLI and include in the migration report
-
-### Phase 29: Deep Body Transformation (✅ Completed)
-- [x] Extend `BodyTransformer` beyond `++`/`--`/`=` to handle spread operators, conditional mutations, `List.add/remove`, and multi-step state updates
-
-### Phase 30: Riverpod Generator 2.0 (Code-Gen Style) (✅ Completed)
-- [x] Generate `@riverpod` annotation style (`riverpod_generator`) instead of manual `StateNotifierProvider`
-- [x] Emit `part` file directives and `build_runner` instructions
-
----
-
-## 🚀 The Journey Continues
-The Flutter State Migrator is evolving into a universal modernization tool for the entire ecosystem.
-
-*This document tracks our ongoing progress toward a universal state migration suite.*
+## Success Definition
+The migrator is successful when a team can run it on a real codebase, review deterministic output, recover safely when needed, and trust that documented behavior is backed by tests rather than roadmap claims.

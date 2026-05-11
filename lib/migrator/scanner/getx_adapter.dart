@@ -1,6 +1,7 @@
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/ast/visitor.dart';
 import '../models/ir_models.dart';
+import 'scanner_utils.dart';
 
 class GetXAdapter extends RecursiveAstVisitor<void> {
   final String filePath;
@@ -26,8 +27,13 @@ class GetXAdapter extends RecursiveAstVisitor<void> {
               stateFields.add(
                 FieldInfo(
                   rawName: variable.name.lexeme,
-                  type: member.fields.type?.toSource() ?? 'dynamic',
-                  initializer: variable.initializer?.toSource(),
+                  type: _inferObservableType(
+                    member.fields.type?.toSource(),
+                    variable.initializer?.toSource(),
+                  ),
+                  initializer: _normalizeObservableInitializer(
+                    variable.initializer?.toSource(),
+                  ),
                 ),
               );
             }
@@ -41,21 +47,10 @@ class GetXAdapter extends RecursiveAstVisitor<void> {
             }
           }
         } else if (member is MethodDeclaration) {
-          final body = member.body.toSource();
-          final returnType = member.returnType?.toSource() ?? 'void';
-          final isAsync = member.body is BlockFunctionBody
-              ? (member.body as BlockFunctionBody).keyword?.lexeme == 'async'
-              : member.body is ExpressionFunctionBody
-              ? (member.body as ExpressionFunctionBody).keyword?.lexeme ==
-                    'async'
-              : false;
           methods.add(
-            MethodInfo(
-              name: member.name.lexeme,
-              callsNotifyListeners: body.contains('.value ='),
-              bodySnippet: body,
-              isAsync: isAsync,
-              returnType: returnType,
+            buildMethodInfo(
+              member,
+              callsNotifyListeners: member.body.toSource().contains('.value ='),
             ),
           );
         }
@@ -106,5 +101,46 @@ class GetXAdapter extends RecursiveAstVisitor<void> {
       }
     }
     return NotifierType.notifier;
+  }
+
+  String _inferObservableType(String? declaredType, String? initializer) {
+    if (declaredType != null && declaredType.isNotEmpty) {
+      if (declaredType == 'RxInt') return 'int';
+      if (declaredType == 'RxDouble') return 'double';
+      if (declaredType == 'RxBool') return 'bool';
+      if (declaredType == 'RxString') return 'String';
+      if (declaredType.startsWith('RxList<')) {
+        return declaredType.replaceFirst('RxList<', 'List<');
+      }
+      if (declaredType.startsWith('RxMap<')) {
+        return declaredType.replaceFirst('RxMap<', 'Map<');
+      }
+      final generic = RegExp(r'^Rx<(.+)>$').firstMatch(declaredType);
+      if (generic != null) {
+        return generic.group(1)!.trim();
+      }
+    }
+
+    final normalized = _normalizeObservableInitializer(initializer);
+    if (normalized == null) return 'dynamic';
+    if (RegExp(r'^\d+$').hasMatch(normalized)) return 'int';
+    if (RegExp(r'^\d+\.\d+$').hasMatch(normalized)) return 'double';
+    if (normalized == 'true' || normalized == 'false') return 'bool';
+    if ((normalized.startsWith("'") && normalized.endsWith("'")) ||
+        (normalized.startsWith('"') && normalized.endsWith('"'))) {
+      return 'String';
+    }
+    if (normalized.startsWith('[') && normalized.endsWith(']')) {
+      return 'List<dynamic>';
+    }
+    if (normalized.startsWith('{') && normalized.endsWith('}')) {
+      return 'Map<dynamic, dynamic>';
+    }
+    return 'dynamic';
+  }
+
+  String? _normalizeObservableInitializer(String? initializer) {
+    if (initializer == null) return null;
+    return initializer.replaceFirst(RegExp(r'\.obs$'), '');
   }
 }

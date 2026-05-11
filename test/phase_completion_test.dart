@@ -203,10 +203,7 @@ class CounterModel extends ChangeNotifier {
         ),
         'Provider.of<CounterModel>(context, listen: false)',
       );
-      expect(
-        providerRead.single.replacement,
-        'ref.read(counterModelProvider.notifier)',
-      );
+      expect(providerRead.single.replacement, 'ref.read(counterModelProvider)');
     });
 
     test('consumer and selector expression builders become valid block builders', () {
