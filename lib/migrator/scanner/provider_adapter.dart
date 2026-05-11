@@ -21,7 +21,9 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
   @override
   void visitMethodDeclaration(MethodDeclaration node) {
     final wasBuild = _inBuildMethod;
-    if (node.name.lexeme == 'build') _inBuildMethod = true;
+    if (node.name.lexeme == 'build') {
+      _inBuildMethod = true;
+    }
     super.visitMethodDeclaration(node);
     _inBuildMethod = wasBuild;
   }
@@ -40,16 +42,22 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
 
   @override
   void visitClassDeclaration(ClassDeclaration node) {
+    final classBody = node.body;
+    if (classBody is! BlockClassBody) {
+      super.visitClassDeclaration(node);
+      return;
+    }
+
     // Detect ChangeNotifier classes
     final extendsClause = node.extendsClause;
     if (extendsClause != null &&
         extendsClause.superclass.name.lexeme == 'ChangeNotifier') {
-      final className = node.name.lexeme;
+      final className = node.namePart.typeName.lexeme;
       final stateFields = <FieldInfo>[];
       final methods = <MethodInfo>[];
 
       bool isFamilyCandidate = false;
-      for (final member in node.members) {
+      for (final member in classBody.members) {
         if (member is FieldDeclaration) {
           for (final variable in member.fields.variables) {
             final typeSource = member.fields.type?.toSource() ?? 'dynamic';
@@ -72,7 +80,9 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
             }
           }
         } else if (member is MethodDeclaration) {
-          if (member.name.lexeme == 'dispose') continue;
+          if (member.name.lexeme == 'dispose') {
+            continue;
+          }
           methods.add(
             buildMethodInfo(
               member,
@@ -99,10 +109,10 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
       );
     } else if (extendsClause != null &&
         extendsClause.superclass.name.lexeme == 'StatelessWidget') {
-      final className = node.name.lexeme;
+      final className = node.namePart.typeName.lexeme;
       int buildMethodOffset = -1;
 
-      for (final member in node.members) {
+      for (final member in classBody.members) {
         if (member is MethodDeclaration && member.name.lexeme == 'build') {
           buildMethodOffset = member.offset;
         }
@@ -120,9 +130,9 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
       );
     } else if (extendsClause != null &&
         extendsClause.superclass.name.lexeme == 'StatefulWidget') {
-      final className = node.name.lexeme;
+      final className = node.namePart.typeName.lexeme;
       int createStateOffset = -1;
-      for (final member in node.members) {
+      for (final member in classBody.members) {
         if (member is MethodDeclaration &&
             member.name.lexeme == 'createState') {
           createStateOffset = member.offset;
@@ -141,7 +151,7 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
       );
     } else if (extendsClause != null &&
         extendsClause.superclass.name.lexeme == 'State') {
-      final className = node.name.lexeme;
+      final className = node.namePart.typeName.lexeme;
       final typeArguments = extendsClause.superclass.typeArguments;
       if (typeArguments != null && typeArguments.arguments.isNotEmpty) {
         final widgetName = typeArguments.arguments.first.toSource();
@@ -157,9 +167,9 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
       }
     } else if (extendsClause != null &&
         extendsClause.superclass.name.lexeme == 'HookWidget') {
-      final className = node.name.lexeme;
+      final className = node.namePart.typeName.lexeme;
       int buildMethodOffset = -1;
-      for (final member in node.members) {
+      for (final member in classBody.members) {
         if (member is MethodDeclaration && member.name.lexeme == 'build') {
           buildMethodOffset = member.offset;
         }
@@ -501,12 +511,17 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
 
   NotifierType _detectNotifierType(List<MethodInfo> methods) {
     for (final m in methods) {
-      if (m.isGetter) continue;
-      if (m.returnType.startsWith('Stream<'))
+      if (m.isGetter) {
+        continue;
+      }
+      if (m.returnType.startsWith('Stream<')) {
         return NotifierType.streamNotifier;
+      }
     }
     for (final m in methods) {
-      if (m.isGetter) continue;
+      if (m.isGetter) {
+        continue;
+      }
       if (m.isAsync || m.returnType.startsWith('Future<')) {
         return NotifierType.asyncNotifier;
       }

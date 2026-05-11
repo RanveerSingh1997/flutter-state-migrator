@@ -1,22 +1,22 @@
-import 'dart:io';
-import 'package:args/args.dart';
-
-import '../lib/migrator/scanner/ast_scanner.dart';
-import '../lib/migrator/models/ir_models.dart';
-import '../lib/migrator/generator/riverpod_generator.dart';
-import '../lib/migrator/generator/riverpod_transformer.dart';
-import '../lib/migrator/analysis/import_manager.dart';
-import '../lib/migrator/analysis/dependency_checker.dart';
-import '../lib/migrator/analysis/config_manager.dart';
-import '../lib/migrator/analysis/monorepo_manager.dart';
-import '../lib/migrator/analysis/visualizer.dart';
-import '../lib/migrator/analysis/cloud_manager.dart';
-import '../lib/migrator/analysis/ai_manager.dart';
-import '../lib/migrator/analysis/analytics_manager.dart';
-import '../lib/migrator/analysis/wizard.dart';
-import '../lib/migrator/analysis/snapshot_manager.dart';
-import '../lib/migrator/analysis/dependency_manager.dart';
 import 'dart:convert';
+import 'dart:io';
+
+import 'package:args/args.dart';
+import 'package:flutter_state_migrator/migrator/analysis/ai_manager.dart';
+import 'package:flutter_state_migrator/migrator/analysis/analytics_manager.dart';
+import 'package:flutter_state_migrator/migrator/analysis/cloud_manager.dart';
+import 'package:flutter_state_migrator/migrator/analysis/config_manager.dart';
+import 'package:flutter_state_migrator/migrator/analysis/dependency_checker.dart';
+import 'package:flutter_state_migrator/migrator/analysis/dependency_manager.dart';
+import 'package:flutter_state_migrator/migrator/analysis/import_manager.dart';
+import 'package:flutter_state_migrator/migrator/analysis/monorepo_manager.dart';
+import 'package:flutter_state_migrator/migrator/analysis/snapshot_manager.dart';
+import 'package:flutter_state_migrator/migrator/analysis/visualizer.dart';
+import 'package:flutter_state_migrator/migrator/analysis/wizard.dart';
+import 'package:flutter_state_migrator/migrator/generator/riverpod_generator.dart';
+import 'package:flutter_state_migrator/migrator/generator/riverpod_transformer.dart';
+import 'package:flutter_state_migrator/migrator/models/ir_models.dart';
+import 'package:flutter_state_migrator/migrator/scanner/ast_scanner.dart';
 
 Future<void> main(List<String> arguments) async {
   final parser = ArgParser()
@@ -263,26 +263,27 @@ Future<void> main(List<String> arguments) async {
 
       for (final node in fileNodes) {
         String comment = '';
-        if (node is LogicUnitNode)
+        if (node is LogicUnitNode) {
           comment =
               '// TODO(Migrator): Convert ${node.name} to StateNotifier\n';
-        else if (node is ProviderDeclarationNode)
+        } else if (node is ProviderDeclarationNode) {
           comment =
               '// TODO(Migrator): Replace ${node.providerType} with StateNotifierProvider\n';
-        else if (node is ConsumerNode)
+        } else if (node is ConsumerNode) {
           comment =
               '// TODO(Migrator): Change to ConsumerWidget and use ref.watch\n';
-        else if (node is ProviderOfNode)
+        } else if (node is ProviderOfNode) {
           comment = '// TODO(Migrator): Replace with ref.read or ref.watch\n';
-        else if (node is SelectorNode)
+        } else if (node is SelectorNode) {
           comment =
               '// TODO(Migrator): Replace Selector with ref.watch(${node.consumedClass.toLowerCase()}Provider.select(...))\n';
-        else if (node is MultiProviderNode)
+        } else if (node is MultiProviderNode) {
           comment =
               '// TODO(Migrator): Remove MultiProvider, Riverpod providers are global. Wrap app in ProviderScope.\n';
-        else if (node is AsyncProviderNode)
+        } else if (node is AsyncProviderNode) {
           comment =
               '// TODO(Migrator): ${node.providerType} exposes AsyncValue. Use .when() to handle data/loading/error states.\n';
+        }
 
         if (comment.isNotEmpty) {
           content = content.replaceRange(node.offset, node.offset, comment);
@@ -318,12 +319,14 @@ Future<void> main(List<String> arguments) async {
       final processedTypes = <String>{};
       for (final node in entry.value) {
         if (node is ProviderOfNode) {
-          if (processedTypes.contains('ProviderOf:${node.consumedClass}'))
+          if (processedTypes.contains('ProviderOf:${node.consumedClass}')) {
             continue;
+          }
           processedTypes.add('ProviderOf:${node.consumedClass}');
         } else if (node is ConsumerNode) {
-          if (processedTypes.contains('Consumer:${node.consumedClass}'))
+          if (processedTypes.contains('Consumer:${node.consumedClass}')) {
             continue;
+          }
           processedTypes.add('Consumer:${node.consumedClass}');
         }
         buffer.writeln(generator.generateSuggestion(node));

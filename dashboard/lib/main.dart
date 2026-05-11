@@ -35,10 +35,7 @@ class _DashboardHomeState extends State<DashboardHome> {
       appBar: AppBar(
         title: const Text('🚀 Migration Dashboard'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () {},
-          ),
+          IconButton(icon: const Icon(Icons.refresh), onPressed: () {}),
         ],
       ),
       body: Row(
@@ -53,7 +50,10 @@ class _DashboardHomeState extends State<DashboardHome> {
                   child: Center(
                     child: Text(
                       'Migrator v1.0.0',
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),
@@ -133,7 +133,9 @@ class _DashboardHomeState extends State<DashboardHome> {
                         itemBuilder: (context, index) {
                           return ListTile(
                             leading: const Icon(Icons.insert_drive_file),
-                            title: Text('lib/models/counter_model_${index + 1}.dart'),
+                            title: Text(
+                              'lib/models/counter_model_${index + 1}.dart',
+                            ),
                             subtitle: const Text('3 Logic Units, 1 Provider'),
                             trailing: ElevatedButton(
                               onPressed: () {},
@@ -156,14 +158,23 @@ class _DashboardHomeState extends State<DashboardHome> {
   Widget _buildStatCard(String title, String value, Color color) {
     return Expanded(
       child: Card(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         child: Padding(
           padding: const EdgeInsets.all(24.0),
           child: Column(
             children: [
-              Text(title, style: TextStyle(color: color, fontWeight: FontWeight.bold)),
+              Text(
+                title,
+                style: TextStyle(color: color, fontWeight: FontWeight.bold),
+              ),
               const SizedBox(height: 8),
-              Text(value, style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ],
           ),
         ),

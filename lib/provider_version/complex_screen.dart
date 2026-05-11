@@ -17,8 +17,8 @@ class ComplexScreen extends StatelessWidget {
         body: // TODO(Migrator): Replace Selector with ref.watch(todoproviderProvider.select(...))
             // TODO(Migrator): Replace Selector with ref.watch(todoproviderProvider.select(...))
             Selector<TodoProvider, int>(
-              selector: (_, provider) => provider.todos.length,
-              builder: (_, count, __) {
+              selector: (context, provider) => provider.todos.length,
+              builder: (context, count, child) {
                 return Text('Total todos: $count');
               },
             ),

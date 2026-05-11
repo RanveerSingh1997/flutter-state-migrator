@@ -1,6 +1,19 @@
+/// AI-assisted refactoring utilities for complex migration paths.
+// ignore: unnecessary_library_name
+library ai_manager;
+
+/// Provides AI-assisted method-body refactoring helpers for complex migrations.
 class AIManager {
+  /// Creates an AI manager configured to target the local Ollama endpoint.
+  AIManager();
+
+  /// The local Ollama generate endpoint used for future AI integrations.
   final String ollamaEndpoint = 'http://localhost:11434/api/generate';
 
+  /// Refactors a stateful method body into Riverpod-style immutable updates.
+  ///
+  /// The current implementation returns a heuristic placeholder while preserving
+  /// the prompt shape needed for a future HTTP-backed Ollama integration.
   Future<String> refactorMethodBody({
     required String className,
     required List<String> stateFields,

@@ -11,18 +11,24 @@ class BlocAdapter extends RecursiveAstVisitor<void> {
 
   @override
   void visitClassDeclaration(ClassDeclaration node) {
+    final classBody = node.body;
+    if (classBody is! BlockClassBody) {
+      super.visitClassDeclaration(node);
+      return;
+    }
+
     final extendsClause = node.extendsClause;
     if (extendsClause != null) {
       final superclassName = extendsClause.superclass.name.lexeme;
       if (superclassName == 'Bloc' || superclassName == 'Cubit') {
-        final className = node.name.lexeme;
+        final className = node.namePart.typeName.lexeme;
         final stateType =
             extendsClause.superclass.typeArguments?.arguments.last.toSource() ??
             'dynamic';
 
         final methods = <MethodInfo>[];
         bool isFamilyCandidate = false;
-        for (final member in node.members) {
+        for (final member in classBody.members) {
           if (member is ConstructorDeclaration) {
             for (final param in member.parameters.parameters) {
               final paramName = param.name?.lexeme ?? '';
@@ -61,8 +67,9 @@ class BlocAdapter extends RecursiveAstVisitor<void> {
 
   NotifierType _detectNotifierType(List<MethodInfo> methods) {
     for (final m in methods) {
-      if (m.returnType.startsWith('Stream<'))
+      if (m.returnType.startsWith('Stream<')) {
         return NotifierType.streamNotifier;
+      }
     }
     for (final m in methods) {
       if (m.isAsync || m.returnType.startsWith('Future<')) {
