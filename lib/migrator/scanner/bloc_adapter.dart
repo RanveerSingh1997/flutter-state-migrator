@@ -1,6 +1,7 @@
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/ast/visitor.dart';
 import '../models/ir_models.dart';
+import 'scanner_utils.dart';
 
 class BlocAdapter extends RecursiveAstVisitor<void> {
   final String filePath;
@@ -31,22 +32,10 @@ class BlocAdapter extends RecursiveAstVisitor<void> {
               }
             }
           } else if (member is MethodDeclaration) {
-            final body = member.body.toSource();
-            final callsEmit = body.contains('emit(');
-            final returnType = member.returnType?.toSource() ?? 'void';
-            final isAsync = member.body is BlockFunctionBody
-                ? (member.body as BlockFunctionBody).keyword?.lexeme == 'async'
-                : member.body is ExpressionFunctionBody
-                ? (member.body as ExpressionFunctionBody).keyword?.lexeme ==
-                      'async'
-                : false;
             methods.add(
-              MethodInfo(
-                name: member.name.lexeme,
-                callsNotifyListeners: callsEmit,
-                bodySnippet: body,
-                isAsync: isAsync,
-                returnType: returnType,
+              buildMethodInfo(
+                member,
+                callsNotifyListeners: member.body.toSource().contains('emit('),
               ),
             );
           }

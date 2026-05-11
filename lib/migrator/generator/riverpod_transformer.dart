@@ -51,28 +51,58 @@ class RiverpodTransformer {
       node.offset + node.length,
     );
     final providerName = providerNameForType(node.consumedClass);
+    final isMethodCall = _isFollowedByMethodCall(
+      originalSource,
+      node.offset + node.length,
+    );
 
     if (snippet.startsWith('Provider.of')) {
-      // `listen: false` always maps to ref.read regardless of location.
       if (snippet.contains('listen: false') || !node.isInBuildMethod) {
-        return [
-          TextEdit(
-            node.offset,
-            node.length,
-            'ref.read($providerName.notifier)',
-          ),
-        ];
+        final target = isMethodCall
+            ? 'ref.read($providerName.notifier)'
+            : 'ref.read($providerName)';
+        return [TextEdit(node.offset, node.length, target)];
       } else {
         return [TextEdit(node.offset, node.length, 'ref.watch($providerName)')];
       }
     } else if (snippet.startsWith('context.read')) {
       return [
-        TextEdit(node.offset, node.length, 'ref.read($providerName.notifier)'),
+        TextEdit(
+          node.offset,
+          node.length,
+          isMethodCall
+              ? 'ref.read($providerName.notifier)'
+              : 'ref.read($providerName)',
+        ),
       ];
     } else if (snippet.startsWith('context.watch')) {
       return [TextEdit(node.offset, node.length, 'ref.watch($providerName)')];
     }
     return [];
+  }
+
+  bool _isFollowedByMethodCall(String source, int endOffset) {
+    var index = endOffset;
+    while (index < source.length && RegExp(r'\s').hasMatch(source[index])) {
+      index++;
+    }
+    if (index >= source.length || source[index] != '.') {
+      return false;
+    }
+
+    index++;
+    while (index < source.length && RegExp(r'\s').hasMatch(source[index])) {
+      index++;
+    }
+    while (index < source.length &&
+        RegExp(r'[A-Za-z0-9_]').hasMatch(source[index])) {
+      index++;
+    }
+    while (index < source.length && RegExp(r'\s').hasMatch(source[index])) {
+      index++;
+    }
+
+    return index < source.length && source[index] == '(';
   }
 
   List<TextEdit> _transformProviderDeclaration(

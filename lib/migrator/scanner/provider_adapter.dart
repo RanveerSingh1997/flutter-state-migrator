@@ -2,6 +2,7 @@ import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/ast/visitor.dart';
 
 import '../models/ir_models.dart';
+import 'scanner_utils.dart';
 
 class ProviderAdapter extends RecursiveAstVisitor<void> {
   final String filePath;
@@ -55,47 +56,12 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
           }
         } else if (member is MethodDeclaration) {
           if (member.name.lexeme == 'dispose') continue;
-
-          final isGetter = member.isGetter;
-          final body = member.body.toSource();
-          final callsNotify = body.contains('notifyListeners()');
-          final returnType = member.returnType?.toSource() ?? 'void';
-          final isAsync = member.body is BlockFunctionBody
-              ? (member.body as BlockFunctionBody).keyword?.lexeme == 'async'
-              : member.body is ExpressionFunctionBody
-              ? (member.body as ExpressionFunctionBody).keyword?.lexeme ==
-                    'async'
-              : false;
-
-          // Capture parameters (skip for getters — they have none)
-          final params = <ParamInfo>[];
-          if (!isGetter && member.parameters != null) {
-            for (final param in member.parameters!.parameters) {
-              final paramName = param.name?.lexeme ?? '';
-              String paramType = 'dynamic';
-              if (param is SimpleFormalParameter) {
-                paramType = param.type?.toSource() ?? 'dynamic';
-              } else if (param is DefaultFormalParameter) {
-                final inner = param.parameter;
-                if (inner is SimpleFormalParameter) {
-                  paramType = inner.type?.toSource() ?? 'dynamic';
-                }
-              }
-              if (paramName.isNotEmpty) {
-                params.add(ParamInfo(name: paramName, type: paramType));
-              }
-            }
-          }
-
           methods.add(
-            MethodInfo(
-              name: member.name.lexeme,
-              callsNotifyListeners: callsNotify,
-              bodySnippet: body,
-              isAsync: isAsync,
-              returnType: returnType,
-              isGetter: isGetter,
-              parameters: params,
+            buildMethodInfo(
+              member,
+              callsNotifyListeners: member.body.toSource().contains(
+                'notifyListeners()',
+              ),
             ),
           );
         }
