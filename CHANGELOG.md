@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.1.1] - 2026-05-11
+
+### Fixed
+- Preserved getter signatures and return types in generated Riverpod output instead of emitting method-shaped accessors.
+- Preserved method parameter lists during migration so notifier methods keep their original call contract.
+- Corrected `Consumer` and `Selector` rewrites to emit valid builder separators and normalized `.select(...)` lambdas.
+- Preserved chained provider method calls so imperative actions migrate to `ref.read(...).method()`.
+- Removed conflicting Riverpod output patterns by standardizing migrated logic units on the `@riverpod` code generation flow.
+- Inferred `build()` return types from typed state fields instead of defaulting to `dynamic`.
+- Captured typed state fields in the IR so generated state and notifier code keeps source field types.
+
 ## [2.1.0] - 2026-05-10
 
 ### Added
