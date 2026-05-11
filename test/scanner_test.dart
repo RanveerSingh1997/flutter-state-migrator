@@ -95,6 +95,34 @@ class SessionModel extends ChangeNotifier {
       expect(login.isAsync, true);
       expect(login.parameters.map((p) => p.name), ['value', 'remember']);
     });
+
+    test('Distinguishes reactive reads from callback reads inside build', () {
+      const source = '''
+class CounterModel extends ChangeNotifier {
+  int _count = 0;
+  int get count => _count;
+}
+
+class CounterView extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final count = Provider.of<CounterModel>(context).count;
+    return IconButton(
+      onPressed: () => Provider.of<CounterModel>(context).increment(),
+      icon: Text('\$count'),
+    );
+  }
+}
+''';
+      final result = parseString(content: source);
+      final adapter = ProviderAdapter('test.dart');
+      result.unit.accept(adapter);
+
+      final reads = adapter.nodes.whereType<ProviderOfNode>().toList();
+      expect(reads, hasLength(2));
+      expect(reads.where((node) => node.isInBuildMethod), hasLength(1));
+      expect(reads.where((node) => !node.isInBuildMethod), hasLength(1));
+    });
   });
 
   group('Other scanner adapters', () {

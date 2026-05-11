@@ -21,6 +21,20 @@ void main() {
       expect(edits.first.replacement, 'ref.watch(counterProvider)');
     });
 
+    test('Transforms Provider.of method chain in build to notifier read', () {
+      const source = 'Provider.of<Counter>(context).increment()';
+      final node = ProviderOfNode(
+        consumedClass: 'Counter',
+        isInBuildMethod: true,
+        filePath: 'test.dart',
+        offset: 0,
+        length: 'Provider.of<Counter>(context)'.length,
+      );
+
+      final edits = transformer.transformNode(node, source);
+      expect(edits.single.replacement, 'ref.read(counterProvider.notifier)');
+    });
+
     test(
       'Transforms Provider.of listen false method chain to notifier read',
       () {
@@ -53,6 +67,20 @@ void main() {
         expect(edits.single.replacement, 'ref.read(counterProvider)');
       },
     );
+
+    test('Transforms context.watch outside reactive build to value read', () {
+      const source = 'context.watch<Counter>().count';
+      final node = ProviderOfNode(
+        consumedClass: 'Counter',
+        isInBuildMethod: false,
+        filePath: 'test.dart',
+        offset: 0,
+        length: 'context.watch<Counter>()'.length,
+      );
+
+      final edits = transformer.transformNode(node, source);
+      expect(edits.single.replacement, 'ref.read(counterProvider)');
+    });
 
     test('Transforms Selector to Consumer', () {
       const source = '''
