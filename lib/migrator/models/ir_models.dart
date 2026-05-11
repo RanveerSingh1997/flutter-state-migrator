@@ -13,6 +13,40 @@ abstract class ProviderNode {
 /// Which Riverpod notifier primitive best fits the detected class shape.
 enum NotifierType { stateNotifier, notifier, asyncNotifier, streamNotifier }
 
+/// A single field captured from a ChangeNotifier class declaration.
+class FieldInfo {
+  /// Raw source name (may have leading `_`), e.g. `_count`.
+  final String rawName;
+
+  /// Public name (leading `_` stripped), e.g. `count`.
+  String get publicName =>
+      rawName.startsWith('_') ? rawName.substring(1) : rawName;
+
+  /// Dart type as source text, e.g. `int`, `String`, `List<Todo>`.
+  /// Falls back to `dynamic` when the type could not be inferred.
+  final String type;
+
+  /// Source text of the initializer expression, e.g. `0`, `''`, `[]`.
+  /// `null` when no initializer was found.
+  final String? initializer;
+
+  const FieldInfo({
+    required this.rawName,
+    this.type = 'dynamic',
+    this.initializer,
+  });
+}
+
+/// A parameter captured from a method declaration, e.g. `String name`.
+class ParamInfo {
+  final String name;
+  final String type;
+
+  const ParamInfo({required this.name, this.type = 'dynamic'});
+
+  String toSource() => '$type $name';
+}
+
 class MethodInfo {
   final String name;
   final bool callsNotifyListeners;
@@ -24,18 +58,30 @@ class MethodInfo {
   /// Source text of the declared return type (e.g. `'Future<void>'`, `'Stream<int>'`).
   final String returnType;
 
+  /// True for Dart getter declarations (`get foo => ...`).
+  /// Getters are skipped during code generation.
+  final bool isGetter;
+
+  /// Formal parameters of the method, in declaration order.
+  final List<ParamInfo> parameters;
+
   MethodInfo({
     required this.name,
     required this.callsNotifyListeners,
     required this.bodySnippet,
     this.isAsync = false,
     this.returnType = 'void',
+    this.isGetter = false,
+    this.parameters = const [],
   });
+
+  /// Emits the parameter list as a source string, e.g. `String name, int age`.
+  String get paramSource => parameters.map((p) => p.toSource()).join(', ');
 }
 
 class LogicUnitNode extends ProviderNode {
   final String name;
-  final List<String> stateVariables;
+  final List<FieldInfo> stateFields;
   final List<MethodInfo> methods;
   final bool isNotifier;
 
@@ -48,7 +94,7 @@ class LogicUnitNode extends ProviderNode {
 
   LogicUnitNode({
     required this.name,
-    required this.stateVariables,
+    required this.stateFields,
     required this.methods,
     required this.isNotifier,
     this.notifierType = NotifierType.stateNotifier,
@@ -58,11 +104,16 @@ class LogicUnitNode extends ProviderNode {
     required super.length,
   });
 
+  /// Backwards-compat: callers that only need the raw names.
+  List<String> get stateVariables => stateFields.map((f) => f.rawName).toList();
+
   Map<String, dynamic> toJson() => {
     'type': 'logic_unit',
     'name': name,
-    'state': stateVariables,
-    'methods': methods,
+    'state': stateFields
+        .map((f) => {'name': f.rawName, 'type': f.type})
+        .toList(),
+    'methods': methods.length,
     'notifier': isNotifier,
     'notifierType': notifierType.name,
     'isFamilyCandidate': isFamilyCandidate,

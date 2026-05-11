@@ -27,14 +27,22 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
     if (extendsClause != null &&
         extendsClause.superclass.name.lexeme == 'ChangeNotifier') {
       final className = node.name.lexeme;
-      final stateVariables = <String>[];
+      final stateFields = <FieldInfo>[];
       final methods = <MethodInfo>[];
 
       bool isFamilyCandidate = false;
       for (final member in node.members) {
         if (member is FieldDeclaration) {
           for (final variable in member.fields.variables) {
-            stateVariables.add(variable.name.lexeme);
+            final typeSource = member.fields.type?.toSource() ?? 'dynamic';
+            final initializer = variable.initializer?.toSource();
+            stateFields.add(
+              FieldInfo(
+                rawName: variable.name.lexeme,
+                type: typeSource,
+                initializer: initializer,
+              ),
+            );
           }
         } else if (member is ConstructorDeclaration) {
           // Any constructor param beyond `key` signals a .family provider is needed
@@ -46,33 +54,57 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
             }
           }
         } else if (member is MethodDeclaration) {
-          if (member.name.lexeme != 'dispose') {
-            final body = member.body.toSource();
-            final callsNotify = body.contains('notifyListeners()');
-            final returnType = member.returnType?.toSource() ?? 'void';
-            final isAsync = member.body is BlockFunctionBody
-                ? (member.body as BlockFunctionBody).keyword?.lexeme == 'async'
-                : member.body is ExpressionFunctionBody
-                ? (member.body as ExpressionFunctionBody).keyword?.lexeme ==
-                      'async'
-                : false;
-            methods.add(
-              MethodInfo(
-                name: member.name.lexeme,
-                callsNotifyListeners: callsNotify,
-                bodySnippet: body,
-                isAsync: isAsync,
-                returnType: returnType,
-              ),
-            );
+          if (member.name.lexeme == 'dispose') continue;
+
+          final isGetter = member.isGetter;
+          final body = member.body.toSource();
+          final callsNotify = body.contains('notifyListeners()');
+          final returnType = member.returnType?.toSource() ?? 'void';
+          final isAsync = member.body is BlockFunctionBody
+              ? (member.body as BlockFunctionBody).keyword?.lexeme == 'async'
+              : member.body is ExpressionFunctionBody
+              ? (member.body as ExpressionFunctionBody).keyword?.lexeme ==
+                    'async'
+              : false;
+
+          // Capture parameters (skip for getters — they have none)
+          final params = <ParamInfo>[];
+          if (!isGetter && member.parameters != null) {
+            for (final param in member.parameters!.parameters) {
+              final paramName = param.name?.lexeme ?? '';
+              String paramType = 'dynamic';
+              if (param is SimpleFormalParameter) {
+                paramType = param.type?.toSource() ?? 'dynamic';
+              } else if (param is DefaultFormalParameter) {
+                final inner = param.parameter;
+                if (inner is SimpleFormalParameter) {
+                  paramType = inner.type?.toSource() ?? 'dynamic';
+                }
+              }
+              if (paramName.isNotEmpty) {
+                params.add(ParamInfo(name: paramName, type: paramType));
+              }
+            }
           }
+
+          methods.add(
+            MethodInfo(
+              name: member.name.lexeme,
+              callsNotifyListeners: callsNotify,
+              bodySnippet: body,
+              isAsync: isAsync,
+              returnType: returnType,
+              isGetter: isGetter,
+              parameters: params,
+            ),
+          );
         }
       }
 
       nodes.add(
         LogicUnitNode(
           name: className,
-          stateVariables: stateVariables,
+          stateFields: stateFields,
           methods: methods,
           isNotifier: true,
           notifierType: _detectNotifierType(methods),
@@ -165,9 +197,6 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
   @override
   void visitInstanceCreationExpression(InstanceCreationExpression node) {
     final typeName = node.constructorName.type.name.lexeme;
-    print(
-      'InstanceCreation: \$typeName | Source: \${node.constructorName.type.toSource()}',
-    );
 
     // Detect ChangeNotifierProvider(...)
     if (typeName == 'ChangeNotifierProvider') {
@@ -393,7 +422,8 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
         );
       }
     }
-    // Detect Consumer<T>(...) as MethodInvocation (happens without full type resolution)
+
+    // Detect Consumer<T>(...) as MethodInvocation
     if (node.methodName.name == 'Consumer') {
       final typeArgs = node.typeArguments;
       if (typeArgs != null && typeArgs.arguments.isNotEmpty) {
@@ -488,10 +518,12 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
 
   NotifierType _detectNotifierType(List<MethodInfo> methods) {
     for (final m in methods) {
+      if (m.isGetter) continue;
       if (m.returnType.startsWith('Stream<'))
         return NotifierType.streamNotifier;
     }
     for (final m in methods) {
+      if (m.isGetter) continue;
       if (m.isAsync || m.returnType.startsWith('Future<')) {
         return NotifierType.asyncNotifier;
       }

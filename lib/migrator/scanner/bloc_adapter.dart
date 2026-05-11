@@ -55,7 +55,7 @@ class BlocAdapter extends RecursiveAstVisitor<void> {
         nodes.add(
           LogicUnitNode(
             name: className,
-            stateVariables: [stateType],
+            stateFields: [FieldInfo(rawName: 'state', type: stateType)],
             methods: methods,
             isNotifier: true,
             notifierType: _detectNotifierType(methods),

@@ -14,7 +14,7 @@ class GetXAdapter extends RecursiveAstVisitor<void> {
     if (extendsClause != null &&
         extendsClause.superclass.name.lexeme == 'GetxController') {
       final className = node.name.lexeme;
-      final stateVariables = <String>[];
+      final stateFields = <FieldInfo>[];
       final methods = <MethodInfo>[];
 
       bool isFamilyCandidate = false;
@@ -23,7 +23,13 @@ class GetXAdapter extends RecursiveAstVisitor<void> {
           for (final variable in member.fields.variables) {
             final source = variable.toSource();
             if (source.contains('.obs')) {
-              stateVariables.add(variable.name.lexeme);
+              stateFields.add(
+                FieldInfo(
+                  rawName: variable.name.lexeme,
+                  type: member.fields.type?.toSource() ?? 'dynamic',
+                  initializer: variable.initializer?.toSource(),
+                ),
+              );
             }
           }
         } else if (member is ConstructorDeclaration) {
@@ -58,7 +64,7 @@ class GetXAdapter extends RecursiveAstVisitor<void> {
       nodes.add(
         LogicUnitNode(
           name: className,
-          stateVariables: stateVariables,
+          stateFields: stateFields,
           methods: methods,
           isNotifier: true,
           notifierType: _detectNotifierType(methods),

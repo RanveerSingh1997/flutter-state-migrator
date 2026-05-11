@@ -70,21 +70,7 @@ class MyWidget extends ConsumerWidget {
   String _generateStateNotifier(LogicUnitNode node) {
     final buffer = StringBuffer();
     final fileName = node.filePath.split('/').last.replaceAll('.dart', '');
-    final stateClassName = '${node.name}State';
-    final buildReturnType = switch (node.notifierType) {
-      NotifierType.asyncNotifier => 'Future<dynamic>',
-      NotifierType.streamNotifier => 'Stream<dynamic>',
-      NotifierType.stateNotifier => stateClassName,
-      NotifierType.notifier => 'dynamic',
-    };
-    final buildBody = switch (node.notifierType) {
-      NotifierType.asyncNotifier =>
-        '    return null; // TODO: Return initial async state',
-      NotifierType.streamNotifier =>
-        '    return const Stream.empty(); // TODO: Return stream',
-      NotifierType.stateNotifier => '    return $stateClassName();',
-      NotifierType.notifier => '    return null; // TODO: Return initial state',
-    };
+    final (buildReturnType, buildBody) = _inferBuildSignature(node);
     final header = switch (node.notifierType) {
       NotifierType.asyncNotifier =>
         '// 🔄 Suggestion: Convert ${node.name} to an @riverpod AsyncNotifier',
@@ -106,43 +92,9 @@ class MyWidget extends ConsumerWidget {
     );
     buffer.writeln();
 
-    if (node.notifierType == NotifierType.stateNotifier) {
-      buffer.writeln('class $stateClassName {');
-      for (final variable in node.stateVariables) {
-        final name = variable.startsWith('_')
-            ? variable.substring(1)
-            : variable;
-        buffer.writeln('  final dynamic $name;');
-      }
-      buffer.writeln();
-      buffer.writeln('  $stateClassName({');
-      for (final variable in node.stateVariables) {
-        final name = variable.startsWith('_')
-            ? variable.substring(1)
-            : variable;
-        buffer.writeln('    this.$name,');
-      }
-      buffer.writeln('  });');
-      buffer.writeln();
-      buffer.writeln('  $stateClassName copyWith({');
-      for (final variable in node.stateVariables) {
-        final name = variable.startsWith('_')
-            ? variable.substring(1)
-            : variable;
-        buffer.writeln('    dynamic $name,');
-      }
-      buffer.writeln('  }) {');
-      buffer.writeln('    return $stateClassName(');
-      for (final variable in node.stateVariables) {
-        final name = variable.startsWith('_')
-            ? variable.substring(1)
-            : variable;
-        buffer.writeln('      $name: $name ?? this.$name,');
-      }
-      buffer.writeln('    );');
-      buffer.writeln('  }');
-      buffer.writeln('}');
-      buffer.writeln();
+    if (node.notifierType == NotifierType.stateNotifier &&
+        node.stateFields.length > 1) {
+      _emitStateClass(buffer, node);
     }
 
     buffer.writeln('@riverpod');
@@ -154,21 +106,116 @@ class MyWidget extends ConsumerWidget {
     buffer.writeln('class ${node.name} extends _\$${node.name} {');
     buffer.writeln('  @override');
     buffer.writeln('  $buildReturnType build() {');
-    buffer.writeln(buildBody);
+    buffer.writeln('    $buildBody');
     buffer.writeln('  }');
     buffer.writeln();
     for (final method in node.methods) {
+      if (method.isGetter) {
+        continue;
+      }
       final transformedBody = _bodyTransformer.transformBody(
         method.bodySnippet,
-        node.stateVariables,
+        node.stateFields,
       );
       final methodReturn = method.isAsync ? 'Future<void>' : 'void';
-      buffer.writeln('  $methodReturn ${method.name}() $transformedBody');
+      buffer.writeln(
+        '  $methodReturn ${method.name}(${method.paramSource}) $transformedBody',
+      );
       buffer.writeln();
     }
     buffer.writeln('}');
 
     return buffer.toString();
+  }
+
+  (String, String) _inferBuildSignature(LogicUnitNode node) {
+    switch (node.notifierType) {
+      case NotifierType.asyncNotifier:
+        return (
+          'Future<dynamic>',
+          'return null; // TODO: Return initial async state',
+        );
+      case NotifierType.streamNotifier:
+        return (
+          'Stream<dynamic>',
+          'return const Stream.empty(); // TODO: Return stream',
+        );
+      default:
+        break;
+    }
+
+    if (node.stateFields.isEmpty) {
+      return ('void', '// TODO: no state fields detected');
+    }
+
+    if (node.stateFields.length == 1) {
+      final field = node.stateFields.first;
+      final type = field.type == 'dynamic' ? 'dynamic' : field.type;
+      final initializer = field.initializer;
+      if (initializer != null) {
+        return (type, 'return $initializer;');
+      }
+      return (type, 'return ${_defaultForType(type)};');
+    }
+
+    final stateClassName = '${node.name}State';
+    return (stateClassName, 'return $stateClassName();');
+  }
+
+  String _defaultForType(String type) {
+    switch (type.trim()) {
+      case 'int':
+        return '0';
+      case 'double':
+        return '0.0';
+      case 'String':
+        return "''";
+      case 'bool':
+        return 'false';
+      default:
+        if (type.startsWith('List')) {
+          return 'const []';
+        }
+        if (type.startsWith('Map')) {
+          return 'const {}';
+        }
+        return 'null';
+    }
+  }
+
+  void _emitStateClass(StringBuffer buffer, LogicUnitNode node) {
+    final stateClassName = '${node.name}State';
+    buffer.writeln('class $stateClassName {');
+    for (final field in node.stateFields) {
+      buffer.writeln('  final ${field.type} ${field.publicName};');
+    }
+    buffer.writeln();
+    buffer.writeln('  const $stateClassName({');
+    for (final field in node.stateFields) {
+      final initializer = field.initializer;
+      if (initializer != null) {
+        buffer.writeln('    this.${field.publicName} = $initializer,');
+      } else {
+        buffer.writeln('    required this.${field.publicName},');
+      }
+    }
+    buffer.writeln('  });');
+    buffer.writeln();
+    buffer.writeln('  $stateClassName copyWith({');
+    for (final field in node.stateFields) {
+      buffer.writeln('    ${field.type}? ${field.publicName},');
+    }
+    buffer.writeln('  }) {');
+    buffer.writeln('    return $stateClassName(');
+    for (final field in node.stateFields) {
+      buffer.writeln(
+        '      ${field.publicName}: ${field.publicName} ?? this.${field.publicName},',
+      );
+    }
+    buffer.writeln('    );');
+    buffer.writeln('  }');
+    buffer.writeln('}');
+    buffer.writeln();
   }
 
   String _generateProviderDeclaration(ProviderDeclarationNode node) {
