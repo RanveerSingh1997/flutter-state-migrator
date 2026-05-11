@@ -11,6 +11,7 @@ import 'package:flutter_state_migrator/migrator/analysis/dependency_manager.dart
 import 'package:flutter_state_migrator/migrator/analysis/generated_file_manager.dart';
 import 'package:flutter_state_migrator/migrator/analysis/import_manager.dart';
 import 'package:flutter_state_migrator/migrator/analysis/monorepo_manager.dart';
+import 'package:flutter_state_migrator/migrator/utils/edit_applier.dart';
 import 'package:flutter_state_migrator/migrator/analysis/snapshot_manager.dart';
 import 'package:flutter_state_migrator/migrator/analysis/visualizer.dart';
 import 'package:flutter_state_migrator/migrator/analysis/wizard.dart';
@@ -391,25 +392,15 @@ Future<void> main(List<String> arguments) async {
       final file = File(entry.key);
       if (!file.existsSync()) continue;
 
-      String content = file.readAsStringSync();
+      final original = file.readAsStringSync();
 
       final edits = <TextEdit>[];
       for (final node in entry.value) {
-        edits.addAll(transformer.transformNode(node, content));
+        edits.addAll(transformer.transformNode(node, original));
       }
 
-      // Sort descending by offset
-      edits.sort((a, b) => b.offset.compareTo(a.offset));
-
-      bool modified = false;
-      for (final edit in edits) {
-        content = content.replaceRange(
-          edit.offset,
-          edit.offset + edit.length,
-          edit.replacement,
-        );
-        modified = true;
-      }
+      String content = applyEdits(original, edits);
+      final modified = content != original;
 
       if (modified) {
         // Post-process imports
@@ -420,7 +411,6 @@ Future<void> main(List<String> arguments) async {
 
         if (dryRun) {
           print('\n👀 Dry Run: Proposed changes for ${entry.key}:');
-          final original = File(entry.key).readAsStringSync();
           _printSimpleDiff(original, content);
         } else {
           file.writeAsStringSync(content);
