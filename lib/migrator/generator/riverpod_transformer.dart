@@ -55,28 +55,37 @@ class RiverpodTransformer {
       originalSource,
       node.offset + node.length,
     );
+    final imperativeValueRead = 'ref.read($providerName)';
+    final imperativeNotifierRead = 'ref.read($providerName.notifier)';
+    final reactiveWatch = 'ref.watch($providerName)';
 
     if (snippet.startsWith('Provider.of')) {
+      if (isMethodCall) {
+        return [TextEdit(node.offset, node.length, imperativeNotifierRead)];
+      }
       if (snippet.contains('listen: false') || !node.isInBuildMethod) {
-        final target = isMethodCall
-            ? 'ref.read($providerName.notifier)'
-            : 'ref.read($providerName)';
-        return [TextEdit(node.offset, node.length, target)];
+        return [TextEdit(node.offset, node.length, imperativeValueRead)];
       } else {
-        return [TextEdit(node.offset, node.length, 'ref.watch($providerName)')];
+        return [TextEdit(node.offset, node.length, reactiveWatch)];
       }
     } else if (snippet.startsWith('context.read')) {
       return [
         TextEdit(
           node.offset,
           node.length,
-          isMethodCall
-              ? 'ref.read($providerName.notifier)'
-              : 'ref.read($providerName)',
+          isMethodCall ? imperativeNotifierRead : imperativeValueRead,
         ),
       ];
     } else if (snippet.startsWith('context.watch')) {
-      return [TextEdit(node.offset, node.length, 'ref.watch($providerName)')];
+      return [
+        TextEdit(
+          node.offset,
+          node.length,
+          isMethodCall
+              ? imperativeNotifierRead
+              : (node.isInBuildMethod ? reactiveWatch : imperativeValueRead),
+        ),
+      ];
     }
     return [];
   }

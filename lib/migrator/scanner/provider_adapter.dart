@@ -11,6 +11,11 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
   /// Tracks whether the visitor is currently inside a `build()` method body.
   bool _inBuildMethod = false;
 
+  /// Tracks nested callback/lambda scopes inside `build()` such as `onPressed`,
+  /// `builder`, and other closures. Reads inside these closures should be
+  /// treated as imperative one-shot access, not reactive watches.
+  int _callbackDepth = 0;
+
   ProviderAdapter(this.filePath);
 
   @override
@@ -19,6 +24,18 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
     if (node.name.lexeme == 'build') _inBuildMethod = true;
     super.visitMethodDeclaration(node);
     _inBuildMethod = wasBuild;
+  }
+
+  @override
+  void visitFunctionExpression(FunctionExpression node) {
+    final shouldTrackCallback = _inBuildMethod;
+    if (shouldTrackCallback) {
+      _callbackDepth++;
+    }
+    super.visitFunctionExpression(node);
+    if (shouldTrackCallback) {
+      _callbackDepth--;
+    }
   }
 
   @override
@@ -354,12 +371,12 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
       final typeArgs = node.typeArguments;
       if (typeArgs != null && typeArgs.arguments.isNotEmpty) {
         final consumedType = typeArgs.arguments.first.beginToken.lexeme;
-        // `listen: false` overrides build-context — that's always a ref.read.
+        final isReactiveBuildContext = _inBuildMethod && _callbackDepth == 0;
         final hasListenFalse = node.toSource().contains('listen: false');
         nodes.add(
           ProviderOfNode(
             consumedClass: consumedType,
-            isInBuildMethod: _inBuildMethod && !hasListenFalse,
+            isInBuildMethod: isReactiveBuildContext && !hasListenFalse,
             filePath: filePath,
             offset: node.offset,
             length: node.length,
@@ -375,12 +392,12 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
       final typeArgs = node.typeArguments;
       if (typeArgs != null && typeArgs.arguments.isNotEmpty) {
         final consumedType = typeArgs.arguments.first.beginToken.lexeme;
-        // context.watch is always reactive; context.read is always one-shot.
+        final isReactiveBuildContext = _inBuildMethod && _callbackDepth == 0;
         final isWatch = node.methodName.name == 'watch';
         nodes.add(
           ProviderOfNode(
             consumedClass: consumedType,
-            isInBuildMethod: isWatch || _inBuildMethod,
+            isInBuildMethod: isWatch && isReactiveBuildContext,
             filePath: filePath,
             offset: node.offset,
             length: node.length,
