@@ -162,7 +162,7 @@ class RiverpodTransformer {
     );
 
     // 1. Replace Selector<A, B> with Consumer
-    final selectorRegex = RegExp(r'Selector<\w+,\s*\w+>');
+    final selectorRegex = RegExp(r'Selector<[^>]+,\s*[^>]+>');
     final selectorMatch = selectorRegex.firstMatch(snippet);
     if (selectorMatch != null) {
       edits.add(
@@ -239,21 +239,39 @@ class RiverpodTransformer {
   /// Riverpod `(state) => state.name` form.
   String _normaliseSelectorSnippet(String snippet) {
     // Match `(ctx, model) => expr` or `(ctx, model) { ... }`
-    final match = RegExp(
+    final trimmed = snippet.trim();
+    final expressionMatch = RegExp(
       r'\(\s*\w+\s*,\s*(\w+)\s*\)\s*=>\s*([\s\S]+)',
-    ).firstMatch(snippet.trim());
-    if (match != null) {
-      final oldVar = match.group(1)!;
-      var expr = match.group(2)!.trim();
-      // Replace the old model variable name with `state`
-      expr = expr.replaceAllMapped(
-        RegExp('(?<![\\w.])${RegExp.escape(oldVar)}(?!\\w)'),
-        (_) => 'state',
+    ).firstMatch(trimmed);
+    if (expressionMatch != null) {
+      final oldVar = expressionMatch.group(1)!;
+      final expr = _replaceSelectorVariable(
+        expressionMatch.group(2)!.trim(),
+        oldVar,
       );
       return '(state) => $expr';
     }
-    // Fallback: wrap as-is
+
+    final blockMatch = RegExp(
+      r'\(\s*\w+\s*,\s*(\w+)\s*\)\s*\{([\s\S]*)\}$',
+    ).firstMatch(trimmed);
+    if (blockMatch != null) {
+      final oldVar = blockMatch.group(1)!;
+      final blockBody = _replaceSelectorVariable(
+        blockMatch.group(2)!.trim(),
+        oldVar,
+      );
+      return '(state) { $blockBody }';
+    }
+
     return '(state) => $snippet';
+  }
+
+  String _replaceSelectorVariable(String source, String variableName) {
+    return source.replaceAllMapped(
+      RegExp('(?<![\\w.])${RegExp.escape(variableName)}(?!\\w)'),
+      (_) => 'state',
+    );
   }
 
   List<TextEdit> _transformAsyncProvider(
@@ -607,7 +625,7 @@ final $providerName = ${node.providerType == 'FutureProvider' ? 'FutureProvider'
     );
 
     // 1. Replace Consumer<Type> with Consumer
-    final consumerRegex = RegExp(r'Consumer<\w+>');
+    final consumerRegex = RegExp(r'Consumer<[^>]+>');
     final consumerMatch = consumerRegex.firstMatch(snippet);
     if (consumerMatch != null) {
       edits.add(
