@@ -108,6 +108,51 @@ Selector<MyModel, int>(
       );
     });
 
+    test('Transforms complex generic Consumer to Consumer', () {
+      const source =
+          'Consumer<Result<MyModel>>(builder: (context, model, child) => Text(model.toString()))';
+      final node = ConsumerNode(
+        consumedClass: 'ResultMyModel',
+        filePath: 'test.dart',
+        offset: 0,
+        length: source.length,
+      );
+
+      final edits = transformer.transformNode(node, source);
+      expect(edits.any((e) => e.replacement == 'Consumer'), isTrue);
+    });
+
+    test('Transforms block selector lambda to state selector', () {
+      const source = '''
+Selector<MyModel, int>(
+  selector: (_, model) {
+    return model.count;
+  },
+  builder: (context, count, child) => Text('\$count'),
+)''';
+      final node = SelectorNode(
+        consumedClass: 'MyModel',
+        selectedType: 'int',
+        selectorSnippet: '''
+(_, model) {
+    return model.count;
+  }''',
+        filePath: 'test.dart',
+        offset: 0,
+        length: source.length,
+      );
+
+      final edits = transformer.transformNode(node, source);
+      expect(
+        edits.any(
+          (e) => e.replacement.contains(
+            'ref.watch(myModelProvider.select((state) { return state.count; }))',
+          ),
+        ),
+        isTrue,
+      );
+    });
+
     test('Unwraps MultiProvider', () {
       const childSource = 'Container()';
       const source = 'MultiProvider(providers: [], child: $childSource)';
