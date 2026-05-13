@@ -18,12 +18,21 @@ class AstScanner {
 
   List<ProviderNode> scanProject() {
     final irNodes = <ProviderNode>[];
-    final directory = Directory(targetPath);
+    final targetType = FileSystemEntity.typeSync(
+      targetPath,
+      followLinks: false,
+    );
 
-    if (!directory.existsSync()) {
+    if (targetType == FileSystemEntityType.notFound) {
       print('Directory $targetPath does not exist.');
       return irNodes;
     }
+
+    if (targetType == FileSystemEntityType.file) {
+      return _scanFile(File(targetPath));
+    }
+
+    final directory = Directory(targetPath);
 
     final dartFiles = directory
         .listSync(recursive: true)

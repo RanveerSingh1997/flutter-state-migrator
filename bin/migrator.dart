@@ -11,6 +11,7 @@ import 'package:flutter_state_migrator/migrator/analysis/dependency_manager.dart
 import 'package:flutter_state_migrator/migrator/analysis/generated_file_manager.dart';
 import 'package:flutter_state_migrator/migrator/analysis/governance_engine.dart';
 import 'package:flutter_state_migrator/migrator/analysis/graph_builder.dart';
+import 'package:flutter_state_migrator/migrator/analysis/ide_intelligence.dart';
 import 'package:flutter_state_migrator/migrator/analysis/import_manager.dart';
 import 'package:flutter_state_migrator/migrator/analysis/monorepo_manager.dart';
 import 'package:flutter_state_migrator/migrator/analysis/snapshot_manager.dart';
@@ -93,6 +94,11 @@ Future<void> main(List<String> arguments) async {
     ..addOption(
       'rollback-to',
       help: 'Path to a specific snapshot directory to restore from',
+    )
+    ..addFlag(
+      'ide-json',
+      negatable: false,
+      help: 'Emit structured IDE diagnostics as JSON without modifying files',
     );
 
   final argResults = parser.parse(arguments);
@@ -106,6 +112,7 @@ Future<void> main(List<String> arguments) async {
   bool dashboard;
   bool generateReport;
   bool cleanImports;
+  final ideJson = argResults['ide-json'] as bool;
 
   if (argResults['help'] as bool) {
     print('Usage: dart run bin/migrator.dart [options] <flutter_project_path>');
@@ -113,7 +120,15 @@ Future<void> main(List<String> arguments) async {
     exit(0);
   }
 
-  if (argResults.rest.isEmpty || argResults['wizard'] as bool) {
+  if (ideJson && argResults.rest.isEmpty) {
+    stderr.writeln(
+      'A target file or project path is required with --ide-json.',
+    );
+    exitCode = 64;
+    return;
+  }
+
+  if (!ideJson && (argResults.rest.isEmpty || argResults['wizard'] as bool)) {
     final wizard = InteractiveWizard();
     final config = wizard.start();
     targetPath = config.targetPath;
@@ -137,7 +152,8 @@ Future<void> main(List<String> arguments) async {
     useAi = argResults['ai'] as bool;
   }
 
-  final snapshot = SnapshotManager(targetPath);
+  final projectRoot = resolveProjectRoot(targetPath);
+  final snapshot = SnapshotManager(projectRoot);
 
   if (argResults['rollback'] as bool) {
     final specificPath = argResults['rollback-to'] as String?;
@@ -159,7 +175,7 @@ Future<void> main(List<String> arguments) async {
     return;
   }
 
-  final monorepo = MonorepoManager(targetPath);
+  final monorepo = MonorepoManager(projectRoot);
   final packages = monorepo.findPackages();
   final isMonorepo = packages.length > 1;
 
@@ -167,25 +183,27 @@ Future<void> main(List<String> arguments) async {
     await snapshot.createSnapshot();
   }
 
-  print(
-    '\x1B[1m\x1B[35m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\x1B[0m',
-  );
-  print('✨ \x1B[1mFlutter Arch Intelligence Platform v2.1.1\x1B[0m ✨');
-  print('🚀 \x1B[1mThe Semantic Architecture Intelligence Suite\x1B[0m');
-  print('📍 Target: \x1B[33m$targetPath\x1B[0m');
-  print(
-    '📦 Packages found: \x1B[33m${packages.length}\x1B[0m'
-    '${isMonorepo ? "  \x1B[90m(monorepo)\x1B[0m" : ""}',
-  );
-  for (final pkg in packages) {
-    print('   - ${pkg.name} (\x1B[33m${pkg.rootPath}\x1B[0m)');
+  if (!ideJson) {
+    print(
+      '\x1B[1m\x1B[35m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\x1B[0m',
+    );
+    print('✨ \x1B[1mFlutter Arch Intelligence Platform v2.1.1\x1B[0m ✨');
+    print('🚀 \x1B[1mThe Semantic Architecture Intelligence Suite\x1B[0m');
+    print('📍 Target: \x1B[33m$targetPath\x1B[0m');
+    print(
+      '📦 Packages found: \x1B[33m${packages.length}\x1B[0m'
+      '${isMonorepo ? "  \x1B[90m(monorepo)\x1B[0m" : ""}',
+    );
+    for (final pkg in packages) {
+      print('   - ${pkg.name} (\x1B[33m${pkg.rootPath}\x1B[0m)');
+    }
+    print('🛠️  Mode:   \x1B[33m$mode\x1B[0m');
+    print(
+      '\x1B[1m\x1B[35m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\x1B[0m',
+    );
   }
-  print('🛠️  Mode:   \x1B[33m$mode\x1B[0m');
-  print(
-    '\x1B[1m\x1B[35m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\x1B[0m',
-  );
 
-  final projectConfig = ConfigurationManager.loadConfig(targetPath);
+  final projectConfig = ConfigurationManager.loadConfig(projectRoot);
 
   // 1. Scan targetPath for Dart files
   final scanner = AstScanner(targetPath);
@@ -196,24 +214,36 @@ Future<void> main(List<String> arguments) async {
   final graph = graphBuilder.buildGraph(nodes);
 
   // 3. Architecture Intelligence
-  print('\n🧠 Running Architecture Intelligence Engine...');
   final intel = ArchitectureIntelligenceEngine(graph);
   final smells = intel.analyze();
-  if (smells.isNotEmpty) {
-    for (final smell in smells) {
-      final color = smell.severity == 'error' ? '\x1B[31m' : '\x1B[33m';
-      print(
-        '   $color${smell.severity.toUpperCase()}\x1B[0m: ${smell.name} - ${smell.description}',
-      );
+  if (!ideJson) {
+    print('\n🧠 Running Architecture Intelligence Engine...');
+    if (smells.isNotEmpty) {
+      for (final smell in smells) {
+        final color = smell.severity == 'error' ? '\x1B[31m' : '\x1B[33m';
+        print(
+          '   $color${smell.severity.toUpperCase()}\x1B[0m: ${smell.name} - ${smell.description}',
+        );
+      }
+    } else {
+      print('   \x1B[32m✓ No architectural smells detected.\x1B[0m');
     }
-  } else {
-    print('   \x1B[32m✓ No architectural smells detected.\x1B[0m');
   }
 
   // 4. Governance Validation
-  print('\n⚖️  Running Governance Validation...');
   final gov = GovernanceEngine(graph, projectConfig.governance);
   final violations = gov.validate();
+  if (ideJson) {
+    final ideReport = IdeIntelligenceEngine(
+      targetPath,
+    ).buildReport(graph: graph, smells: smells, violations: violations);
+    stdout.write(
+      const JsonEncoder.withIndent('  ').convert(ideReport.toJson()),
+    );
+    return;
+  }
+
+  print('\n⚖️  Running Governance Validation...');
   if (violations.isNotEmpty) {
     for (final v in violations) {
       print('   \x1B[31mVIOLATION\x1B[0m: ${v.ruleName} - ${v.message}');
@@ -226,7 +256,7 @@ Future<void> main(List<String> arguments) async {
   if (visualize) {
     final visualizer = ProviderVisualizer();
     final mmd = visualizer.generateMermaid(graph);
-    visualizer.saveGraph(targetPath, mmd);
+    visualizer.saveGraph(projectRoot, mmd);
     print('   📈 Graph summary: ${visualizer.describeSummary(graph)}');
   }
 
@@ -396,7 +426,7 @@ Future<void> main(List<String> arguments) async {
     }
 
     if (generateReport && !dryRun) {
-      final reportFile = File('$targetPath/migration_report.json');
+      final reportFile = File('$projectRoot/migration_report.json');
       reportFile.writeAsStringSync(
         JsonEncoder.withIndent('  ').convert(reportData),
       );
@@ -434,20 +464,21 @@ Future<void> main(List<String> arguments) async {
           ? monorepo.migrateablePackages(
               (reportData['modified_files'] as List).cast<String>(),
             )
-          : [PackageInfo(name: 'root', rootPath: targetPath)];
+          : [PackageInfo(name: 'root', rootPath: projectRoot)];
 
       for (final pkg in affectedPkgs) {
         final pkgDep = DependencyManager(pkg.rootPath);
         await pkgDep.updateDependencies();
       }
 
-      final genManager = GeneratedFileManager(targetPath);
+      final genManager = GeneratedFileManager(projectRoot);
       final needsBuildRunner = genManager.pendingBuildRunnerFiles(
         (reportData['modified_files'] as List).cast<String>(),
       );
       if (needsBuildRunner.isNotEmpty) {
         print('\n⚙️  Run build_runner for ${needsBuildRunner.length} file(s).');
       }
+
       genManager.cleanStaleFiles();
     }
 
@@ -472,4 +503,12 @@ void _printSimpleDiff(String original, String modified) {
       print('\x1B[32m+ ${modifiedLines[i]}\x1B[0m');
     }
   }
+}
+
+String resolveProjectRoot(String targetPath) {
+  final type = FileSystemEntity.typeSync(targetPath, followLinks: false);
+  if (type == FileSystemEntityType.file) {
+    return File(targetPath).parent.path;
+  }
+  return targetPath;
 }
