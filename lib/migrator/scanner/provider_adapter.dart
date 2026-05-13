@@ -48,11 +48,14 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
       return;
     }
 
-    // Detect ChangeNotifier classes
     final extendsClause = node.extendsClause;
-    if (extendsClause != null &&
-        extendsClause.superclass.name.lexeme == 'ChangeNotifier') {
-      final className = node.namePart.typeName.lexeme;
+    final superClassName = extendsClause?.superclass.name.lexeme;
+    final mixins =
+        node.withClause?.mixinTypes.map((t) => t.name.lexeme).toList() ?? [];
+
+    // Detect ChangeNotifier classes (Standard Provider pattern)
+    if (extendsClause != null && superClassName == 'ChangeNotifier') {
+      final className = node.name.lexeme;
       final stateFields = <FieldInfo>[];
       final methods = <MethodInfo>[];
 
@@ -71,7 +74,6 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
             );
           }
         } else if (member is ConstructorDeclaration) {
-          // Any constructor param beyond `key` signals a .family provider is needed
           for (final param in member.parameters.parameters) {
             final paramName = param.name?.lexeme ?? '';
             if (paramName != 'key') {
@@ -80,9 +82,7 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
             }
           }
         } else if (member is MethodDeclaration) {
-          if (member.name.lexeme == 'dispose') {
-            continue;
-          }
+          if (member.name.lexeme == 'dispose') continue;
           methods.add(
             buildMethodInfo(
               member,
@@ -102,14 +102,16 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
           isNotifier: true,
           notifierType: detectNotifierType(methods),
           isFamilyCandidate: isFamilyCandidate,
+          role: _inferRole(className, superClassName),
+          superClassName: superClassName,
+          mixins: mixins,
           filePath: filePath,
           offset: node.offset,
           length: node.length,
         ),
       );
-    } else if (extendsClause != null &&
-        extendsClause.superclass.name.lexeme == 'StatelessWidget') {
-      final className = node.namePart.typeName.lexeme;
+    } else if (extendsClause != null && superClassName == 'StatelessWidget') {
+      final className = node.name.lexeme;
       int buildMethodOffset = -1;
 
       for (final member in classBody.members) {
@@ -128,9 +130,8 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
           length: node.length,
         ),
       );
-    } else if (extendsClause != null &&
-        extendsClause.superclass.name.lexeme == 'StatefulWidget') {
-      final className = node.namePart.typeName.lexeme;
+    } else if (extendsClause != null && superClassName == 'StatefulWidget') {
+      final className = node.name.lexeme;
       int createStateOffset = -1;
       for (final member in classBody.members) {
         if (member is MethodDeclaration &&
@@ -142,16 +143,14 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
         WidgetNode(
           widgetName: className,
           widgetType: 'StatefulWidget',
-          buildMethodOffset:
-              createStateOffset, // Reuse this field for createState offset in StatefulWidget
+          buildMethodOffset: createStateOffset,
           filePath: filePath,
           offset: node.offset,
           length: node.length,
         ),
       );
-    } else if (extendsClause != null &&
-        extendsClause.superclass.name.lexeme == 'State') {
-      final className = node.namePart.typeName.lexeme;
+    } else if (extendsClause != null && superClassName == 'State') {
+      final className = node.name.lexeme;
       final typeArguments = extendsClause.superclass.typeArguments;
       if (typeArguments != null && typeArguments.arguments.isNotEmpty) {
         final widgetName = typeArguments.arguments.first.toSource();
@@ -165,9 +164,8 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
           ),
         );
       }
-    } else if (extendsClause != null &&
-        extendsClause.superclass.name.lexeme == 'HookWidget') {
-      final className = node.namePart.typeName.lexeme;
+    } else if (extendsClause != null && superClassName == 'HookWidget') {
+      final className = node.name.lexeme;
       int buildMethodOffset = -1;
       for (final member in classBody.members) {
         if (member is MethodDeclaration && member.name.lexeme == 'build') {
@@ -183,15 +181,53 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
           length: node.length,
         ),
       );
+    } else if (_isLogicClass(
+      className: node.name.lexeme,
+      superClassName: superClassName,
+    )) {
+      // Catch-all for other logic classes (repositories, services)
+      final className = node.name.lexeme;
+      nodes.add(
+        LogicUnitNode(
+          name: className,
+          stateFields: [], // Not a framework-managed state
+          methods: [], // Could be expanded to scan methods
+          isNotifier: false,
+          role: _inferRole(className, superClassName),
+          superClassName: superClassName,
+          mixins: mixins,
+          filePath: filePath,
+          offset: node.offset,
+          length: node.length,
+        ),
+      );
     }
+
     super.visitClassDeclaration(node);
+  }
+
+  bool _isLogicClass({required String className, String? superClassName}) {
+    final lowerName = className.toLowerCase();
+    return lowerName.endsWith('repository') ||
+        lowerName.endsWith('service') ||
+        lowerName.endsWith('manager') ||
+        lowerName.endsWith('api');
+  }
+
+  String _inferRole(String className, String? superClassName) {
+    final lowerName = className.toLowerCase();
+    if (lowerName.endsWith('repository')) return 'repository';
+    if (lowerName.endsWith('service')) return 'service';
+    if (lowerName.endsWith('api')) return 'api';
+    if (lowerName.endsWith('provider')) return 'provider';
+    if (superClassName == 'ChangeNotifier') return 'provider';
+    return 'logic';
   }
 
   @override
   void visitInstanceCreationExpression(InstanceCreationExpression node) {
     final typeName = node.constructorName.type.name.lexeme;
 
-    // Detect ChangeNotifierProvider(...)
     if (typeName == 'ChangeNotifierProvider') {
       String? providedClass;
       int? childOffset;
@@ -230,26 +266,40 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
           length: node.length,
         ),
       );
-    }
-
-    // Detect Consumer<T>(...)
-    if (typeName == 'Consumer') {
+    } else if (typeName == 'Consumer') {
       final typeArgs = node.constructorName.type.typeArguments;
       if (typeArgs != null && typeArgs.arguments.isNotEmpty) {
         final consumedType = typeArgs.arguments.first.beginToken.lexeme;
+        int? builderOffset;
+        int? builderLength;
+        int? childOffset;
+        int? childLength;
+
+        for (final arg in node.argumentList.arguments) {
+          if (arg is! NamedExpression) continue;
+          if (arg.name.label.name == 'builder') {
+            builderOffset = arg.expression.offset;
+            builderLength = arg.expression.length;
+          } else if (arg.name.label.name == 'child') {
+            childOffset = arg.expression.offset;
+            childLength = arg.expression.length;
+          }
+        }
+
         nodes.add(
           ConsumerNode(
             consumedClass: consumedType,
+            builderOffset: builderOffset,
+            builderLength: builderLength,
+            childOffset: childOffset,
+            childLength: childLength,
             filePath: filePath,
             offset: node.offset,
             length: node.length,
           ),
         );
       }
-    }
-
-    // Detect MultiProvider(...)
-    if (typeName == 'MultiProvider') {
+    } else if (typeName == 'MultiProvider') {
       int? childOffset;
       int? childLength;
       for (final arg in node.argumentList.arguments) {
@@ -267,18 +317,26 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
           length: node.length,
         ),
       );
-    }
-
-    // Detect Selector<T, R>(...)
-    if (typeName == 'Selector') {
+    } else if (typeName == 'Selector') {
       final typeArgs = node.constructorName.type.typeArguments;
       if (typeArgs != null && typeArgs.arguments.length >= 2) {
         final consumedType = typeArgs.arguments[0].beginToken.lexeme;
         final selectedType = typeArgs.arguments[1].beginToken.lexeme;
         String selectorSnippet = '/* TODO: Selector */';
+        int? builderOffset;
+        int? builderLength;
+        int? childOffset;
+        int? childLength;
         for (final arg in node.argumentList.arguments) {
-          if (arg is NamedExpression && arg.name.label.name == 'selector') {
+          if (arg is! NamedExpression) continue;
+          if (arg.name.label.name == 'selector') {
             selectorSnippet = arg.expression.toSource();
+          } else if (arg.name.label.name == 'builder') {
+            builderOffset = arg.expression.offset;
+            builderLength = arg.expression.length;
+          } else if (arg.name.label.name == 'child') {
+            childOffset = arg.expression.offset;
+            childLength = arg.expression.length;
           }
         }
         nodes.add(
@@ -286,16 +344,17 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
             consumedClass: consumedType,
             selectedType: selectedType,
             selectorSnippet: selectorSnippet,
+            builderOffset: builderOffset,
+            builderLength: builderLength,
+            childOffset: childOffset,
+            childLength: childLength,
             filePath: filePath,
             offset: node.offset,
             length: node.length,
           ),
         );
       }
-    }
-
-    // Detect FutureProvider / StreamProvider(...)
-    if (typeName == 'FutureProvider' || typeName == 'StreamProvider') {
+    } else if (typeName == 'FutureProvider' || typeName == 'StreamProvider') {
       String providedType = 'Unknown';
       int? childOffset;
       int? childLength;
@@ -327,54 +386,18 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
 
   @override
   void visitMethodInvocation(MethodInvocation node) {
-    final nodeName = node.methodName.name;
-
-    // Detect ChangeNotifierProvider(...) as MethodInvocation
-    if (nodeName == 'ChangeNotifierProvider') {
-      String? providedClass;
-      int? childOffset;
-      int? childLength;
-      for (final arg in node.argumentList.arguments) {
-        if (arg is NamedExpression) {
-          if (arg.name.label.name == 'create') {
-            if (arg.expression is FunctionExpression) {
-              final func = arg.expression as FunctionExpression;
-              final body = func.body;
-              if (body is ExpressionFunctionBody) {
-                // Could be MethodInvocation or InstanceCreationExpression
-                if (body.expression is MethodInvocation) {
-                  providedClass =
-                      (body.expression as MethodInvocation).methodName.name;
-                } else if (body.expression is InstanceCreationExpression) {
-                  providedClass =
-                      (body.expression as InstanceCreationExpression)
-                          .constructorName
-                          .type
-                          .name
-                          .lexeme;
-                }
-              }
-            }
-          } else if (arg.name.label.name == 'child') {
-            childOffset = arg.expression.offset;
-            childLength = arg.expression.length;
-          }
-        }
-      }
-      nodes.add(
-        ProviderDeclarationNode(
-          providerType: nodeName,
-          providedClass: providedClass ?? 'Unknown',
-          childOffset: childOffset,
-          childLength: childLength,
-          filePath: filePath,
+    if (node.target == null &&
+        _handleConstructorLikeInvocation(
+          typeName: node.methodName.name,
+          typeArguments: node.typeArguments,
+          argumentList: node.argumentList,
           offset: node.offset,
           length: node.length,
-        ),
-      );
+        )) {
+      super.visitMethodInvocation(node);
+      return;
     }
 
-    // Detect Provider.of<T>(context)
     if (node.target != null &&
         node.target!.beginToken.lexeme == 'Provider' &&
         node.methodName.name == 'of') {
@@ -394,10 +417,7 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
           ),
         );
       }
-    }
-
-    // Detect context.read<T>() and context.watch<T>()
-    if (node.target != null &&
+    } else if (node.target != null &&
         node.target!.beginToken.lexeme == 'context' &&
         (node.methodName.name == 'read' || node.methodName.name == 'watch')) {
       final typeArgs = node.typeArguments;
@@ -418,27 +438,82 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
       }
     }
 
-    // Detect Consumer<T>(...) as MethodInvocation
-    if (node.methodName.name == 'Consumer') {
-      final typeArgs = node.typeArguments;
-      if (typeArgs != null && typeArgs.arguments.isNotEmpty) {
-        final consumedType = typeArgs.arguments.first.beginToken.lexeme;
-        nodes.add(
-          ConsumerNode(
-            consumedClass: consumedType,
-            filePath: filePath,
-            offset: node.offset,
-            length: node.length,
-          ),
-        );
-      }
-    }
+    super.visitMethodInvocation(node);
+  }
 
-    // Detect MultiProvider(...)
-    if (nodeName == 'MultiProvider') {
+  bool _handleConstructorLikeInvocation({
+    required String typeName,
+    required TypeArgumentList? typeArguments,
+    required ArgumentList argumentList,
+    required int offset,
+    required int length,
+  }) {
+    if (typeName == 'ChangeNotifierProvider') {
+      String? providedClass;
       int? childOffset;
       int? childLength;
-      for (final arg in node.argumentList.arguments) {
+      for (final arg in argumentList.arguments) {
+        if (arg is! NamedExpression) continue;
+        if (arg.name.label.name == 'create') {
+          providedClass = _inferConstructedType(arg.expression);
+        } else if (arg.name.label.name == 'child') {
+          childOffset = arg.expression.offset;
+          childLength = arg.expression.length;
+        }
+      }
+      nodes.add(
+        ProviderDeclarationNode(
+          providerType: typeName,
+          providedClass: providedClass ?? 'Unknown',
+          childOffset: childOffset,
+          childLength: childLength,
+          filePath: filePath,
+          offset: offset,
+          length: length,
+        ),
+      );
+      return true;
+    }
+
+    if (typeName == 'Consumer') {
+      if (typeArguments == null || typeArguments.arguments.isEmpty) {
+        return false;
+      }
+      int? builderOffset;
+      int? builderLength;
+      int? childOffset;
+      int? childLength;
+
+      for (final arg in argumentList.arguments) {
+        if (arg is! NamedExpression) continue;
+        if (arg.name.label.name == 'builder') {
+          builderOffset = arg.expression.offset;
+          builderLength = arg.expression.length;
+        } else if (arg.name.label.name == 'child') {
+          childOffset = arg.expression.offset;
+          childLength = arg.expression.length;
+        }
+      }
+
+      nodes.add(
+        ConsumerNode(
+          consumedClass: typeArguments.arguments.first.toSource(),
+          builderOffset: builderOffset,
+          builderLength: builderLength,
+          childOffset: childOffset,
+          childLength: childLength,
+          filePath: filePath,
+          offset: offset,
+          length: length,
+        ),
+      );
+      return true;
+    }
+
+    if (typeName == 'MultiProvider') {
+      int? childOffset;
+      int? childLength;
+      for (final arg in argumentList.arguments) {
         if (arg is NamedExpression && arg.name.label.name == 'child') {
           childOffset = arg.expression.offset;
           childLength = arg.expression.length;
@@ -449,47 +524,59 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
           childOffset: childOffset,
           childLength: childLength,
           filePath: filePath,
-          offset: node.offset,
-          length: node.length,
+          offset: offset,
+          length: length,
         ),
       );
+      return true;
     }
 
-    // Detect Selector<T, R>(...)
-    if (nodeName == 'Selector') {
-      final typeArgs = node.typeArguments;
-      if (typeArgs != null && typeArgs.arguments.length >= 2) {
-        final consumedType = typeArgs.arguments[0].beginToken.lexeme;
-        final selectedType = typeArgs.arguments[1].beginToken.lexeme;
-        String selectorSnippet = '/* TODO: Selector */';
-        for (final arg in node.argumentList.arguments) {
-          if (arg is NamedExpression && arg.name.label.name == 'selector') {
-            selectorSnippet = arg.expression.toSource();
-          }
-        }
-        nodes.add(
-          SelectorNode(
-            consumedClass: consumedType,
-            selectedType: selectedType,
-            selectorSnippet: selectorSnippet,
-            filePath: filePath,
-            offset: node.offset,
-            length: node.length,
-          ),
-        );
+    if (typeName == 'Selector') {
+      if (typeArguments == null || typeArguments.arguments.length < 2) {
+        return false;
       }
-    }
-
-    // Detect FutureProvider / StreamProvider(...)
-    if (nodeName == 'FutureProvider' || nodeName == 'StreamProvider') {
-      String providedType = 'Unknown';
+      String selectorSnippet = '/* TODO: Selector */';
+      int? builderOffset;
+      int? builderLength;
       int? childOffset;
       int? childLength;
-      final typeArgs = node.typeArguments;
-      if (typeArgs != null && typeArgs.arguments.isNotEmpty) {
-        providedType = typeArgs.arguments.first.beginToken.lexeme;
+      for (final arg in argumentList.arguments) {
+        if (arg is! NamedExpression) continue;
+        if (arg.name.label.name == 'selector') {
+          selectorSnippet = arg.expression.toSource();
+        } else if (arg.name.label.name == 'builder') {
+          builderOffset = arg.expression.offset;
+          builderLength = arg.expression.length;
+        } else if (arg.name.label.name == 'child') {
+          childOffset = arg.expression.offset;
+          childLength = arg.expression.length;
+        }
       }
-      for (final arg in node.argumentList.arguments) {
+      nodes.add(
+        SelectorNode(
+          consumedClass: typeArguments.arguments[0].toSource(),
+          selectedType: typeArguments.arguments[1].toSource(),
+          selectorSnippet: selectorSnippet,
+          builderOffset: builderOffset,
+          builderLength: builderLength,
+          childOffset: childOffset,
+          childLength: childLength,
+          filePath: filePath,
+          offset: offset,
+          length: length,
+        ),
+      );
+      return true;
+    }
+
+    if (typeName == 'FutureProvider' || typeName == 'StreamProvider') {
+      final providedType =
+          (typeArguments != null && typeArguments.arguments.isNotEmpty)
+          ? typeArguments.arguments.first.toSource()
+          : 'Unknown';
+      int? childOffset;
+      int? childLength;
+      for (final arg in argumentList.arguments) {
         if (arg is NamedExpression && arg.name.label.name == 'child') {
           childOffset = arg.expression.offset;
           childLength = arg.expression.length;
@@ -497,31 +584,44 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
       }
       nodes.add(
         AsyncProviderNode(
-          providerType: nodeName,
+          providerType: typeName,
           providedType: providedType,
           childOffset: childOffset,
           childLength: childLength,
           filePath: filePath,
-          offset: node.offset,
-          length: node.length,
+          offset: offset,
+          length: length,
         ),
       );
+      return true;
     }
 
-    super.visitMethodInvocation(node);
+    return false;
+  }
+
+  String? _inferConstructedType(Expression expression) {
+    if (expression is FunctionExpression) {
+      final body = expression.body;
+      if (body is ExpressionFunctionBody) {
+        return _inferConstructedType(body.expression);
+      }
+    }
+    if (expression is InstanceCreationExpression) {
+      return expression.constructorName.type.name.lexeme;
+    }
+    if (expression is MethodInvocation && expression.target == null) {
+      return expression.methodName.name;
+    }
+    return null;
   }
 
   bool _isFollowedByMethodCall(MethodInvocation node) {
     final parent = node.parent;
-    if (parent is MethodInvocation && parent.target == node) {
-      return true;
-    }
+    if (parent is MethodInvocation && parent.target == node) return true;
     if (parent is PropertyAccess && parent.target == node) {
-      // Could be a getter or a method call on the result
       final grandParent = parent.parent;
-      if (grandParent is MethodInvocation && grandParent.target == parent) {
+      if (grandParent is MethodInvocation && grandParent.target == parent)
         return true;
-      }
     }
     return false;
   }

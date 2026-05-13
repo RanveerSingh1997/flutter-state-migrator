@@ -22,7 +22,7 @@ class BlocAdapter extends RecursiveAstVisitor<void> {
     if (extendsClause != null) {
       final superclassName = extendsClause.superclass.name.lexeme;
       if (superclassName == 'Bloc' || superclassName == 'Cubit') {
-        final className = node.namePart.typeName.lexeme;
+        final className = node.name.lexeme;
         final stateType =
             extendsClause.superclass.typeArguments?.arguments.last.toSource() ??
             'dynamic';
@@ -56,6 +56,8 @@ class BlocAdapter extends RecursiveAstVisitor<void> {
             isNotifier: true,
             notifierType: detectNotifierType(methods),
             isFamilyCandidate: isFamilyCandidate,
+            role: _inferRole(className),
+            superClassName: superclassName,
             filePath: filePath,
             offset: node.offset,
             length: node.length,
@@ -64,5 +66,93 @@ class BlocAdapter extends RecursiveAstVisitor<void> {
       }
     }
     super.visitClassDeclaration(node);
+  }
+
+  String _inferRole(String className) {
+    final lower = className.toLowerCase();
+    if (lower.endsWith('bloc')) return 'bloc';
+    if (lower.endsWith('cubit')) return 'cubit';
+    return 'logic';
+  }
+
+  @override
+  void visitInstanceCreationExpression(InstanceCreationExpression node) {
+    final typeName = node.constructorName.type.name.lexeme;
+
+    if (typeName == 'BlocProvider' || typeName == 'RepositoryProvider') {
+      _handleBlocDeclaration(node, typeName);
+    } else if (typeName == 'BlocBuilder' ||
+        typeName == 'BlocListener' ||
+        typeName == 'BlocConsumer') {
+      _handleBlocConsumer(node, typeName);
+    }
+
+    super.visitInstanceCreationExpression(node);
+  }
+
+  void _handleBlocDeclaration(InstanceCreationExpression node, String type) {
+    String? providedClass;
+    int? childOffset;
+    int? childLength;
+
+    final typeArgs = node.constructorName.type.typeArguments;
+    if (typeArgs != null && typeArgs.arguments.isNotEmpty) {
+      providedClass = typeArgs.arguments.first.toSource();
+    }
+
+    for (final arg in node.argumentList.arguments) {
+      if (arg is NamedExpression) {
+        if (arg.name.label.name == 'create' && providedClass == null) {
+          providedClass = _inferTypeFromCreate(arg.expression);
+        } else if (arg.name.label.name == 'child') {
+          childOffset = arg.expression.offset;
+          childLength = arg.expression.length;
+        }
+      }
+    }
+
+    nodes.add(
+      ProviderDeclarationNode(
+        providerType: type,
+        providedClass: providedClass ?? 'Unknown',
+        childOffset: childOffset,
+        childLength: childLength,
+        filePath: filePath,
+        offset: node.offset,
+        length: node.length,
+      ),
+    );
+  }
+
+  void _handleBlocConsumer(InstanceCreationExpression node, String type) {
+    String? consumedClass;
+    final typeArgs = node.constructorName.type.typeArguments;
+    if (typeArgs != null && typeArgs.arguments.isNotEmpty) {
+      consumedClass = typeArgs.arguments.first.toSource();
+    }
+
+    if (consumedClass != null) {
+      nodes.add(
+        ConsumerNode(
+          consumedClass: consumedClass,
+          filePath: filePath,
+          offset: node.offset,
+          length: node.length,
+        ),
+      );
+    }
+  }
+
+  String? _inferTypeFromCreate(Expression expression) {
+    if (expression is FunctionExpression) {
+      final body = expression.body;
+      if (body is ExpressionFunctionBody) {
+        final expr = body.expression;
+        if (expr is InstanceCreationExpression) {
+          return expr.constructorName.type.name.lexeme;
+        }
+      }
+    }
+    return null;
   }
 }

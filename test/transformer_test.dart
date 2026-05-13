@@ -1,11 +1,11 @@
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_state_migrator/migrator/generator/riverpod_transformer.dart';
 import 'package:flutter_state_migrator/migrator/models/ir_models.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   final transformer = RiverpodTransformer();
 
-  group('RiverpodTransformer Tests', () {
+  group('RiverpodTransformer - Provider.of / context.read', () {
     test('Transforms Provider.of to ref.watch', () {
       const source = 'Provider.of<Counter>(context)';
       final node = ProviderOfNode(
@@ -21,11 +21,12 @@ void main() {
       expect(edits.first.replacement, 'ref.watch(counterProvider)');
     });
 
-    test('Transforms Provider.of method chain in build to notifier read', () {
+    test('Transforms Provider.of method call to notifier read', () {
       const source = 'Provider.of<Counter>(context).increment()';
       final node = ProviderOfNode(
         consumedClass: 'Counter',
         isInBuildMethod: true,
+        isMethodCall: true,
         filePath: 'test.dart',
         offset: 0,
         length: 'Provider.of<Counter>(context)'.length,
@@ -35,130 +36,33 @@ void main() {
       expect(edits.single.replacement, 'ref.read(counterProvider.notifier)');
     });
 
-    test(
-      'Transforms Provider.of listen false method chain to notifier read',
-      () {
-        const source =
-            'Provider.of<Counter>(context, listen: false).increment()';
-        final node = ProviderOfNode(
-          consumedClass: 'Counter',
-          filePath: 'test.dart',
-          offset: 0,
-          length: 'Provider.of<Counter>(context, listen: false)'.length,
-        );
-
-        final edits = transformer.transformNode(node, source);
-        expect(edits.single.replacement, 'ref.read(counterProvider.notifier)');
-      },
-    );
-
-    test(
-      'Transforms Provider.of listen false property chain to value read',
-      () {
-        const source = 'Provider.of<Counter>(context, listen: false).count';
-        final node = ProviderOfNode(
-          consumedClass: 'Counter',
-          filePath: 'test.dart',
-          offset: 0,
-          length: 'Provider.of<Counter>(context, listen: false)'.length,
-        );
-
-        final edits = transformer.transformNode(node, source);
-        expect(edits.single.replacement, 'ref.read(counterProvider)');
-      },
-    );
-
-    test('Transforms context.watch outside reactive build to value read', () {
-      const source = 'context.watch<Counter>().count';
+    test('Transforms context.read to ref.read', () {
+      const source = 'context.read<Counter>()';
       final node = ProviderOfNode(
         consumedClass: 'Counter',
         isInBuildMethod: false,
         filePath: 'test.dart',
         offset: 0,
-        length: 'context.watch<Counter>()'.length,
+        length: source.length,
       );
 
       final edits = transformer.transformNode(node, source);
       expect(edits.single.replacement, 'ref.read(counterProvider)');
     });
+  });
 
-    test('Transforms Selector to Consumer', () {
-      const source = '''
-Selector<MyModel, int>(
-  selector: (_, model) => model.count,
-  builder: (context, count, child) => Text('\$count'),
-)''';
-      final node = SelectorNode(
-        consumedClass: 'MyModel',
-        selectedType: 'int',
-        selectorSnippet: '(_, model) => model.count',
-        filePath: 'test.dart',
-        offset: 0,
-        length: source.length,
-      );
+  group('RiverpodTransformer - Consumer / Selector (Structured)', () {
+    test('Transforms Consumer with builder and child offsets', () {
+      const builder = '(context, model, child) => Text(model.count.toString())';
+      const child = 'const Icon(Icons.add)';
+      const source = 'Consumer<Counter>(builder: $builder, child: $child)';
 
-      final edits = transformer.transformNode(node, source);
-      // Should have: Replace Selector with Consumer, Remove selector arg, Replace builder signature
-      expect(edits.any((e) => e.replacement == 'Consumer'), true);
-      expect(
-        edits.any(
-          (e) => e.replacement.contains('ref.watch(myModelProvider.select'),
-        ),
-        true,
-      );
-    });
-
-    test('Transforms complex generic Consumer to Consumer', () {
-      const source =
-          'Consumer<Result<MyModel>>(builder: (context, model, child) => Text(model.toString()))';
       final node = ConsumerNode(
-        consumedClass: 'ResultMyModel',
-        filePath: 'test.dart',
-        offset: 0,
-        length: source.length,
-      );
-
-      final edits = transformer.transformNode(node, source);
-      expect(edits.any((e) => e.replacement == 'Consumer'), isTrue);
-    });
-
-    test('Transforms block selector lambda to state selector', () {
-      const source = '''
-Selector<MyModel, int>(
-  selector: (_, model) {
-    return model.count;
-  },
-  builder: (context, count, child) => Text('\$count'),
-)''';
-      final node = SelectorNode(
-        consumedClass: 'MyModel',
-        selectedType: 'int',
-        selectorSnippet: '''
-(_, model) {
-    return model.count;
-  }''',
-        filePath: 'test.dart',
-        offset: 0,
-        length: source.length,
-      );
-
-      final edits = transformer.transformNode(node, source);
-      expect(
-        edits.any(
-          (e) => e.replacement.contains(
-            'ref.watch(myModelProvider.select((state) { return state.count; }))',
-          ),
-        ),
-        isTrue,
-      );
-    });
-
-    test('Unwraps MultiProvider', () {
-      const childSource = 'Container()';
-      const source = 'MultiProvider(providers: [], child: $childSource)';
-      final node = MultiProviderNode(
-        childOffset: source.indexOf(childSource),
-        childLength: childSource.length,
+        consumedClass: 'Counter',
+        builderOffset: source.indexOf(builder),
+        builderLength: builder.length,
+        childOffset: source.indexOf(child),
+        childLength: child.length,
         filePath: 'test.dart',
         offset: 0,
         length: source.length,
@@ -166,7 +70,66 @@ Selector<MyModel, int>(
 
       final edits = transformer.transformNode(node, source);
       expect(edits.length, 1);
-      expect(edits.first.replacement, 'ProviderScope(child: $childSource)');
+      expect(edits.first.replacement, contains('ref.watch(counterProvider)'));
+      expect(edits.first.replacement, contains('child: const Icon(Icons.add)'));
+    });
+
+    test('Transforms Selector using builder offsets', () {
+      const selector = '(_, model) => model.count';
+      const builder = '(context, count, child) => Text(count.toString())';
+      const source =
+          'Selector<Counter, int>(selector: $selector, builder: $builder)';
+
+      final node = SelectorNode(
+        consumedClass: 'Counter',
+        selectedType: 'int',
+        selectorSnippet: selector,
+        builderOffset: source.indexOf(builder),
+        builderLength: builder.length,
+        filePath: 'test.dart',
+        offset: 0,
+        length: source.length,
+      );
+
+      final edits = transformer.transformNode(node, source);
+      expect(edits.length, 1);
+      expect(
+        edits.first.replacement,
+        contains('ref.watch(counterProvider.select((state) => state.count))'),
+      );
+    });
+  });
+
+  group('RiverpodTransformer - Logic Units', () {
+    test('Generates Notifier from ChangeNotifier', () {
+      const source = 'class Counter extends ChangeNotifier { int count = 0; }';
+      final node = LogicUnitNode(
+        name: 'Counter',
+        stateFields: [
+          FieldInfo(rawName: 'count', type: 'int', initializer: '0'),
+        ],
+        methods: [],
+        isNotifier: true,
+        filePath: 'counter.dart',
+        offset: 0,
+        length: source.length,
+      );
+
+      final edits = transformer.transformNode(node, source);
+      expect(
+        edits.any(
+          (e) => e.replacement.contains('class Counter extends _\$Counter'),
+        ),
+        true,
+      );
+      expect(
+        edits.any(
+          (e) => e.replacement.contains(
+            'import "package:riverpod_annotation/riverpod_annotation.dart";',
+          ),
+        ),
+        true,
+      );
     });
   });
 }

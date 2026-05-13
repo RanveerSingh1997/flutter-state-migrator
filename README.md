@@ -1,25 +1,24 @@
-# 🚀 Flutter State Migrator
+# 🚀 Flutter Architecture Intelligence Platform
 
 [![CI/CD](https://github.com/RanveerSingh1997/flutter-state-migrator/actions/workflows/dart_test.yml/badge.svg)](https://github.com/RanveerSingh1997/flutter-state-migrator/actions/workflows/dart_test.yml)
 [![Pub Version](https://img.shields.io/pub/v/flutter_state_migrator)](https://pub.dev/packages/flutter_state_migrator)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**Flutter State Migrator** is a powerful CLI tool designed to automate the modernization of Flutter applications by migrating state management from **Provider** (or **BLoC/Cubit**) to **Riverpod**.
+The **Flutter Architecture Intelligence Platform** is a production-grade suite designed to help teams modernize, analyze, and govern large-scale Flutter codebases. 
 
-Using advanced AST (Abstract Syntax Tree) analysis, it intelligently refactors your source code, updates imports, and injects Riverpod best practices, saving you days of manual refactoring.
+Evolved from the Flutter State Migrator, this platform goes beyond simple code rewriting to provide deep semantic understanding, architecture health metrics, and automated governance.
 
 ---
 
-## ✨ Key Features
+## ✨ Key Capabilities
 
-- **AST-Based Transformation**: Intelligent source code rewriting using the official Dart analyzer.
-- **Multi-Library Support**: Migrates from `Provider`, `ChangeNotifierProvider`, `Bloc`, and `Cubit`.
-- **Intelligent Logic Mapping**: Refactors `notifyListeners()` and `emit()` into idiomatic Riverpod state updates.
-- **Interactive Dry-run**: Preview all changes with colorized console diffs before applying them.
-- **Monorepo Aware**: Automatically detects and handles multiple packages in a single workspace.
-- **VS Code Integration**: Right-click to migrate directly from your IDE.
-- **Detailed Audit Reports**: Generates `migration_report.json` with complexity scores and metrics.
-- **Import Management**: Automatically manages `flutter_riverpod` imports and prunes legacy ones.
+- **Semantic Architecture Analysis**: Uses AST-based scanning to build a comprehensive dependency graph of your application.
+- **Multi-Framework Migration**: Automates the transition from `Provider`, `BLoC/Cubit`, `GetX`, and `MobX` to modern `Riverpod` with `@riverpod` annotations.
+- **Architecture Health Scoring**: Real-time scoring (0-100) based on detected architecture smells like God Components, State Explosion, and High Coupling.
+- **Automated Governance**: Enforce scalable development practices by defining forbidden layer dependencies and complexity limits.
+- **Safety-First Transformation**: Integrated snapshot and manifest-based rollback systems ensure every aggressive rewrite is reversible.
+- **Interactive Dashboard**: Visualize your architecture relationships, track migration progress, and review intelligence insights.
+- **Monorepo & Workspace Intelligence**: Automatically detects and validates architecture across multi-package Flutter ecosystems.
 
 ---
 
@@ -27,47 +26,58 @@ Using advanced AST (Abstract Syntax Tree) analysis, it intelligently refactors y
 
 ### Installation
 
-Install the migrator globally via pub.dev:
+Install the platform CLI globally via pub.dev:
 
 ```bash
 dart pub global activate flutter_state_migrator
 ```
 
-The package is published as `flutter_state_migrator`, but the installed CLI command is `migrator`.
+*Note: The package is published as `flutter_state_migrator`, providing the `migrator` CLI command.*
 
 ### Usage
 
-Run the migrator on your project directory:
+Run the intelligence engine on your project directory:
 
 ```bash
-# Preview changes (Dry Run)
+# Analyze architecture and detect smells
+migrator .
+
+# Preview migration changes (Dry Run)
 migrator --mode aggressive --dry-run .
 
-# Apply changes directly
+# Apply migration and governance fixes
 migrator --mode aggressive .
 
-# Generate a dependency visualization graph
+# Generate a visual architecture relationship graph
 migrator --visualize .
 ```
 
 ---
 
-## 🛠️ Configuration
+## ⚖️ Architecture Governance
 
-You can customize the migration behavior by adding a `migrator_config.yaml` to your project root:
+Define your architecture contracts in `migrator_config.yaml`:
 
 ```yaml
-provider_naming: camelCase  # or PascalCase
-auto_merge_state: true      # Toggle automatic state class merging
+# Governance Rules
+governance:
+  forbidden_imports:
+    - presentation -> data
+    - ui -> repository
+  feature:
+    max_dependencies: 8
+
+# Naming Conventions
+provider_naming: camelCase
 ```
 
 ---
 
 ## 📖 Documentation
 
+- [Project Plan](Project.Plan.md): Roadmap and technical vision.
 - [Detailed Migration Guide](MIGRATION_GUIDE.md): Understand how patterns are transformed.
 - [VS Code Extension](vscode-extension/README.md): IDE integration details.
-- [Contributing](CONTRIBUTING.md): How to help improve the migrator.
 
 ---
 

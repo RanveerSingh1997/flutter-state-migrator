@@ -6,6 +6,7 @@ import 'package:flutter_state_migrator/migrator/analysis/body_transformer.dart';
 import 'package:flutter_state_migrator/migrator/analysis/dependency_checker.dart';
 import 'package:flutter_state_migrator/migrator/analysis/dependency_manager.dart';
 import 'package:flutter_state_migrator/migrator/analysis/generated_file_manager.dart';
+import 'package:flutter_state_migrator/migrator/analysis/graph_builder.dart';
 import 'package:flutter_state_migrator/migrator/analysis/monorepo_manager.dart';
 import 'package:flutter_state_migrator/migrator/generator/riverpod_generator.dart';
 import 'package:flutter_state_migrator/migrator/generator/riverpod_transformer.dart';
@@ -14,7 +15,7 @@ import 'package:flutter_state_migrator/migrator/models/ir_models.dart';
 void main() {
   group('Phase 28 dependency graph', () {
     test('detects circular logic-unit dependencies', () {
-      final warnings = DependencyChecker().checkCircularDependencies([
+      final graph = GraphBuilder().buildGraph([
         LogicUnitNode(
           name: 'CounterModel',
           stateFields: const [],
@@ -46,6 +47,7 @@ void main() {
           length: 1,
         ),
       ]);
+      final warnings = DependencyChecker().checkCircularDependencies(graph);
 
       expect(warnings, hasLength(1));
       expect(
@@ -190,10 +192,7 @@ class CounterModel extends ChangeNotifier {
             .length,
         1,
       );
-      expect(
-        headerEdit.replacement,
-        contains('part "counter_model.g.dart";'),
-      );
+      expect(headerEdit.replacement, contains('part "counter_model.g.dart";'));
       expect(classEdit.replacement, contains('return 0;'));
       expect(classEdit.replacement, contains('void increment(int delta)'));
       expect(
@@ -276,10 +275,11 @@ class CounterModel extends ChangeNotifier {
 
     // ── DependencyManager ───────────────────────────────────────────────────
 
-    test('DependencyManager adds Riverpod deps and fixes capture-group bug',
-        () async {
-      final pubspec = File(p.join(tmpDir.path, 'pubspec.yaml'))
-        ..writeAsStringSync('''
+    test(
+      'DependencyManager adds Riverpod deps and fixes capture-group bug',
+      () async {
+        final pubspec = File(p.join(tmpDir.path, 'pubspec.yaml'))
+          ..writeAsStringSync('''
 name: my_app
 dependencies:
   flutter:
@@ -290,36 +290,44 @@ dev_dependencies:
     sdk: flutter
 ''');
 
-      final result =
-          await DependencyManager(tmpDir.path).updateDependencies();
+        final result = await DependencyManager(
+          tmpDir.path,
+        ).updateDependencies();
 
-      final content = pubspec.readAsStringSync();
-      expect(result.added, containsAll(['flutter_riverpod', 'riverpod_annotation']));
-      expect(result.commented, contains('provider'));
-      expect(content, contains('flutter_riverpod:'));
-      expect(content, contains('riverpod_annotation:'));
-      // Capture-group replacement must produce `# provider:`, not literal `$1# $2`.
-      expect(content, contains('# provider:'));
-      expect(content, isNot(contains(r'$1# $2')));
-    });
+        final content = pubspec.readAsStringSync();
+        expect(
+          result.added,
+          containsAll(['flutter_riverpod', 'riverpod_annotation']),
+        );
+        expect(result.commented, contains('provider'));
+        expect(content, contains('flutter_riverpod:'));
+        expect(content, contains('riverpod_annotation:'));
+        // Capture-group replacement must produce `# provider:`, not literal `$1# $2`.
+        expect(content, contains('# provider:'));
+        expect(content, isNot(contains(r'$1# $2')));
+      },
+    );
 
-    test('DependencyManager creates dev_dependencies section when absent',
-        () async {
-      File(p.join(tmpDir.path, 'pubspec.yaml')).writeAsStringSync('''
+    test(
+      'DependencyManager creates dev_dependencies section when absent',
+      () async {
+        File(p.join(tmpDir.path, 'pubspec.yaml')).writeAsStringSync('''
 name: no_dev
 dependencies:
   flutter:
     sdk: flutter
 ''');
 
-      await DependencyManager(tmpDir.path).updateDependencies();
+        await DependencyManager(tmpDir.path).updateDependencies();
 
-      final content =
-          File(p.join(tmpDir.path, 'pubspec.yaml')).readAsStringSync();
-      expect(content, contains('dev_dependencies:'));
-      expect(content, contains('riverpod_generator:'));
-      expect(content, contains('build_runner:'));
-    });
+        final content = File(
+          p.join(tmpDir.path, 'pubspec.yaml'),
+        ).readAsStringSync();
+        expect(content, contains('dev_dependencies:'));
+        expect(content, contains('riverpod_generator:'));
+        expect(content, contains('build_runner:'));
+      },
+    );
 
     test('DependencyManager is idempotent on a second run', () async {
       File(p.join(tmpDir.path, 'pubspec.yaml')).writeAsStringSync('''
@@ -332,8 +340,7 @@ dev_dependencies:
   build_runner: ^2.4.0
 ''');
 
-      final result =
-          await DependencyManager(tmpDir.path).updateDependencies();
+      final result = await DependencyManager(tmpDir.path).updateDependencies();
       expect(result.added, isEmpty);
       expect(result.commented, isEmpty);
     });
@@ -342,28 +349,33 @@ dev_dependencies:
 
     test('GeneratedFileManager finds stale .g.dart files', () {
       // Source with no part directive → stale
-      File(p.join(tmpDir.path, 'stale.dart'))
-          .writeAsStringSync('void main() {}');
-      File(p.join(tmpDir.path, 'stale.g.dart'))
-          .writeAsStringSync('// generated');
+      File(
+        p.join(tmpDir.path, 'stale.dart'),
+      ).writeAsStringSync('void main() {}');
+      File(
+        p.join(tmpDir.path, 'stale.g.dart'),
+      ).writeAsStringSync('// generated');
 
       // Source with matching part directive → live
-      File(p.join(tmpDir.path, 'live.dart'))
-          .writeAsStringSync("part 'live.g.dart';");
-      File(p.join(tmpDir.path, 'live.g.dart'))
-          .writeAsStringSync('// generated');
+      File(
+        p.join(tmpDir.path, 'live.dart'),
+      ).writeAsStringSync("part 'live.g.dart';");
+      File(
+        p.join(tmpDir.path, 'live.g.dart'),
+      ).writeAsStringSync('// generated');
 
       final mgr = GeneratedFileManager(tmpDir.path);
       final stale = mgr.findStaleGeneratedFiles();
 
       expect(stale.map((f) => p.basename(f.path)), contains('stale.g.dart'));
-      expect(stale.map((f) => p.basename(f.path)),
-          isNot(contains('live.g.dart')));
+      expect(
+        stale.map((f) => p.basename(f.path)),
+        isNot(contains('live.g.dart')),
+      );
     });
 
     test('GeneratedFileManager cleans stale files', () {
-      File(p.join(tmpDir.path, 'orphan.dart'))
-          .writeAsStringSync('void f() {}');
+      File(p.join(tmpDir.path, 'orphan.dart')).writeAsStringSync('void f() {}');
       final gFile = File(p.join(tmpDir.path, 'orphan.g.dart'))
         ..writeAsStringSync('// generated');
 
@@ -388,18 +400,21 @@ dev_dependencies:
 
     test('MonorepoManager finds packages and skips excluded dirs', () {
       // Root package
-      File(p.join(tmpDir.path, 'pubspec.yaml'))
-          .writeAsStringSync('name: root\n');
+      File(
+        p.join(tmpDir.path, 'pubspec.yaml'),
+      ).writeAsStringSync('name: root\n');
       // Sub-package
       final sub = Directory(p.join(tmpDir.path, 'packages', 'sub_pkg'))
         ..createSync(recursive: true);
-      File(p.join(sub.path, 'pubspec.yaml'))
-          .writeAsStringSync('name: sub_pkg\n');
+      File(
+        p.join(sub.path, 'pubspec.yaml'),
+      ).writeAsStringSync('name: sub_pkg\n');
       // Should be ignored
       final buildDir = Directory(p.join(tmpDir.path, 'build', 'pkg'))
         ..createSync(recursive: true);
-      File(p.join(buildDir.path, 'pubspec.yaml'))
-          .writeAsStringSync('name: should_be_excluded\n');
+      File(
+        p.join(buildDir.path, 'pubspec.yaml'),
+      ).writeAsStringSync('name: should_be_excluded\n');
 
       final mgr = MonorepoManager(tmpDir.path);
       final names = mgr.findPackages().map((p) => p.name).toSet();
@@ -410,16 +425,19 @@ dev_dependencies:
     });
 
     test('MonorepoManager.migrateablePackages filters by node file paths', () {
-      File(p.join(tmpDir.path, 'pubspec.yaml'))
-          .writeAsStringSync('name: root\n');
+      File(
+        p.join(tmpDir.path, 'pubspec.yaml'),
+      ).writeAsStringSync('name: root\n');
       final pkgA = Directory(p.join(tmpDir.path, 'packages', 'pkg_a'))
         ..createSync(recursive: true);
-      File(p.join(pkgA.path, 'pubspec.yaml'))
-          .writeAsStringSync('name: pkg_a\n');
+      File(
+        p.join(pkgA.path, 'pubspec.yaml'),
+      ).writeAsStringSync('name: pkg_a\n');
       final pkgB = Directory(p.join(tmpDir.path, 'packages', 'pkg_b'))
         ..createSync(recursive: true);
-      File(p.join(pkgB.path, 'pubspec.yaml'))
-          .writeAsStringSync('name: pkg_b\n');
+      File(
+        p.join(pkgB.path, 'pubspec.yaml'),
+      ).writeAsStringSync('name: pkg_b\n');
 
       final mgr = MonorepoManager(tmpDir.path);
       final relevant = mgr.migrateablePackages([

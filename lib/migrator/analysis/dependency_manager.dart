@@ -27,10 +27,7 @@ class DependencyUpdateResult {
   final List<String> added;
   final List<String> commented;
 
-  const DependencyUpdateResult({
-    required this.added,
-    required this.commented,
-  });
+  const DependencyUpdateResult({required this.added, required this.commented});
 
   bool get hasChanges => added.isNotEmpty || commented.isNotEmpty;
 }
@@ -89,8 +86,10 @@ class DependencyManager {
 
   /// Returns true if [name] already appears as a non-commented dep key.
   bool _hasDep(String content, String name) {
-    return RegExp('^\\s+${RegExp.escape(name)}:', multiLine: true)
-        .hasMatch(content);
+    return RegExp(
+      '^\\s+${RegExp.escape(name)}:',
+      multiLine: true,
+    ).hasMatch(content);
   }
 
   String _addDependency(String content, String name, String version) {
@@ -101,9 +100,7 @@ class DependencyManager {
   }
 
   String _addDevDependency(String content, String name, String version) {
-    final idx = content.indexOf(
-      RegExp(r'^dev_dependencies:', multiLine: true),
-    );
+    final idx = content.indexOf(RegExp(r'^dev_dependencies:', multiLine: true));
     if (idx == -1) return content;
     final eol = content.indexOf('\n', idx);
     return content.replaceRange(eol + 1, eol + 1, '  $name: $version\n');
