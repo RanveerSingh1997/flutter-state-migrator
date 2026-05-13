@@ -20,6 +20,7 @@ Evolved from the Flutter State Migrator, this platform goes beyond simple code r
 - **Safety-First Transformation**: Integrated snapshot and manifest-based rollback systems ensure every aggressive rewrite is reversible.
 - **Interactive Dashboard**: Review architecture health, governance posture, migration rollout, and Mermaid relationship diagrams from one place.
 - **IDE Intelligence**: Structured diagnostics and quick-fix recommendations surface architecture warnings inline in the VS Code extension.
+- **AI Guidance with Safe Fallbacks**: `--ai` prefers a local Ollama endpoint for migration recommendations and falls back to deterministic architecture guidance when the model is unavailable.
 - **Monorepo & Workspace Intelligence**: Automatically detects and validates architecture across multi-package Flutter ecosystems.
 
 ---
@@ -55,6 +56,9 @@ migrator --visualize .
 
 # Emit IDE diagnostics as JSON for editor integrations
 migrator --ide-json .
+
+# Print AI-assisted guidance using a local Ollama model when available
+migrator --ai .
 ```
 
 ---
