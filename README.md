@@ -16,8 +16,9 @@ Evolved from the Flutter State Migrator, this platform goes beyond simple code r
 - **Multi-Framework Migration**: Automates the transition from `Provider`, `BLoC/Cubit`, `GetX`, and `MobX` to modern `Riverpod` with `@riverpod` annotations.
 - **Architecture Health Scoring**: Real-time scoring (0-100) based on detected architecture smells like God Components, State Explosion, and High Coupling.
 - **Automated Governance**: Enforce scalable development practices by defining forbidden layer dependencies and complexity limits.
+- **Verification Matrix**: Golden-style regression fixtures validate scanner, transformer, visualization, and integration behavior across supported frameworks.
 - **Safety-First Transformation**: Integrated snapshot and manifest-based rollback systems ensure every aggressive rewrite is reversible.
-- **Interactive Dashboard**: Visualize your architecture relationships, track migration progress, and review intelligence insights.
+- **Interactive Dashboard**: Review architecture health, governance posture, migration rollout, and Mermaid relationship diagrams from one place.
 - **Monorepo & Workspace Intelligence**: Automatically detects and validates architecture across multi-package Flutter ecosystems.
 
 ---
@@ -75,7 +76,7 @@ provider_naming: camelCase
 
 ## 📖 Documentation
 
-- [Project Plan](Project.Plan.md): Roadmap and technical vision.
+- [Project Plan](Project Plan.md): Roadmap and technical vision.
 - [Detailed Migration Guide](MIGRATION_GUIDE.md): Understand how patterns are transformed.
 - [VS Code Extension](vscode-extension/README.md): IDE integration details.
 
