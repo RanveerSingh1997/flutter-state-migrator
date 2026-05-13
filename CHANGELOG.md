@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [2.2.0] - 2026-05-13
 
 ### Added
 - **IDE Intelligence (Phase 40)**: `migrator --ide-json` now emits structured architecture and governance diagnostics for editor integrations.
