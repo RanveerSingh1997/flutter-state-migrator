@@ -67,8 +67,8 @@ The platform now surfaces semantic guidance through governance validation, archi
 ### Phase 39 — Visualization & Dashboard Expansion [COMPLETED]
 *   **Results**: Dashboard views are structured around architecture metrics, governance, migration rollout, and Mermaid relationship diagrams with validated rendering behavior.
 
-### Phase 40 — IDE Intelligence & Guided Development [PLANNED]
-*   **Goals**: Inline architecture warnings and quick-fix recommendations in VS Code/Android Studio.
+### Phase 40 — IDE Intelligence & Guided Development [COMPLETED]
+*   **Results**: CLI emits structured IDE diagnostics, the VS Code extension surfaces inline architecture warnings, and quick-fix actions guide migration and governance remediation.
 
 ### Phase 41 — Monorepo & Workspace Intelligence [COMPLETED]
 *   **Results**: `MonorepoManager` provides cross-package dependency validation.

@@ -19,6 +19,7 @@ Evolved from the Flutter State Migrator, this platform goes beyond simple code r
 - **Verification Matrix**: Golden-style regression fixtures validate scanner, transformer, visualization, and integration behavior across supported frameworks.
 - **Safety-First Transformation**: Integrated snapshot and manifest-based rollback systems ensure every aggressive rewrite is reversible.
 - **Interactive Dashboard**: Review architecture health, governance posture, migration rollout, and Mermaid relationship diagrams from one place.
+- **IDE Intelligence**: Structured diagnostics and quick-fix recommendations surface architecture warnings inline in the VS Code extension.
 - **Monorepo & Workspace Intelligence**: Automatically detects and validates architecture across multi-package Flutter ecosystems.
 
 ---
@@ -51,6 +52,9 @@ migrator --mode aggressive .
 
 # Generate a visual architecture relationship graph
 migrator --visualize .
+
+# Emit IDE diagnostics as JSON for editor integrations
+migrator --ide-json .
 ```
 
 ---

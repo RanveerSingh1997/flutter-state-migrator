@@ -1,7 +1,7 @@
 {
   "name": "flutter-state-migrator",
   "displayName": "Flutter State Migrator",
-  "description": "Automated migration from Provider to Riverpod",
+  "description": "Architecture diagnostics and Riverpod migration guidance for Flutter codebases",
   "version": "1.0.0",
   "publisher": "ranveersingh",
   "engines": {
@@ -10,7 +10,13 @@
   "categories": [
     "Programming Languages"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "onStartupFinished",
+    "onLanguage:dart",
+    "onCommand:flutter-migrator.migrateFile",
+    "onCommand:flutter-migrator.migrateProject",
+    "onCommand:flutter-migrator.refreshDiagnostics"
+  ],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
@@ -22,6 +28,11 @@
       {
         "command": "flutter-migrator.migrateProject",
         "title": "Migrate Project to Riverpod",
+        "category": "Flutter Migrator"
+      },
+      {
+        "command": "flutter-migrator.refreshDiagnostics",
+        "title": "Refresh Architecture Diagnostics",
         "category": "Flutter Migrator"
       }
     ],
