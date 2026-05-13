@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Added
+- **IDE Intelligence (Phase 40)**: `migrator --ide-json` now emits structured architecture and governance diagnostics for editor integrations.
+- **VS Code Diagnostics & Quick Fixes**: The extension now surfaces inline diagnostics, recommendation actions, and migration commands for Dart files.
+- **AI Architecture Guidance (Phase 44)**: `AIManager` now produces explainable guidance for architecture smells, governance violations, and complex notifier methods.
+
+### Changed
+- `--ai` now prefers a local Ollama-compatible endpoint and falls back to deterministic recommendations when the LLM is unavailable.
+
 ## [2.1.1] - 2026-05-11
 
 ### Fixed
