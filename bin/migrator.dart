@@ -227,6 +227,7 @@ Future<void> main(List<String> arguments) async {
     final visualizer = ProviderVisualizer();
     final mmd = visualizer.generateMermaid(graph);
     visualizer.saveGraph(targetPath, mmd);
+    print('   📈 Graph summary: ${visualizer.describeSummary(graph)}');
   }
 
   if (dashboard) {
