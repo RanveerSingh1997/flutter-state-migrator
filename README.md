@@ -19,7 +19,7 @@ Evolved from the Flutter State Migrator, this platform goes beyond simple code r
 - **Verification Matrix**: Golden-style regression fixtures validate scanner, transformer, visualization, and integration behavior across supported frameworks.
 - **Safety-First Transformation**: Integrated snapshot and manifest-based rollback systems ensure every aggressive rewrite is reversible.
 - **Interactive Dashboard**: Review architecture health, governance posture, migration rollout, and Mermaid relationship diagrams from one place.
-- **IDE Intelligence**: Structured diagnostics and quick-fix recommendations surface architecture warnings inline in the VS Code extension.
+- **IDE Intelligence**: Structured diagnostics and quick-fix recommendations surface architecture warnings inline in the optional VS Code companion extension.
 - **AI Guidance with Safe Fallbacks**: `--ai` prefers a local Ollama endpoint for migration recommendations and falls back to deterministic architecture guidance when the model is unavailable.
 - **Monorepo & Workspace Intelligence**: Automatically detects and validates architecture across multi-package Flutter ecosystems.
 
@@ -86,7 +86,7 @@ provider_naming: camelCase
 
 - [Project Plan](Project Plan.md): Roadmap and technical vision.
 - [Detailed Migration Guide](MIGRATION_GUIDE.md): Understand how patterns are transformed.
-- [VS Code Extension](vscode-extension/README.md): IDE integration details.
+- [VS Code Extension](vscode-extension/README.md): Optional companion integration for editor diagnostics and quick fixes.
 
 ---
 
