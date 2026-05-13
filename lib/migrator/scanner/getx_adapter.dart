@@ -21,7 +21,7 @@ class GetXAdapter extends RecursiveAstVisitor<void> {
     final extendsClause = node.extendsClause;
     if (extendsClause != null &&
         extendsClause.superclass.name.lexeme == 'GetxController') {
-      final className = node.namePart.typeName.lexeme;
+      final className = node.name.lexeme;
       final stateFields = <FieldInfo>[];
       final methods = <MethodInfo>[];
 
@@ -81,20 +81,107 @@ class GetXAdapter extends RecursiveAstVisitor<void> {
   }
 
   @override
-  void visitMethodInvocation(MethodInvocation node) {
-    if (node.methodName.name == 'find' && node.target?.toSource() == 'Get') {
-      // Get.find<T>()
-      final type = node.typeArguments?.arguments.first.toSource() ?? 'dynamic';
+  void visitInstanceCreationExpression(InstanceCreationExpression node) {
+    final typeName = node.constructorName.type.name.lexeme;
+
+    if (typeName == 'GetX' || typeName == 'GetBuilder') {
+      final typeArgs = node.constructorName.type.typeArguments;
+      if (typeArgs != null && typeArgs.arguments.isNotEmpty) {
+        final consumedType = typeArgs.arguments.first.toSource();
+        nodes.add(
+          ConsumerNode(
+            consumedClass: consumedType,
+            filePath: filePath,
+            offset: node.offset,
+            length: node.length,
+          ),
+        );
+      }
+    } else if (typeName == 'GetMaterialApp') {
+      // GetMaterialApp is often used to provide dependencies via 'initialBinding'
       nodes.add(
-        ProviderOfNode(
-          consumedClass: type,
+        MultiProviderNode(
           filePath: filePath,
           offset: node.offset,
           length: node.length,
         ),
       );
     }
+
+    super.visitInstanceCreationExpression(node);
+  }
+
+  @override
+  void visitMethodInvocation(MethodInvocation node) {
+    final name = node.methodName.name;
+
+    if (name == 'find' && node.target?.toSource() == 'Get') {
+      // Get.find<T>()
+      final type = node.typeArguments?.arguments.first.toSource() ?? 'dynamic';
+      nodes.add(
+        ProviderOfNode(
+          consumedClass: type,
+          isMethodCall: _isFollowedByMethodCall(node),
+          filePath: filePath,
+          offset: node.offset,
+          length: node.length,
+        ),
+      );
+    } else if (name == 'put' && node.target?.toSource() == 'Get') {
+      // Get.put(MyController())
+      final type =
+          node.typeArguments?.arguments.first.toSource() ??
+          _inferTypeFromPut(node.argumentList.arguments.first);
+      if (type != null) {
+        nodes.add(
+          ProviderDeclarationNode(
+            providerType: 'Get.put',
+            providedClass: type,
+            filePath: filePath,
+            offset: node.offset,
+            length: node.length,
+          ),
+        );
+      }
+    } else if (name == 'Obx') {
+      // Obx(() => ...) is technically a function/constructor invocation depending on implementation,
+      // but often appears as a MethodInvocation if used without 'new'.
+      nodes.add(
+        ConsumerNode(
+          consumedClass:
+              'RxState', // Heuristic as Obx detects Rx usage automatically
+          filePath: filePath,
+          offset: node.offset,
+          length: node.length,
+        ),
+      );
+    }
+
     super.visitMethodInvocation(node);
+  }
+
+  bool _isFollowedByMethodCall(MethodInvocation node) {
+    final parent = node.parent;
+    if (parent is MethodInvocation && parent.target == node) {
+      return true;
+    }
+    if (parent is PropertyAccess && parent.target == node) {
+      final grandParent = parent.parent;
+      if (grandParent is MethodInvocation && grandParent.target == parent) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  String? _inferTypeFromPut(Expression expression) {
+    if (expression is InstanceCreationExpression) {
+      return expression.constructorName.type.name.lexeme;
+    }
+    if (expression is MethodInvocation && expression.target == null) {
+      return expression.methodName.name;
+    }
+    return null;
   }
 
   String _inferObservableType(String? declaredType, String? initializer) {

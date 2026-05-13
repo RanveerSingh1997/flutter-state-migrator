@@ -1,56 +1,60 @@
 import 'dart:io';
+
+import '../models/graph_models.dart';
 import '../models/ir_models.dart';
 
 class ProviderVisualizer {
-  String generateMermaid(List<ProviderNode> nodes) {
+  String generateMermaid(ArchitectureGraph graph) {
     final buffer = StringBuffer();
     buffer.writeln('graph TD');
 
-    final logicUnits = nodes.whereType<LogicUnitNode>().toList();
-    final declarations = nodes.whereType<ProviderDeclarationNode>().toList();
-    final consumers = nodes.whereType<ConsumerNode>().toList();
-    final selectors = nodes.whereType<SelectorNode>().toList();
-    final providerOfs = nodes.whereType<ProviderOfNode>().toList();
+    // 1. Define nodes with semantic labels
+    for (final entry in graph.nodes.entries) {
+      final id = _escape(entry.key);
+      final node = entry.value;
 
-    // 1. Draw logic units and their providers
-    for (final node in logicUnits) {
-      final safeName = _sanitize(node.name);
-      buffer.writeln('  $safeName[${node.name} Logic]');
+      if (node is LogicUnitNode) {
+        final role = node.role.toUpperCase();
+        buffer.writeln('  $id["$role: ${node.name}"]');
+      } else if (node is WidgetNode) {
+        buffer.writeln('  $id["WIDGET: ${node.widgetName}"]');
+      } else if (node is ProviderDeclarationNode) {
+        buffer.writeln('  $id{{"PROVIDER: ${node.providerType}"}}');
+      }
     }
 
-    for (final node in declarations) {
-      final safeClass = _sanitize(node.providedClass);
-      final providerName = _sanitize('${node.providedClass}Provider');
-      buffer.writeln('  $providerName(($providerName))');
-      buffer.writeln('  $safeClass --> $providerName');
-    }
-
-    // 2. Draw consumers
-    for (final node in consumers) {
-      final providerName = _sanitize('${node.consumedClass}Provider');
-      buffer.writeln('  $providerName -.-> ConsumerWidget');
-    }
-
-    for (final node in selectors) {
-      final providerName = _sanitize('${node.consumedClass}Provider');
-      buffer.writeln('  $providerName -.-> SelectorWidget');
-    }
-
-    for (final node in providerOfs) {
-      final providerName = _sanitize('${node.consumedClass}Provider');
-      buffer.writeln('  $providerName -.-> ContextReadWatch');
+    // 2. Define edges
+    for (final edge in graph.edges) {
+      final from = _escape(edge.fromId);
+      final to = _escape(edge.toId);
+      switch (edge.type) {
+        case RelationshipType.watches:
+          buffer.writeln('  $to -.->|WATCHES| $from');
+          break;
+        case RelationshipType.reads:
+          buffer.writeln('  $to -.->|READS| $from');
+          break;
+        case RelationshipType.provides:
+          buffer.writeln('  $from ===>|PROVIDES| $to');
+          break;
+        case RelationshipType.calls:
+          buffer.writeln('  $from -->|CALLS| $to');
+          break;
+        default:
+          buffer.writeln('  $from --> $to');
+      }
     }
 
     return buffer.toString();
   }
 
   void saveGraph(String targetPath, String content) {
-    final file = File('$targetPath/dependency_graph.mmd');
+    final file = File('$targetPath/architecture_graph.mmd');
     file.writeAsStringSync(content);
-    print('🎨 Dependency graph saved to: \x1B[33m${file.path}\x1B[0m');
+    print('🎨 Architecture graph saved to: \x1B[33m${file.path}\x1B[0m');
   }
 
-  String _sanitize(String name) {
-    return name.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_');
+  String _escape(String id) {
+    return id.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_');
   }
 }

@@ -13,7 +13,7 @@ abstract class ProviderNode {
 /// Which Riverpod notifier primitive best fits the detected class shape.
 enum NotifierType { stateNotifier, notifier, asyncNotifier, streamNotifier }
 
-/// A single field captured from a ChangeNotifier class declaration.
+/// A single field captured from a class declaration.
 class FieldInfo {
   /// Raw source name (may have leading `_`), e.g. `_count`.
   final String rawName;
@@ -23,11 +23,9 @@ class FieldInfo {
       rawName.startsWith('_') ? rawName.substring(1) : rawName;
 
   /// Dart type as source text, e.g. `int`, `String`, `List<Todo>`.
-  /// Falls back to `dynamic` when the type could not be inferred.
   final String type;
 
-  /// Source text of the initializer expression, e.g. `0`, `''`, `[]`.
-  /// `null` when no initializer was found.
+  /// Source text of the initializer expression.
   final String? initializer;
 
   const FieldInfo({
@@ -37,7 +35,7 @@ class FieldInfo {
   });
 }
 
-/// A parameter captured from a method declaration, e.g. `String name`.
+/// A parameter captured from a method declaration.
 class ParamInfo {
   final String name;
   final String type;
@@ -55,14 +53,13 @@ class MethodInfo {
   /// True when the method body contains `async`/`await`.
   final bool isAsync;
 
-  /// Source text of the declared return type (e.g. `'Future<void>'`, `'Stream<int>'`).
+  /// Source text of the declared return type.
   final String returnType;
 
-  /// True for Dart getter declarations (`get foo => ...`).
-  /// Getters are skipped during code generation.
+  /// True for Dart getter declarations.
   final bool isGetter;
 
-  /// Formal parameters of the method, in declaration order.
+  /// Formal parameters of the method.
   final List<ParamInfo> parameters;
 
   MethodInfo({
@@ -75,7 +72,6 @@ class MethodInfo {
     this.parameters = const [],
   });
 
-  /// Emits the parameter list as a source string, e.g. `String name, int age`.
   String get paramSource => parameters.map((p) => p.toSource()).join(', ');
 }
 
@@ -88,9 +84,17 @@ class LogicUnitNode extends ProviderNode {
   /// Best-fit Riverpod primitive inferred from the class's method signatures.
   final NotifierType notifierType;
 
-  /// True when the class constructor has required parameters (beyond `key`),
-  /// indicating a `.family` provider is needed.
+  /// True when the class constructor has required parameters.
   final bool isFamilyCandidate;
+
+  /// Semantic architecture role (e.g., 'bloc', 'controller', 'repository', 'service')
+  final String role;
+
+  /// Name of the superclass.
+  final String? superClassName;
+
+  /// Names of mixins used by this class.
+  final List<String> mixins;
 
   LogicUnitNode({
     required this.name,
@@ -99,17 +103,20 @@ class LogicUnitNode extends ProviderNode {
     required this.isNotifier,
     this.notifierType = NotifierType.stateNotifier,
     this.isFamilyCandidate = false,
+    this.role = 'logic',
+    this.superClassName,
+    this.mixins = const [],
     required super.filePath,
     required super.offset,
     required super.length,
   });
 
-  /// Backwards-compat: callers that only need the raw names.
   List<String> get stateVariables => stateFields.map((f) => f.rawName).toList();
 
   Map<String, dynamic> toJson() => {
     'type': 'logic_unit',
     'name': name,
+    'role': role,
     'state': stateFields
         .map((f) => {'name': f.rawName, 'type': f.type})
         .toList(),
@@ -117,6 +124,8 @@ class LogicUnitNode extends ProviderNode {
     'notifier': isNotifier,
     'notifierType': notifierType.name,
     'isFamilyCandidate': isFamilyCandidate,
+    'superClass': superClassName,
+    'mixins': mixins,
   };
 }
 
@@ -139,9 +148,17 @@ class ProviderDeclarationNode extends ProviderNode {
 
 class ConsumerNode extends ProviderNode {
   final String consumedClass;
+  final int? builderOffset;
+  final int? builderLength;
+  final int? childOffset;
+  final int? childLength;
 
   ConsumerNode({
     required this.consumedClass,
+    this.builderOffset,
+    this.builderLength,
+    this.childOffset,
+    this.childLength,
     required super.filePath,
     required super.offset,
     required super.length,
@@ -150,14 +167,7 @@ class ConsumerNode extends ProviderNode {
 
 class ProviderOfNode extends ProviderNode {
   final String consumedClass;
-
-  /// True when this consumption occurs inside a `build()` method.
-  /// Used to select `ref.watch` (reactive, in build) vs `ref.read` (one-shot, in callbacks).
   final bool isInBuildMethod;
-
-  /// True if the `Provider.of<T>(context)` or `context.read<T>()` call is
-  /// immediately followed by a method invocation, e.g., `.increment()`.
-  /// This signals we should use `ref.read(provider.notifier)` instead of the value.
   final bool isMethodCall;
 
   ProviderOfNode({
@@ -174,11 +184,19 @@ class SelectorNode extends ProviderNode {
   final String consumedClass;
   final String selectedType;
   final String selectorSnippet;
+  final int? builderOffset;
+  final int? builderLength;
+  final int? childOffset;
+  final int? childLength;
 
   SelectorNode({
     required this.consumedClass,
     required this.selectedType,
     required this.selectorSnippet,
+    this.builderOffset,
+    this.builderLength,
+    this.childOffset,
+    this.childLength,
     required super.filePath,
     required super.offset,
     required super.length,
@@ -200,7 +218,7 @@ class MultiProviderNode extends ProviderNode {
 
 class AsyncProviderNode extends ProviderNode {
   final String providerType; // FutureProvider or StreamProvider
-  final String providedType; // The type returned by the future/stream
+  final String providedType;
   final int? childOffset;
   final int? childLength;
 
@@ -217,9 +235,8 @@ class AsyncProviderNode extends ProviderNode {
 
 class WidgetNode extends ProviderNode {
   final String widgetName;
-  final String widgetType; // e.g., StatelessWidget, StatefulWidget
-  final int?
-  buildMethodOffset; // Where to inject `WidgetRef ref` (null for StatefulWidget)
+  final String widgetType;
+  final int? buildMethodOffset;
 
   WidgetNode({
     required this.widgetName,

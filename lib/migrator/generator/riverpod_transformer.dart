@@ -12,11 +12,9 @@ class TextEdit {
 class RiverpodTransformer {
   final _bodyTransformer = BodyTransformer();
 
-  /// Tracks which files have already received the @riverpod file-level header
-  /// (imports + part directive). Keyed by absolute file path.
+  /// Tracks which files have already received the @riverpod file-level header.
   final _fileHeaderInjected = <String>{};
 
-  /// Returns a list of specific text edits to apply.
   List<TextEdit> transformNode(ProviderNode node, String originalSource) {
     if (node is ProviderOfNode) {
       return _transformProviderOf(node, originalSource);
@@ -51,12 +49,7 @@ class RiverpodTransformer {
       node.offset + node.length,
     );
     final providerName = providerNameForType(node.consumedClass);
-
-    // Prefer IR-detected flag; fall back to text heuristic for cases where the
-    // scanner hasn't populated the field (e.g. unit tests, external callers).
-    final isMethodCall =
-        node.isMethodCall ||
-        _isFollowedByMethodCall(originalSource, node.offset + node.length);
+    final isMethodCall = node.isMethodCall;
 
     final imperativeValueRead = 'ref.read($providerName)';
     final imperativeNotifierRead = 'ref.read($providerName.notifier)';
@@ -93,43 +86,22 @@ class RiverpodTransformer {
     return [];
   }
 
-  bool _isFollowedByMethodCall(String source, int endOffset) {
-    var i = endOffset;
-    while (i < source.length && source[i] == ' ') {
-      i++;
-    }
-    if (i >= source.length || source[i] != '.') return false;
-    i++;
-    final identStart = i;
-    while (i < source.length && RegExp(r'[A-Za-z0-9_]').hasMatch(source[i])) {
-      i++;
-    }
-    if (i == identStart) return false;
-    while (i < source.length && source[i] == ' ') {
-      i++;
-    }
-    return i < source.length && source[i] == '(';
-  }
-
   List<TextEdit> _transformProviderDeclaration(
     ProviderDeclarationNode node,
     String originalSource,
   ) {
-    final edits = <TextEdit>[];
-
+    // If it's a root-level provider wrapping the app, replace with ProviderScope
     if (node.childOffset != null && node.childLength != null) {
       final child = originalSource.substring(
         node.childOffset!,
         node.childOffset! + node.childLength!,
       );
-      edits.add(
+      return [
         TextEdit(node.offset, node.length, 'ProviderScope(child: $child)'),
-      );
-    } else {
-      edits.add(TextEdit(node.offset, node.length, ''));
+      ];
     }
-
-    return edits;
+    // For nested providers, we often just remove them as Riverpod providers are global
+    return [TextEdit(node.offset, node.length, '')];
   }
 
   List<TextEdit> _transformMultiProvider(
@@ -148,83 +120,123 @@ class RiverpodTransformer {
     return [];
   }
 
-  List<TextEdit> _transformSelector(SelectorNode node, String originalSource) {
-    final edits = <TextEdit>[];
-    final snippet = originalSource.substring(
-      node.offset,
-      node.offset + node.length,
-    );
-
-    final selectorRegex = RegExp(r'Selector<[^>]+,\s*[^>]+>');
-    final selectorMatch = selectorRegex.firstMatch(snippet);
-    if (selectorMatch != null) {
-      edits.add(
-        TextEdit(
-          node.offset + selectorMatch.start,
-          selectorMatch.group(0)!.length,
-          'Consumer',
-        ),
-      );
-    }
-
-    final selectorArgRegex = RegExp(
-      r'selector:\s*[\s\S]+?(?=builder:)',
-      multiLine: true,
-    );
-    final selectorArgMatch = selectorArgRegex.firstMatch(snippet);
-    if (selectorArgMatch != null) {
-      edits.add(
-        TextEdit(
-          node.offset + selectorArgMatch.start,
-          selectorArgMatch.group(0)!.length,
-          '',
-        ),
-      );
-    }
-
+  List<TextEdit> _transformConsumer(ConsumerNode node, String originalSource) {
     final providerName = providerNameForType(node.consumedClass);
-    final normalisedSelector = _normaliseSelectorSnippet(node.selectorSnippet);
-    final expressionBuilder = RegExp(
-      r'builder:\s*\(\s*([^,]+)\s*,\s*([^,]+)\s*,\s*([^)]+)\)\s*=>\s*([\s\S]*?)(?=,\s*\)|\)\s*$)',
-      multiLine: true,
-    ).firstMatch(snippet);
-    if (expressionBuilder != null) {
-      final ctx = expressionBuilder.group(1)!.trim();
-      final val = expressionBuilder.group(2)!.trim();
-      final ch = expressionBuilder.group(3)!.trim();
-      final expr = expressionBuilder.group(4)!.trim();
-      edits.add(
-        TextEdit(
-          node.offset + expressionBuilder.start,
-          expressionBuilder.group(0)!.length,
-          'builder: ($ctx, ref, $ch) {\n'
-          '    final $val = ref.watch($providerName.select($normalisedSelector));\n'
-          '    return $expr;\n'
-          '  }',
-        ),
-      );
-      return edits;
+    final builderSource = _extractBuilderSource(
+      originalSource: originalSource,
+      nodeOffset: node.offset,
+      nodeLength: node.length,
+      builderOffset: node.builderOffset,
+      builderLength: node.builderLength,
+      pattern: RegExp(r'builder:\s*(.+?)(?:,\s*child:|\s*\)$)', dotAll: true),
+    );
+    final childSource = _extractNamedArgumentSource(
+      originalSource: originalSource,
+      nodeOffset: node.offset,
+      nodeLength: node.length,
+      valueOffset: node.childOffset,
+      valueLength: node.childLength,
+      pattern: RegExp(r'child:\s*(.+?)\s*\)$', dotAll: true),
+    );
+
+    if (builderSource != null) {
+      final signatureMatch = RegExp(
+        r'\(\s*([^,]+)\s*,\s*([^,]+)\s*,\s*([^)]+)\)\s*(=>|\{)',
+      ).firstMatch(builderSource);
+
+      if (signatureMatch != null) {
+        final ctx = signatureMatch.group(1)!.trim();
+        final val = signatureMatch.group(2)!.trim();
+        final ch = signatureMatch.group(3)!.trim();
+        final type = signatureMatch.group(4)!;
+
+        String newBuilder;
+        if (type == '=>') {
+          final body = builderSource.substring(signatureMatch.end).trim();
+          newBuilder =
+              '($ctx, ref, $ch) {\n'
+              '      final $val = ref.watch($providerName);\n'
+              '      return $body;\n'
+              '    }';
+        } else {
+          final body = builderSource.substring(signatureMatch.end).trim();
+          newBuilder =
+              '($ctx, ref, $ch) {\n'
+              '      final $val = ref.watch($providerName);\n'
+              '      $body';
+        }
+
+        String replacement = 'Consumer(\n    builder: $newBuilder,\n';
+        if (childSource != null) {
+          replacement += '    child: $childSource,\n';
+        }
+        replacement += '  )';
+
+        return [TextEdit(node.offset, node.length, replacement)];
+      }
     }
 
-    final blockBuilder = RegExp(
-      r'builder:\s*\(\s*([^,]+)\s*,\s*([^,]+)\s*,\s*([^)]+)\)\s*\{',
-      multiLine: true,
-    ).firstMatch(snippet);
-    if (blockBuilder != null) {
-      final ctx = blockBuilder.group(1)!.trim();
-      final val = blockBuilder.group(2)!.trim();
-      final ch = blockBuilder.group(3)!.trim();
-      edits.add(
-        TextEdit(
-          node.offset + blockBuilder.start,
-          blockBuilder.group(0)!.length,
-          'builder: ($ctx, ref, $ch) {\n'
-          '    final $val = ref.watch($providerName.select($normalisedSelector));',
-        ),
-      );
+    return [];
+  }
+
+  List<TextEdit> _transformSelector(SelectorNode node, String originalSource) {
+    final providerName = providerNameForType(node.consumedClass);
+    final selector = _normaliseSelectorSnippet(node.selectorSnippet);
+    final builderSource = _extractBuilderSource(
+      originalSource: originalSource,
+      nodeOffset: node.offset,
+      nodeLength: node.length,
+      builderOffset: node.builderOffset,
+      builderLength: node.builderLength,
+      pattern: RegExp(r'builder:\s*(.+?)(?:,\s*child:|\s*\)$)', dotAll: true),
+    );
+    final childSource = _extractNamedArgumentSource(
+      originalSource: originalSource,
+      nodeOffset: node.offset,
+      nodeLength: node.length,
+      valueOffset: node.childOffset,
+      valueLength: node.childLength,
+      pattern: RegExp(r'child:\s*(.+?)\s*\)$', dotAll: true),
+    );
+
+    if (builderSource != null) {
+      final signatureMatch = RegExp(
+        r'\(\s*([^,]+)\s*,\s*([^,]+)\s*,\s*([^)]+)\)\s*(=>|\{)',
+      ).firstMatch(builderSource);
+
+      if (signatureMatch != null) {
+        final ctx = signatureMatch.group(1)!.trim();
+        final val = signatureMatch.group(2)!.trim();
+        final ch = signatureMatch.group(3)!.trim();
+        final type = signatureMatch.group(4)!;
+
+        String newBuilder;
+        if (type == '=>') {
+          final body = builderSource.substring(signatureMatch.end).trim();
+          newBuilder =
+              '($ctx, ref, $ch) {\n'
+              '      final $val = ref.watch($providerName.select($selector));\n'
+              '      return $body;\n'
+              '    }';
+        } else {
+          final body = builderSource.substring(signatureMatch.end).trim();
+          newBuilder =
+              '($ctx, ref, $ch) {\n'
+              '      final $val = ref.watch($providerName.select($selector));\n'
+              '      $body';
+        }
+
+        String replacement = 'Consumer(\n    builder: $newBuilder,\n';
+        if (childSource != null) {
+          replacement += '    child: $childSource,\n';
+        }
+        replacement += '  )';
+
+        return [TextEdit(node.offset, node.length, replacement)];
+      }
     }
 
-    return edits;
+    return [];
   }
 
   String _normaliseSelectorSnippet(String snippet) {
@@ -254,6 +266,50 @@ class RiverpodTransformer {
     }
 
     return '(state) => $snippet';
+  }
+
+  String? _extractBuilderSource({
+    required String originalSource,
+    required int nodeOffset,
+    required int nodeLength,
+    required int? builderOffset,
+    required int? builderLength,
+    required RegExp pattern,
+  }) {
+    if (builderOffset != null && builderLength != null) {
+      return originalSource.substring(
+        builderOffset,
+        builderOffset + builderLength,
+      );
+    }
+    return _extractNamedArgumentSource(
+      originalSource: originalSource,
+      nodeOffset: nodeOffset,
+      nodeLength: nodeLength,
+      valueOffset: null,
+      valueLength: null,
+      pattern: pattern,
+    );
+  }
+
+  String? _extractNamedArgumentSource({
+    required String originalSource,
+    required int nodeOffset,
+    required int nodeLength,
+    required int? valueOffset,
+    required int? valueLength,
+    required RegExp pattern,
+  }) {
+    if (valueOffset != null && valueLength != null) {
+      return originalSource.substring(valueOffset, valueOffset + valueLength);
+    }
+
+    final nodeSource = originalSource.substring(
+      nodeOffset,
+      nodeOffset + nodeLength,
+    );
+    final match = pattern.firstMatch(nodeSource);
+    return match?.group(1)?.trim();
   }
 
   String _replaceSelectorVariable(String source, String variableName) {
@@ -303,7 +359,6 @@ final $providerName = ${node.providerType == 'FutureProvider' ? 'FutureProvider'
     final buffer = StringBuffer();
     final edits = <TextEdit>[];
 
-    // File-level header: Prepended to top of file instead of injected at node offset
     if (!_fileHeaderInjected.contains(node.filePath)) {
       _fileHeaderInjected.add(node.filePath);
       final fileName = node.filePath.split('/').last.replaceAll('.dart', '');
@@ -584,69 +639,6 @@ part "$fileName.g.dart";
         ),
       );
     }
-    return edits;
-  }
-
-  List<TextEdit> _transformConsumer(ConsumerNode node, String originalSource) {
-    final edits = <TextEdit>[];
-    final snippet = originalSource.substring(
-      node.offset,
-      node.offset + node.length,
-    );
-
-    final consumerRegex = RegExp(r'Consumer<[^>]+>');
-    final consumerMatch = consumerRegex.firstMatch(snippet);
-    if (consumerMatch != null) {
-      edits.add(
-        TextEdit(
-          node.offset + consumerMatch.start,
-          consumerMatch.group(0)!.length,
-          'Consumer',
-        ),
-      );
-    }
-
-    final providerName = providerNameForType(node.consumedClass);
-    final expressionBuilder = RegExp(
-      r'builder:\s*\(\s*([^,]+)\s*,\s*([^,]+)\s*,\s*([^)]+)\)\s*=>\s*([\s\S]*?)(?=,\s*\)|\)\s*$)',
-      multiLine: true,
-    ).firstMatch(snippet);
-    if (expressionBuilder != null) {
-      final ctx = expressionBuilder.group(1)!.trim();
-      final val = expressionBuilder.group(2)!.trim();
-      final ch = expressionBuilder.group(3)!.trim();
-      final expr = expressionBuilder.group(4)!.trim();
-      edits.add(
-        TextEdit(
-          node.offset + expressionBuilder.start,
-          expressionBuilder.group(0)!.length,
-          'builder: ($ctx, ref, $ch) {\n'
-          '    final $val = ref.watch($providerName);\n'
-          '    return $expr;\n'
-          '  }',
-        ),
-      );
-      return edits;
-    }
-
-    final blockBuilder = RegExp(
-      r'builder:\s*\(\s*([^,]+)\s*,\s*([^,]+)\s*,\s*([^)]+)\)\s*\{',
-      multiLine: true,
-    ).firstMatch(snippet);
-    if (blockBuilder != null) {
-      final ctx = blockBuilder.group(1)!.trim();
-      final val = blockBuilder.group(2)!.trim();
-      final ch = blockBuilder.group(3)!.trim();
-      edits.add(
-        TextEdit(
-          node.offset + blockBuilder.start,
-          blockBuilder.group(0)!.length,
-          'builder: ($ctx, ref, $ch) {\n'
-          '    final $val = ref.watch($providerName);',
-        ),
-      );
-    }
-
     return edits;
   }
 }

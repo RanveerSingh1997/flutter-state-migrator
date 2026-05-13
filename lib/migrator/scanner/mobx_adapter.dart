@@ -19,36 +19,45 @@ class MobXAdapter extends RecursiveAstVisitor<void> {
     }
 
     bool isMobXStore = false;
+    // Also check for abstract classes ending in '_Store' or with 'Store' mixin
+    // but the most reliable way is checking for annotations.
     for (final member in classBody.members) {
       if (member is FieldDeclaration) {
         for (final metadata in member.metadata) {
-          if (metadata.name.toSource() == 'observable') {
+          final name = metadata.name.toSource();
+          if (name == 'observable' || name == 'computed') {
             isMobXStore = true;
             break;
           }
         }
       }
+      if (isMobXStore) break;
     }
 
     if (isMobXStore) {
-      final className = node.namePart.typeName.lexeme;
+      final className = node.name.lexeme;
       final stateFields = <FieldInfo>[];
       final methods = <MethodInfo>[];
 
       bool isFamilyCandidate = false;
       for (final member in classBody.members) {
         if (member is FieldDeclaration) {
+          bool hasObservable = false;
           for (final metadata in member.metadata) {
             if (metadata.name.toSource() == 'observable') {
-              for (final variable in member.fields.variables) {
-                stateFields.add(
-                  FieldInfo(
-                    rawName: variable.name.lexeme,
-                    type: member.fields.type?.toSource() ?? 'dynamic',
-                    initializer: variable.initializer?.toSource(),
-                  ),
-                );
-              }
+              hasObservable = true;
+              break;
+            }
+          }
+          if (hasObservable) {
+            for (final variable in member.fields.variables) {
+              stateFields.add(
+                FieldInfo(
+                  rawName: variable.name.lexeme,
+                  type: member.fields.type?.toSource() ?? 'dynamic',
+                  initializer: variable.initializer?.toSource(),
+                ),
+              );
             }
           }
         } else if (member is ConstructorDeclaration) {
@@ -67,6 +76,7 @@ class MobXAdapter extends RecursiveAstVisitor<void> {
               break;
             }
           }
+          // We capture all methods, but mark if they are actions (callsNotifyListeners equivalent)
           methods.add(buildMethodInfo(member, callsNotifyListeners: isAction));
         }
       }
@@ -90,7 +100,7 @@ class MobXAdapter extends RecursiveAstVisitor<void> {
 
   @override
   void visitInstanceCreationExpression(InstanceCreationExpression node) {
-    final typeName = node.constructorName.type.toSource();
+    final typeName = node.constructorName.type.name.lexeme;
     if (typeName == 'Observer') {
       nodes.add(
         ConsumerNode(
