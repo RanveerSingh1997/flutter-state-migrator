@@ -76,3 +76,37 @@ The platform compares current analysis against historical snapshots to identify 
 
 ## 5. Visual Intelligence
 Run `migrator --visualize .` to generate a `architecture_graph.mmd` file, which can be rendered as a Mermaid diagram to visualize component relationships and roles (Services, Repositories, Providers, Widgets).
+
+---
+
+## 6. IDE Intelligence
+
+Run `migrator --ide-json .` to emit structured diagnostics for editor integrations.
+
+### 6.1 Diagnostic Categories
+- **Architecture**: Smells such as God Component, State Explosion, High Coupling, Improper Async Pattern, and Circular Dependency.
+- **Governance**: Violations produced from configured contracts like forbidden layer dependencies, maximum dependency fan-out, and maximum dependency depth.
+
+### 6.2 VS Code Integration
+The bundled VS Code extension consumes `--ide-json` output and surfaces:
+- inline diagnostics for Dart files,
+- quick fixes to migrate the current file or project,
+- recommendation actions for guidance-oriented findings,
+- migration-guide shortcuts from the editor.
+
+---
+
+## 7. AI-Assisted Guidance
+
+Run `migrator --ai .` to print explainable migration guidance in the CLI.
+
+### 7.1 Local LLM First
+`AIManager` prefers a local Ollama-compatible endpoint (`http://localhost:11434/api/generate`) for architecture and refactoring guidance.
+
+### 7.2 Deterministic Fallbacks
+If the local model is unavailable, times out, or returns an invalid response, the platform still emits deterministic guidance derived from the semantic graph, architecture smells, governance violations, and notifier method metadata.
+
+### 7.3 What Receives Guidance
+- Logic methods that still rely on mutable state updates or `notifyListeners()`.
+- Components flagged by architecture intelligence.
+- Components involved in governance violations.
