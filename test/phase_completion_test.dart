@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 import 'package:flutter_state_migrator/migrator/analysis/body_transformer.dart';
+import 'package:flutter_state_migrator/migrator/analysis/ai_manager.dart';
 import 'package:flutter_state_migrator/migrator/analysis/dependency_checker.dart';
 import 'package:flutter_state_migrator/migrator/analysis/dependency_manager.dart';
 import 'package:flutter_state_migrator/migrator/analysis/generated_file_manager.dart';
@@ -11,6 +12,8 @@ import 'package:flutter_state_migrator/migrator/analysis/monorepo_manager.dart';
 import 'package:flutter_state_migrator/migrator/generator/riverpod_generator.dart';
 import 'package:flutter_state_migrator/migrator/generator/riverpod_transformer.dart';
 import 'package:flutter_state_migrator/migrator/models/ir_models.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 
 void main() {
   group('Phase 28 dependency graph', () {
@@ -446,6 +449,24 @@ dev_dependencies:
 
       expect(relevant.map((p) => p.name), contains('pkg_a'));
       expect(relevant.map((p) => p.name), isNot(contains('pkg_b')));
+    });
+  });
+
+  group('Phase 44 AI guidance', () {
+    test('AIManager provides deterministic fallback guidance', () async {
+      final guidance = await AIManager(
+        client: MockClient(
+          (_) async => http.Response('service unavailable', 503),
+        ),
+      ).refactorMethodBody(
+        className: 'CounterModel',
+        stateFields: const ['_count'],
+        methodName: 'increment',
+        methodBody: '{ _count += 1; notifyListeners(); }',
+      );
+
+      expect(guidance.recommendation, isNotEmpty);
+      expect(guidance.prompt, contains('CounterModel'));
     });
   });
 }
