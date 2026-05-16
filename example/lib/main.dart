@@ -1,64 +1,57 @@
+// Example: before-and-after migration from Provider to Riverpod.
+//
+// Run `dart pub global activate flutter_state_migrator` then:
+//   migrator --mode aggressive --dry-run .
+// to preview the automated transformation of this file.
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'counter_model.dart';
-import 'settings_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-void main() {
-  runApp(
-    ProviderScope(child: const MyApp()),
-  );
+// ── Riverpod notifier (post-migration) ──────────────────────────────────────
+
+class Counter extends StateNotifier<int> {
+  Counter() : super(0);
+  void increment() => state++;
 }
 
-class MyApp extends ConsumerWidget {
+final counterProvider = StateNotifierProvider<Counter, int>((ref) => Counter());
+
+// ── App ──────────────────────────────────────────────────────────────────────
+
+void main() {
+  runApp(const ProviderScope(child: MyApp()));
+}
+
+class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Provider Migration Example',
+      title: 'Flutter State Migrator Example',
       theme: ThemeData(primarySwatch: Colors.blue),
-      home: const HomeScreen(),
+      home: const CounterScreen(),
     );
   }
 }
 
-class HomeScreen extends ConsumerWidget {
-  const HomeScreen({super.key});
+class CounterScreen extends ConsumerWidget {
+  const CounterScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final count = ref.watch(counterProvider);
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Home'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const SettingsScreen()),
-            ),
-          ),
-        ],
-      ),
+      appBar: AppBar(title: const Text('Counter (Riverpod)')),
       body: Center(
-        child: Consumer(
-          builder: (context, ref, child) => ref.watch(countermodelProvider) Text(
-            'Count: ${counter.count}',
-            style: Theme.of(context).textTheme.headlineMedium,
-          ),
+        child: Text(
+          'Count: $count',
+          style: Theme.of(context).textTheme.headlineMedium,
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () =>
-            ref.read(countermodelProvider).increment(),
+        onPressed: () => ref.read(counterProvider.notifier).increment(),
         child: const Icon(Icons.add),
       ),
     );
   }
 }
-
-// TODO: Auto-migrated Riverpod Provider
-final countermodelProvider = StateNotifierProvider<CounterModelNotifier, CounterModelState>((ref) {
-  return CounterModelNotifier();
-});

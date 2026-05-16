@@ -22,7 +22,8 @@ class AnalyticsManager {
     // Architecture Health Score calculation (starts at 100)
     double healthScore = 100.0;
     healthScore -= (smells.length * 2.5); // Deduct for smells
-    healthScore -= (violations.length * 5.0); // Heavier deduction for violations
+    healthScore -=
+        (violations.length * 5.0); // Heavier deduction for violations
     if (healthScore < 0) healthScore = 0.0;
 
     return {
@@ -30,7 +31,8 @@ class AnalyticsManager {
       'methods_transformed': totalMethods,
       'files_processed': filesProcessed,
       'estimated_hours_saved': estimatedHoursSaved,
-      'boilerplate_reduction_percent': (boilerplateReduction * 100).toStringAsFixed(1),
+      'boilerplate_reduction_percent': (boilerplateReduction * 100)
+          .toStringAsFixed(1),
       'architecture_health_score': healthScore.toStringAsFixed(1),
       'smells_count': smells.length,
       'violations_count': violations.length,

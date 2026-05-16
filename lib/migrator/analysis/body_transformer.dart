@@ -14,7 +14,12 @@ class BodyTransformer {
       final pub = entry.value;
 
       // 1. Handle collection mutations (add/remove/clear)
-      transformed = _rewriteCollectionMutations(transformed, raw, pub, fieldMap);
+      transformed = _rewriteCollectionMutations(
+        transformed,
+        raw,
+        pub,
+        fieldMap,
+      );
 
       // 2. Handle numeric/boolean/generic mutations (=, +=, -=, ++, --, ??=)
       transformed = _rewriteFieldMutations(transformed, raw, pub, fieldMap);
@@ -46,7 +51,10 @@ class BodyTransformer {
     transformed = transformed.replaceAllMapped(
       RegExp('$escaped\\.add\\(([^;]+)\\);'),
       (match) {
-        final item = _normalizeStateReferences(match.group(1)!.trim(), fieldMap);
+        final item = _normalizeStateReferences(
+          match.group(1)!.trim(),
+          fieldMap,
+        );
         return 'state = state.copyWith($stateField: [...state.$stateField, $item]);';
       },
     );
@@ -55,7 +63,10 @@ class BodyTransformer {
     transformed = transformed.replaceAllMapped(
       RegExp('$escaped\\.addAll\\(([^;]+)\\);'),
       (match) {
-        final items = _normalizeStateReferences(match.group(1)!.trim(), fieldMap);
+        final items = _normalizeStateReferences(
+          match.group(1)!.trim(),
+          fieldMap,
+        );
         return 'state = state.copyWith($stateField: [...state.$stateField, ...$items]);';
       },
     );
@@ -64,7 +75,10 @@ class BodyTransformer {
     transformed = transformed.replaceAllMapped(
       RegExp('$escaped\\.remove\\(([^;]+)\\);'),
       (match) {
-        final item = _normalizeStateReferences(match.group(1)!.trim(), fieldMap);
+        final item = _normalizeStateReferences(
+          match.group(1)!.trim(),
+          fieldMap,
+        );
         return 'state = state.copyWith($stateField: state.$stateField.where((e) => e != $item).toList());';
       },
     );
@@ -105,7 +119,10 @@ class BodyTransformer {
       transformed = transformed.replaceAllMapped(
         RegExp('$escaped\\s*$op\\s*([^;]+);'),
         (match) {
-          final delta = _normalizeStateReferences(match.group(1)!.trim(), fieldMap);
+          final delta = _normalizeStateReferences(
+            match.group(1)!.trim(),
+            fieldMap,
+          );
           return 'state = state.copyWith($stateField: state.$stateField $mathOp $delta);';
         },
       );
@@ -115,7 +132,10 @@ class BodyTransformer {
     transformed = transformed.replaceAllMapped(
       RegExp('$escaped\\s*\\?\\?=\\s*([^;]+);'),
       (match) {
-        final value = _normalizeStateReferences(match.group(1)!.trim(), fieldMap);
+        final value = _normalizeStateReferences(
+          match.group(1)!.trim(),
+          fieldMap,
+        );
         return 'state = state.copyWith($stateField: state.$stateField ?? $value);';
       },
     );
@@ -124,7 +144,10 @@ class BodyTransformer {
     transformed = transformed.replaceAllMapped(
       RegExp('(?<![=!])$escaped\\s*=\\s*(?![=])([^;]+);'),
       (match) {
-        final value = _normalizeStateReferences(match.group(1)!.trim(), fieldMap);
+        final value = _normalizeStateReferences(
+          match.group(1)!.trim(),
+          fieldMap,
+        );
         return 'state = state.copyWith($stateField: $value);';
       },
     );
@@ -172,7 +195,7 @@ class BodyTransformer {
       final match = RegExp(
         r'^(\s*)state = state\.copyWith\((.+)\);\s*$',
       ).firstMatch(line);
-      
+
       if (match == null) {
         flushPending();
         merged.add(line);
@@ -181,7 +204,7 @@ class BodyTransformer {
 
       final indent = match.group(1)!;
       final update = match.group(2)!.trim();
-      
+
       // Extract field names from the copyWith call (e.g., "count: state.count + 1")
       final fieldNames = RegExp(
         r'(?:^|,\s*)([A-Za-z_]\w*)\s*:',

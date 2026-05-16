@@ -80,7 +80,10 @@ class MyWidget extends ConsumerWidget {
     if (expressionMatch != null) {
       final oldVar = expressionMatch.group(1)!;
       final expr = trimmed
-          .substring(expressionMatch.start + expressionMatch.group(0)!.indexOf(expressionMatch.group(2)!))
+          .substring(
+            expressionMatch.start +
+                expressionMatch.group(0)!.indexOf(expressionMatch.group(2)!),
+          )
           .replaceAllMapped(
             RegExp('(?<![\\w.])${RegExp.escape(oldVar)}(?!\\w)'),
             (_) => 'state',
@@ -161,7 +164,8 @@ class MyWidget extends ConsumerWidget {
     switch (inferredType) {
       case NotifierType.asyncNotifier:
         final method = node.methods.firstWhere(
-          (m) => !m.isGetter && (m.isAsync || m.returnType.startsWith('Future')),
+          (m) =>
+              !m.isGetter && (m.isAsync || m.returnType.startsWith('Future')),
           orElse: () => MethodInfo(
             name: '',
             callsNotifyListeners: false,

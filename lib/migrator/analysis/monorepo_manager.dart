@@ -67,8 +67,10 @@ class MonorepoManager {
       } else if (entry is File && name == 'pubspec.yaml') {
         final packageRoot = p.dirname(entry.path);
         final content = entry.readAsStringSync();
-        final match = RegExp(r'^name:\s+([a-zA-Z0-9_]+)', multiLine: true)
-            .firstMatch(content);
+        final match = RegExp(
+          r'^name:\s+([a-zA-Z0-9_]+)',
+          multiLine: true,
+        ).firstMatch(content);
         if (match != null) {
           out.add(PackageInfo(name: match.group(1)!, rootPath: packageRoot));
         }

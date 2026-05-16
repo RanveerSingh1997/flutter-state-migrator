@@ -84,7 +84,7 @@ provider_naming: camelCase
 
 ## 📖 Documentation
 
-- [Project Plan](Project Plan.md): Roadmap and technical vision.
+- [Project Plan](Project_Plan.md): Roadmap and technical vision.
 - [Detailed Migration Guide](MIGRATION_GUIDE.md): Understand how patterns are transformed.
 - [VS Code Extension](vscode-extension/README.md): Optional companion integration for editor diagnostics and quick fixes.
 

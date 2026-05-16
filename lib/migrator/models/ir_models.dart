@@ -1,6 +1,17 @@
+/// Base class for all semantic IR nodes emitted by the scanner adapters.
+///
+/// Each node represents one detectable construct in a Flutter source file —
+/// a notifier class, a widget, a provider declaration, or a provider access.
+/// Nodes carry source location ([filePath], [offset], [length]) so that
+/// downstream transformers can produce precise [TextEdit]s.
 abstract class ProviderNode {
+  /// Absolute path to the source file that contains this node.
   final String filePath;
+
+  /// Byte offset of the node's start within the source file.
   final int offset;
+
+  /// Byte length of the node within the source file.
   final int length;
 
   ProviderNode({
@@ -45,6 +56,7 @@ class ParamInfo {
   String toSource() => '$type $name';
 }
 
+/// Captured information about a single method in a detected class.
 class MethodInfo {
   final String name;
   final bool callsNotifyListeners;
@@ -75,6 +87,7 @@ class MethodInfo {
   String get paramSource => parameters.map((p) => p.toSource()).join(', ');
 }
 
+/// IR node for a ChangeNotifier / Bloc / Cubit / GetxController / MobX store.
 class LogicUnitNode extends ProviderNode {
   final String name;
   final List<FieldInfo> stateFields;
@@ -129,6 +142,7 @@ class LogicUnitNode extends ProviderNode {
   };
 }
 
+/// IR node for an explicit Provider/ChangeNotifierProvider declaration site.
 class ProviderDeclarationNode extends ProviderNode {
   final String providerType; // e.g. ChangeNotifierProvider
   final String providedClass; // e.g. Counter
@@ -146,6 +160,7 @@ class ProviderDeclarationNode extends ProviderNode {
   });
 }
 
+/// IR node for a Consumer or Builder widget that watches a provider.
 class ConsumerNode extends ProviderNode {
   final String consumedClass;
   final int? builderOffset;
@@ -165,6 +180,7 @@ class ConsumerNode extends ProviderNode {
   });
 }
 
+/// IR node for a `context.watch`, `context.read`, or `Provider.of` access.
 class ProviderOfNode extends ProviderNode {
   final String consumedClass;
   final bool isInBuildMethod;
@@ -180,6 +196,7 @@ class ProviderOfNode extends ProviderNode {
   });
 }
 
+/// IR node for a `Selector` widget that listens to a derived slice of state.
 class SelectorNode extends ProviderNode {
   final String consumedClass;
   final String selectedType;
@@ -203,6 +220,7 @@ class SelectorNode extends ProviderNode {
   });
 }
 
+/// IR node for a `MultiProvider` wrapper.
 class MultiProviderNode extends ProviderNode {
   final int? childOffset;
   final int? childLength;
@@ -216,6 +234,7 @@ class MultiProviderNode extends ProviderNode {
   });
 }
 
+/// IR node for a `FutureProvider` or `StreamProvider` declaration.
 class AsyncProviderNode extends ProviderNode {
   final String providerType; // FutureProvider or StreamProvider
   final String providedType;
@@ -233,6 +252,7 @@ class AsyncProviderNode extends ProviderNode {
   });
 }
 
+/// IR node for a StatelessWidget or StatefulWidget class.
 class WidgetNode extends ProviderNode {
   final String widgetName;
   final String widgetType;
@@ -248,6 +268,7 @@ class WidgetNode extends ProviderNode {
   });
 }
 
+/// IR node for a `State<T>` class paired with a `StatefulWidget`.
 class StateNode extends ProviderNode {
   final String stateClassName;
   final String widgetName;
@@ -261,6 +282,7 @@ class StateNode extends ProviderNode {
   });
 }
 
+/// IR node for a `HookWidget` that uses flutter_hooks.
 class HookWidgetNode extends ProviderNode {
   final String widgetName;
   final int buildMethodOffset;
