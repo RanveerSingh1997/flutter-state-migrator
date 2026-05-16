@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.2.1] - 2026-05-16
+
+### Fixed
+- `AsyncNotifier` and `StreamNotifier` `build()` now uses the real method body and infers the concrete return type (e.g. `Future<List<User>>`) instead of emitting a `return null; // TODO` placeholder that failed to compile.
+- `Selector` transformer now skips nodes where no `selector:` argument was captured, preventing broken Dart output. Generator uses the actual normalised selector snippet instead of a hardcoded `state.someProperty` template.
+- Removed the `--sync` flag and `CloudManager` which simulated a fake cloud upload with a fabricated URL.
+- `PluginLoader` now prints a clear warning when a `migrator_plugins/` directory is detected rather than silently doing nothing.
+
+### Added
+- 13 new tests covering edge cases: generic type parameters, mixin usage, family candidates, widgets with multiple provider accesses, empty/malformed input. Suite: 84 → 97 tests.
+- `scripts/publish.sh` — automated release script that bumps version, updates CHANGELOG, tags, pushes, publishes to pub.dev, and opens a dev branch.
+
 ## [2.2.0] - 2026-05-13
 
 ### Added
