@@ -131,5 +131,68 @@ void main() {
         true,
       );
     });
+
+    test('AsyncNotifier build() uses real method body and concrete return type',
+        () {
+      const source = 'class UserRepo extends ChangeNotifier {}';
+      final node = LogicUnitNode(
+        name: 'UserRepo',
+        stateFields: [],
+        methods: [
+          MethodInfo(
+            name: 'loadUsers',
+            callsNotifyListeners: false,
+            bodySnippet: 'async { return await api.getUsers(); }',
+            isAsync: true,
+            returnType: 'Future<List<User>>',
+          ),
+        ],
+        isNotifier: true,
+        notifierType: NotifierType.asyncNotifier,
+        filePath: 'user_repo.dart',
+        offset: 0,
+        length: source.length,
+      );
+
+      final t2 = RiverpodTransformer();
+      final edits = t2.transformNode(node, source);
+      // The last edit is always the class body replacement; the first is the file header.
+      final classEdit = edits.last;
+
+      expect(classEdit.replacement, contains('Future<List<User>>'));
+      expect(classEdit.replacement, contains('build() async {'));
+      expect(classEdit.replacement, contains('return await api.getUsers();'));
+      expect(classEdit.replacement, isNot(contains('TODO: Return initial async state')));
+    });
+
+    test('StreamNotifier build() uses real stream method body and type', () {
+      const source = 'class TickerService extends ChangeNotifier {}';
+      final node = LogicUnitNode(
+        name: 'TickerService',
+        stateFields: [],
+        methods: [
+          MethodInfo(
+            name: 'tick',
+            callsNotifyListeners: false,
+            bodySnippet: '{ return Stream.periodic(Duration(seconds: 1)); }',
+            isAsync: false,
+            returnType: 'Stream<int>',
+          ),
+        ],
+        isNotifier: true,
+        notifierType: NotifierType.streamNotifier,
+        filePath: 'ticker.dart',
+        offset: 0,
+        length: source.length,
+      );
+
+      final t2 = RiverpodTransformer();
+      final edits = t2.transformNode(node, source);
+      final classEdit = edits.last;
+
+      expect(classEdit.replacement, contains('Stream<int>'));
+      expect(classEdit.replacement, contains('Stream.periodic'));
+      expect(classEdit.replacement, isNot(contains('TODO: Return stream')));
+    });
   });
 }
