@@ -58,15 +58,36 @@ void main() {
 
   String _generateSelectorWidget(SelectorNode node) {
     final providerName = providerNameForType(node.consumedClass);
+    final selector = node.selectorSnippet.startsWith('/*')
+        ? '(state) => state./* TODO: specify property */'
+        : _normaliseSelectorSnippet(node.selectorSnippet);
     return '''// 🔄 Suggestion: Replace Selector with ref.watch and select()
 class MyWidget extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // This will only rebuild when the selected value changes
-    final selectedValue = ref.watch($providerName.select((state) => state.someProperty));
+    final selectedValue = ref.watch($providerName.select($selector));
     return /* Your UI */;
   }
 }''';
+  }
+
+  String _normaliseSelectorSnippet(String snippet) {
+    final trimmed = snippet.trim();
+    final expressionMatch = RegExp(
+      r'\(\s*\w+\s*,\s*(\w+)\s*\)\s*=>\s*([\s\S]+)',
+    ).firstMatch(trimmed);
+    if (expressionMatch != null) {
+      final oldVar = expressionMatch.group(1)!;
+      final expr = trimmed
+          .substring(expressionMatch.start + expressionMatch.group(0)!.indexOf(expressionMatch.group(2)!))
+          .replaceAllMapped(
+            RegExp('(?<![\\w.])${RegExp.escape(oldVar)}(?!\\w)'),
+            (_) => 'state',
+          );
+      return '(state) => $expr';
+    }
+    return '(state) => $snippet';
   }
 
   String _generateStateNotifier(LogicUnitNode node) {
