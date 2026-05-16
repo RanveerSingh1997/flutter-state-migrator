@@ -478,54 +478,54 @@ Future<void> main(List<String> arguments) async {
     }
 
     if (useAi) {
-        print('\n🤖 Running AI-assisted architecture guidance...');
+      print('\n🤖 Running AI-assisted architecture guidance...');
       final aiManager = AIManager();
-        try {
-          final architectureGuidance = await aiManager.buildArchitectureGuidance(
-            graph: graph,
-            smells: smells,
-            violations: violations,
-          );
-          final methodGuidance = <AiGuidance>[];
-          for (final node in nodes.whereType<LogicUnitNode>()) {
-            for (final method in node.methods.where(
-              (m) => m.callsNotifyListeners,
-            )) {
-              methodGuidance.add(
-                await aiManager.refactorMethodBody(
-                  className: node.name,
-                  stateFields: node.stateVariables,
-                  methodName: method.name,
-                  methodBody: method.bodySnippet,
-                  notifierType: node.notifierType,
-                ),
-              );
-            }
+      try {
+        final architectureGuidance = await aiManager.buildArchitectureGuidance(
+          graph: graph,
+          smells: smells,
+          violations: violations,
+        );
+        final methodGuidance = <AiGuidance>[];
+        for (final node in nodes.whereType<LogicUnitNode>()) {
+          for (final method in node.methods.where(
+            (m) => m.callsNotifyListeners,
+          )) {
+            methodGuidance.add(
+              await aiManager.refactorMethodBody(
+                className: node.name,
+                stateFields: node.stateVariables,
+                methodName: method.name,
+                methodBody: method.bodySnippet,
+                notifierType: node.notifierType,
+              ),
+            );
           }
-
-          final allGuidance = [...architectureGuidance, ...methodGuidance];
-          if (allGuidance.isEmpty) {
-            print('   \x1B[32m✓ No AI guidance candidates detected.\x1B[0m');
-          } else {
-            for (final guidance in allGuidance) {
-              final sourceLabel = guidance.source == AiGuidanceSource.localLlm
-                  ? 'LOCAL LLM'
-                  : 'FALLBACK';
-              final color = guidance.source == AiGuidanceSource.localLlm
-                  ? '\x1B[36m'
-                  : '\x1B[33m';
-              print('   $color$sourceLabel\x1B[0m: ${guidance.title}');
-              print('      Why: ${guidance.rationale}');
-              print('      Next: ${guidance.recommendation}');
-              if (guidance.fallbackReason != null) {
-                print('      Note: ${guidance.fallbackReason}');
-              }
-            }
-          }
-        } finally {
-          aiManager.dispose();
         }
+
+        final allGuidance = [...architectureGuidance, ...methodGuidance];
+        if (allGuidance.isEmpty) {
+          print('   \x1B[32m✓ No AI guidance candidates detected.\x1B[0m');
+        } else {
+          for (final guidance in allGuidance) {
+            final sourceLabel = guidance.source == AiGuidanceSource.localLlm
+                ? 'LOCAL LLM'
+                : 'FALLBACK';
+            final color = guidance.source == AiGuidanceSource.localLlm
+                ? '\x1B[36m'
+                : '\x1B[33m';
+            print('   $color$sourceLabel\x1B[0m: ${guidance.title}');
+            print('      Why: ${guidance.rationale}');
+            print('      Next: ${guidance.recommendation}');
+            if (guidance.fallbackReason != null) {
+              print('      Note: ${guidance.fallbackReason}');
+            }
+          }
+        }
+      } finally {
+        aiManager.dispose();
       }
+    }
 
     print('\n🧹 Running dart format...');
     Process.runSync('dart', ['format', targetPath]);

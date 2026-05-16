@@ -61,12 +61,15 @@ class GovernanceEngine {
 
         if (fromNode is LogicUnitNode && toNode is LogicUnitNode) {
           if (fromNode.role == fromRole && toNode.role == toRole) {
-            violations.add(GovernanceViolation(
-              nodeId: edge.fromId,
-              ruleName: 'Forbidden Dependency',
-              message: 'Architecture violation: Layer "$fromRole" is not allowed to depend on "$toRole". '
-                  'Found dependency: ${fromNode.name} -> ${toNode.name}',
-            ));
+            violations.add(
+              GovernanceViolation(
+                nodeId: edge.fromId,
+                ruleName: 'Forbidden Dependency',
+                message:
+                    'Architecture violation: Layer "$fromRole" is not allowed to depend on "$toRole". '
+                    'Found dependency: ${fromNode.name} -> ${toNode.name}',
+              ),
+            );
           }
         }
       }
@@ -83,12 +86,15 @@ class GovernanceEngine {
       if (node is LogicUnitNode) {
         final deps = graph.getDependencies(nodeId);
         if (deps.length > limit) {
-          violations.add(GovernanceViolation(
-            nodeId: nodeId,
-            ruleName: 'Max Dependencies Exceeded',
-            message: 'Class ${node.name} has ${deps.length} dependencies, exceeding the limit of $limit.',
-            severity: 'warning',
-          ));
+          violations.add(
+            GovernanceViolation(
+              nodeId: nodeId,
+              ruleName: 'Max Dependencies Exceeded',
+              message:
+                  'Class ${node.name} has ${deps.length} dependencies, exceeding the limit of $limit.',
+              severity: 'warning',
+            ),
+          );
         }
       }
     }
@@ -104,13 +110,16 @@ class GovernanceEngine {
       if (node is LogicUnitNode) {
         final depth = graph.getDependencyDepth(nodeId);
         if (depth > limit) {
-          violations.add(GovernanceViolation(
-            nodeId: nodeId,
-            ruleName: 'Max Dependency Depth Exceeded',
-            message: 'Class ${node.name} has a dependency depth of $depth, exceeding the limit of $limit. '
-                'Deep dependency chains increase instability and make testing harder.',
-            severity: 'warning',
-          ));
+          violations.add(
+            GovernanceViolation(
+              nodeId: nodeId,
+              ruleName: 'Max Dependency Depth Exceeded',
+              message:
+                  'Class ${node.name} has a dependency depth of $depth, exceeding the limit of $limit. '
+                  'Deep dependency chains increase instability and make testing harder.',
+              severity: 'warning',
+            ),
+          );
         }
       }
     }

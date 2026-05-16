@@ -388,7 +388,9 @@ part "$fileName.g.dart";
     }
     buffer.writeln('class ${node.name} extends _\$${node.name} {');
     buffer.writeln('  @override');
-    final asyncKw = node.notifierType == NotifierType.asyncNotifier ? ' async' : '';
+    final asyncKw = node.notifierType == NotifierType.asyncNotifier
+        ? ' async'
+        : '';
     buffer.writeln('  $buildReturnType build()$asyncKw {');
     buffer.writeln('    $buildBody');
     buffer.writeln('  }');
@@ -421,7 +423,8 @@ part "$fileName.g.dart";
     switch (node.notifierType) {
       case NotifierType.asyncNotifier:
         final method = node.methods.firstWhere(
-          (m) => !m.isGetter && (m.isAsync || m.returnType.startsWith('Future')),
+          (m) =>
+              !m.isGetter && (m.isAsync || m.returnType.startsWith('Future')),
           orElse: () => MethodInfo(
             name: '',
             callsNotifyListeners: false,

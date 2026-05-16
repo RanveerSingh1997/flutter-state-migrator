@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.2.2] - 2026-05-16
+
+### Fixed
+- `dart format` applied to all `lib/` and `bin/` files — resolves pub.dev static-analysis formatting check.
+- Repaired broken `example/lib/main.dart` (syntax error in Consumer builder); example now compiles and runs correctly.
+- Removed dead `cloud_manager.dart` from `lib/migrator/analysis/` (file was never imported post-2.2.1 cleanup).
+- Fixed unresolved doc reference `[Project Plan]` in `README.md` (filename contained a space); renamed to `Project_Plan.md`.
+- Added `///` doc comments to all public IR node classes (`ProviderNode`, `LogicUnitNode`, `WidgetNode`, et al.) to meet pub.dev 20% documentation coverage threshold.
+- Stripped auto-generated Flutter app boilerplate comments from `pubspec.yaml`.
+
 ## [2.2.1] - 2026-05-16
 
 ### Fixed
