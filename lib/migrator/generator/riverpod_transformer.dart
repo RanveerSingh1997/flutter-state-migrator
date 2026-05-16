@@ -180,6 +180,8 @@ class RiverpodTransformer {
   }
 
   List<TextEdit> _transformSelector(SelectorNode node, String originalSource) {
+    // Skip when no real selector was captured (fallback placeholder).
+    if (node.selectorSnippet.startsWith('/*')) return [];
     final providerName = providerNameForType(node.consumedClass);
     final selector = _normaliseSelectorSnippet(node.selectorSnippet);
     final builderSource = _extractBuilderSource(
