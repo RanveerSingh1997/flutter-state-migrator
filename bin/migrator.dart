@@ -5,7 +5,6 @@ import 'package:args/args.dart';
 import 'package:flutter_state_migrator/migrator/analysis/ai_manager.dart';
 import 'package:flutter_state_migrator/migrator/analysis/analytics_manager.dart';
 import 'package:flutter_state_migrator/migrator/analysis/architecture_intelligence.dart';
-import 'package:flutter_state_migrator/migrator/analysis/cloud_manager.dart';
 import 'package:flutter_state_migrator/migrator/analysis/config_manager.dart';
 import 'package:flutter_state_migrator/migrator/analysis/dependency_manager.dart';
 import 'package:flutter_state_migrator/migrator/analysis/generated_file_manager.dart';
@@ -60,12 +59,6 @@ Future<void> main(List<String> arguments) async {
       help: 'Launch the interactive migration dashboard',
     )
     ..addFlag(
-      'sync',
-      abbr: 's',
-      negatable: false,
-      help: 'Synchronize report with the cloud dashboard',
-    )
-    ..addFlag(
       'ai',
       negatable: false,
       help: 'Enable AI-assisted architecture guidance and logic refactoring',
@@ -112,7 +105,6 @@ Future<void> main(List<String> arguments) async {
   String targetPath;
   String mode;
   bool useAi;
-  bool syncCloud;
   bool dryRun;
   bool visualize;
   bool dashboard;
@@ -140,7 +132,6 @@ Future<void> main(List<String> arguments) async {
     targetPath = config.targetPath;
     mode = config.mode;
     useAi = config.useAi;
-    syncCloud = config.syncCloud;
     dryRun = config.dryRun;
     visualize = config.visualize;
     dashboard = false;
@@ -154,7 +145,6 @@ Future<void> main(List<String> arguments) async {
     dryRun = argResults['dry-run'] as bool;
     visualize = argResults['visualize'] as bool;
     dashboard = argResults['dashboard'] as bool;
-    syncCloud = argResults['sync'] as bool;
     useAi = argResults['ai'] as bool;
   }
 
@@ -485,11 +475,6 @@ Future<void> main(List<String> arguments) async {
         JsonEncoder.withIndent('  ').convert(reportData),
       );
       print('\n📊 Report generated at: ${reportFile.path}');
-
-      if (syncCloud) {
-        final cloudManager = CloudManager();
-        await cloudManager.uploadReport(reportData);
-      }
     }
 
     if (useAi) {

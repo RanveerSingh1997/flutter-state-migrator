@@ -4,7 +4,6 @@ class WizardConfig {
   final String targetPath;
   final String mode;
   final bool useAi;
-  final bool syncCloud;
   final bool dryRun;
   final bool cleanImports;
   final bool generateReport;
@@ -14,7 +13,6 @@ class WizardConfig {
     required this.targetPath,
     required this.mode,
     required this.useAi,
-    required this.syncCloud,
     this.dryRun = false,
     this.cleanImports = true,
     this.generateReport = true,
@@ -25,7 +23,6 @@ class WizardConfig {
     'targetPath': targetPath,
     'mode': mode,
     'useAi': useAi,
-    'syncCloud': syncCloud,
     'dryRun': dryRun,
     'cleanImports': cleanImports,
     'generateReport': generateReport,
@@ -93,15 +90,11 @@ class InteractiveWizard {
     final useAi = _promptYesNo(
       '🤖 Enable AI-assisted logic refactoring (requires local LLM)?',
     );
-    final syncCloud = _promptYesNo(
-      '☁️  Synchronize reports with the Cloud Dashboard?',
-    );
 
     final config = WizardConfig(
       targetPath: targetPath,
       mode: mode,
       useAi: useAi,
-      syncCloud: syncCloud,
       dryRun: dryRun,
       cleanImports: cleanImports,
       generateReport: generateReport,
@@ -198,7 +191,6 @@ migrator:
     visualize: ${config.visualize}
   features:
     ai_assisted: ${config.useAi}
-    cloud_sync: ${config.syncCloud}
 ''';
     file.writeAsStringSync(yaml);
     print('\n\x1B[32m✅ Configuration saved to migrator.yaml\x1B[0m');
