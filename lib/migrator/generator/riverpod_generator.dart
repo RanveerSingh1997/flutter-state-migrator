@@ -111,7 +111,8 @@ class MyWidget extends ConsumerWidget {
     }
     buffer.writeln('class ${node.name} extends _\$${node.name} {');
     buffer.writeln('  @override');
-    buffer.writeln('  $buildReturnType build() {');
+    final asyncKw = inferredType == NotifierType.asyncNotifier ? ' async' : '';
+    buffer.writeln('  $buildReturnType build()$asyncKw {');
     buffer.writeln('    $buildBody');
     buffer.writeln('  }');
     buffer.writeln();
@@ -138,15 +139,35 @@ class MyWidget extends ConsumerWidget {
     final inferredType = detectNotifierType(node.methods);
     switch (inferredType) {
       case NotifierType.asyncNotifier:
-        return (
-          'Future<dynamic>',
-          'return null; // TODO: Return initial async state',
+        final method = node.methods.firstWhere(
+          (m) => !m.isGetter && (m.isAsync || m.returnType.startsWith('Future')),
+          orElse: () => MethodInfo(
+            name: '',
+            callsNotifyListeners: false,
+            bodySnippet: '',
+            returnType: 'dynamic',
+          ),
         );
+        final innerType = _extractTypeParam(method.returnType, 'Future');
+        final body = method.bodySnippet.isNotEmpty
+            ? _extractBodyContent(method.bodySnippet)
+            : 'return null; // TODO: Return initial async state';
+        return ('Future<$innerType>', body);
       case NotifierType.streamNotifier:
-        return (
-          'Stream<dynamic>',
-          'return const Stream.empty(); // TODO: Return stream',
+        final method = node.methods.firstWhere(
+          (m) => !m.isGetter && m.returnType.startsWith('Stream'),
+          orElse: () => MethodInfo(
+            name: '',
+            callsNotifyListeners: false,
+            bodySnippet: '',
+            returnType: 'dynamic',
+          ),
         );
+        final innerType = _extractTypeParam(method.returnType, 'Stream');
+        final body = method.bodySnippet.isNotEmpty
+            ? _extractBodyContent(method.bodySnippet)
+            : 'return const Stream.empty(); // TODO: Return stream';
+        return ('Stream<$innerType>', body);
       default:
         break;
     }
@@ -167,6 +188,27 @@ class MyWidget extends ConsumerWidget {
 
     final stateClassName = '${node.name}State';
     return (stateClassName, 'return $stateClassName();');
+  }
+
+  String _extractTypeParam(String returnType, String wrapper) {
+    final match = RegExp('$wrapper<(.+)>').firstMatch(returnType);
+    return match?.group(1) ?? 'dynamic';
+  }
+
+  String _extractBodyContent(String bodySnippet) {
+    String s = bodySnippet.trim();
+    if (s.startsWith('async*')) {
+      s = s.substring(6).trim();
+    } else if (s.startsWith('async')) {
+      s = s.substring(5).trim();
+    }
+    if (s.startsWith('{') && s.endsWith('}')) {
+      return s.substring(1, s.length - 1).trim();
+    }
+    if (s.startsWith('=>')) {
+      return 'return ${s.substring(2).trim()};';
+    }
+    return s;
   }
 
   String _defaultForType(String type) {
