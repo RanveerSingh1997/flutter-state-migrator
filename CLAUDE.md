@@ -53,7 +53,7 @@ Each adapter emits typed `ProviderNode` subclasses (defined in `lib/migrator/mod
 
 Shared utilities live in `scanner_utils.dart`: `buildMethodInfo()` and `detectNotifierType()` are used by all adapters and the generator.
 
-Plugins can extend scanning via `lib/migrator/plugins/plugin_base.dart` — implement `CustomAdapter` (a `RecursiveAstVisitor`) and `CustomTransformer`. `PluginLoader` loads them from a `migrator_plugins/` directory in the target project.
+**[EXPERIMENTAL — not functional]** Plugins can extend scanning via `lib/migrator/plugins/plugin_base.dart` — implement `CustomAdapter` (a `RecursiveAstVisitor`) and `CustomTransformer`. `PluginLoader` detects a `migrator_plugins/` directory in the target project but prints a warning and does nothing: Dart has no runtime `.dart` file loading, so plugins must be compiled into the tool. This feature is a placeholder for a future compile-time registry approach.
 
 ### Stage 2 — Semantic Graph (`lib/migrator/models/graph_models.dart`, `lib/migrator/analysis/graph_builder.dart`)
 
