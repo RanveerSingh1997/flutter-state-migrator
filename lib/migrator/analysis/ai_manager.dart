@@ -221,7 +221,9 @@ class AIManager {
 
       final payload = jsonDecode(response.body);
       if (payload is! Map<String, dynamic>) {
-        return const _LlmResult.failure('Local LLM returned an invalid JSON payload.');
+        return const _LlmResult.failure(
+          'Local LLM returned an invalid JSON payload.',
+        );
       }
 
       final text = payload['response'];
@@ -329,7 +331,9 @@ Return a concise recommendation with:
     final publicFields = stateFields
         .map((field) => field.startsWith('_') ? field.substring(1) : field)
         .toList();
-    final firstField = publicFields.isEmpty ? '/* stateField */' : publicFields.first;
+    final firstField = publicFields.isEmpty
+        ? '/* stateField */'
+        : publicFields.first;
     final notifierHint = notifierType == NotifierType.asyncNotifier
         ? 'Use AsyncNotifier state transitions if this method coordinates loading or error states.'
         : 'Keep the method inside a Riverpod Notifier and express mutations through copyWith.';

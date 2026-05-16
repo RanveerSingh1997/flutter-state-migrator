@@ -67,15 +67,7 @@ class GeneratedFileManager {
   }
 
   static bool _isExcluded(String path) {
-    const excluded = {
-      'build',
-      '.dart_tool',
-      '.pub-cache',
-      '.git',
-      '.fvm',
-    };
-    return path
-        .split(p.separator)
-        .any((segment) => excluded.contains(segment));
+    const excluded = {'build', '.dart_tool', '.pub-cache', '.git', '.fvm'};
+    return path.split(p.separator).any((segment) => excluded.contains(segment));
   }
 }

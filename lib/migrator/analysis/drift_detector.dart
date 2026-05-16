@@ -80,14 +80,12 @@ class ArchitectureDriftDetector {
     final priorViolations = prior.violationFingerprints.toSet();
 
     return DriftReport(
-      newSmells:
-          currentSmells.difference(priorSmells).toList()..sort(),
-      resolvedSmells:
-          priorSmells.difference(currentSmells).toList()..sort(),
-      newViolations:
-          currentViolations.difference(priorViolations).toList()..sort(),
-      resolvedViolations:
-          priorViolations.difference(currentViolations).toList()..sort(),
+      newSmells: currentSmells.difference(priorSmells).toList()..sort(),
+      resolvedSmells: priorSmells.difference(currentSmells).toList()..sort(),
+      newViolations: currentViolations.difference(priorViolations).toList()
+        ..sort(),
+      resolvedViolations: priorViolations.difference(currentViolations).toList()
+        ..sort(),
       scoreDelta: healthScore - prior.healthScore,
       comparedAt: prior.timestamp,
     );
@@ -105,7 +103,8 @@ class ArchitectureDriftDetector {
     final snapshot = DriftSnapshot(
       timestamp: DateTime.now(),
       smellFingerprints: _smellFingerprints(smells).toList()..sort(),
-      violationFingerprints: _violationFingerprints(violations).toList()..sort(),
+      violationFingerprints: _violationFingerprints(violations).toList()
+        ..sort(),
       healthScore: healthScore,
     );
 
