@@ -9,11 +9,15 @@ class PluginLoader {
     final pluginDir = Directory('$projectPath/migrator/plugins');
     if (!pluginDir.existsSync()) return;
 
-    print('🔌 Loading custom plugins from ${pluginDir.path}...');
-
-    // In a real implementation, we would use something like 'dart:isolate'
-    // or a dynamic library loader to instantiate these from .dart files.
-    // For this prototype, we'll look for registrations.
+    print(
+      '\x1B[33m⚠️  [EXPERIMENTAL] Plugin directory detected at ${pluginDir.path}.\x1B[0m',
+    );
+    print(
+      '   Plugin loading is not yet implemented. Dart has no runtime .dart file loading;',
+    );
+    print(
+      '   plugins must be compiled into the tool. Skipping plugin discovery.',
+    );
   }
 
   void registerAdapter(CustomAdapter adapter) {
