@@ -90,4 +90,4 @@ Configuration is loaded from `migrator_config.yaml` at the project root (optiona
 
 Tests are in `test/`. Fixture files for regression tests live in `test/fixtures/`. The analyzer excludes `example/`, `test_project/`, and `test/fixtures/` from analysis.
 
-Exit criterion: `dart analyze lib/` must report **zero issues** and `flutter test` must pass **all 80 tests** before any commit or PR.
+Exit criterion: `dart analyze lib/` must report **zero issues** and `flutter test` must pass **all 97 tests** before any commit or PR.
