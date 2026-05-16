@@ -43,3 +43,7 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Test-generated artifacts
+test/fixtures/*.actual.dart
+.migrator_drift/
