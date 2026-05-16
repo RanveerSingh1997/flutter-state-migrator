@@ -98,7 +98,7 @@ class ArchitectureIntelligenceEngine {
       widgetSmells.add(ArchitectureSmell(
         nodeId: id,
         name: 'Logic Leakage',
-        description: 'Widget ${node.widgetName} accesses providers ${usageNodes} times. Consider refactoring UI-coupled logic into a dedicated Controller or ViewModel.',
+        description: 'Widget ${node.widgetName} accesses providers $usageNodes times. Consider refactoring UI-coupled logic into a dedicated Controller or ViewModel.',
         severity: 'warning',
       ));
     }

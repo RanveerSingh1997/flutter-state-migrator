@@ -35,7 +35,7 @@ class MobXAdapter extends RecursiveAstVisitor<void> {
     }
 
     if (isMobXStore) {
-      final className = node.name.lexeme;
+      final className = node.namePart.typeName.lexeme;
       final stateFields = <FieldInfo>[];
       final methods = <MethodInfo>[];
 

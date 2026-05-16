@@ -21,7 +21,7 @@ class GetXAdapter extends RecursiveAstVisitor<void> {
     final extendsClause = node.extendsClause;
     if (extendsClause != null &&
         extendsClause.superclass.name.lexeme == 'GetxController') {
-      final className = node.name.lexeme;
+      final className = node.namePart.typeName.lexeme;
       final stateFields = <FieldInfo>[];
       final methods = <MethodInfo>[];
 

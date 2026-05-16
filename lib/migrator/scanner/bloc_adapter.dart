@@ -22,7 +22,7 @@ class BlocAdapter extends RecursiveAstVisitor<void> {
     if (extendsClause != null) {
       final superclassName = extendsClause.superclass.name.lexeme;
       if (superclassName == 'Bloc' || superclassName == 'Cubit') {
-        final className = node.name.lexeme;
+        final className = node.namePart.typeName.lexeme;
         final stateType =
             extendsClause.superclass.typeArguments?.arguments.last.toSource() ??
             'dynamic';

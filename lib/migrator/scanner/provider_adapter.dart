@@ -55,7 +55,7 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
 
     // Detect ChangeNotifier classes (Standard Provider pattern)
     if (extendsClause != null && superClassName == 'ChangeNotifier') {
-      final className = node.name.lexeme;
+      final className = node.namePart.typeName.lexeme;
       final stateFields = <FieldInfo>[];
       final methods = <MethodInfo>[];
 
@@ -111,7 +111,7 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
         ),
       );
     } else if (extendsClause != null && superClassName == 'StatelessWidget') {
-      final className = node.name.lexeme;
+      final className = node.namePart.typeName.lexeme;
       int buildMethodOffset = -1;
 
       for (final member in classBody.members) {
@@ -131,7 +131,7 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
         ),
       );
     } else if (extendsClause != null && superClassName == 'StatefulWidget') {
-      final className = node.name.lexeme;
+      final className = node.namePart.typeName.lexeme;
       int createStateOffset = -1;
       for (final member in classBody.members) {
         if (member is MethodDeclaration &&
@@ -150,7 +150,7 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
         ),
       );
     } else if (extendsClause != null && superClassName == 'State') {
-      final className = node.name.lexeme;
+      final className = node.namePart.typeName.lexeme;
       final typeArguments = extendsClause.superclass.typeArguments;
       if (typeArguments != null && typeArguments.arguments.isNotEmpty) {
         final widgetName = typeArguments.arguments.first.toSource();
@@ -165,7 +165,7 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
         );
       }
     } else if (extendsClause != null && superClassName == 'HookWidget') {
-      final className = node.name.lexeme;
+      final className = node.namePart.typeName.lexeme;
       int buildMethodOffset = -1;
       for (final member in classBody.members) {
         if (member is MethodDeclaration && member.name.lexeme == 'build') {
@@ -182,11 +182,11 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
         ),
       );
     } else if (_isLogicClass(
-      className: node.name.lexeme,
+      className: node.namePart.typeName.lexeme,
       superClassName: superClassName,
     )) {
       // Catch-all for other logic classes (repositories, services)
-      final className = node.name.lexeme;
+      final className = node.namePart.typeName.lexeme;
       nodes.add(
         LogicUnitNode(
           name: className,
@@ -620,8 +620,9 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
     if (parent is MethodInvocation && parent.target == node) return true;
     if (parent is PropertyAccess && parent.target == node) {
       final grandParent = parent.parent;
-      if (grandParent is MethodInvocation && grandParent.target == parent)
+      if (grandParent is MethodInvocation && grandParent.target == parent) {
         return true;
+      }
     }
     return false;
   }
