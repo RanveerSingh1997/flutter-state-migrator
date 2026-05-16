@@ -9,6 +9,7 @@ import 'package:flutter_state_migrator/migrator/analysis/cloud_manager.dart';
 import 'package:flutter_state_migrator/migrator/analysis/config_manager.dart';
 import 'package:flutter_state_migrator/migrator/analysis/dependency_manager.dart';
 import 'package:flutter_state_migrator/migrator/analysis/generated_file_manager.dart';
+import 'package:flutter_state_migrator/migrator/analysis/drift_detector.dart';
 import 'package:flutter_state_migrator/migrator/analysis/governance_engine.dart';
 import 'package:flutter_state_migrator/migrator/analysis/graph_builder.dart';
 import 'package:flutter_state_migrator/migrator/analysis/ide_intelligence.dart';
@@ -99,6 +100,11 @@ Future<void> main(List<String> arguments) async {
       'ide-json',
       negatable: false,
       help: 'Emit structured IDE diagnostics as JSON without modifying files',
+    )
+    ..addFlag(
+      'drift',
+      negatable: false,
+      help: 'Compare architecture health against saved baseline',
     );
 
   final argResults = parser.parse(arguments);
@@ -252,6 +258,53 @@ Future<void> main(List<String> arguments) async {
     print('   \x1B[32m✓ Governance rules satisfied.\x1B[0m');
   }
 
+  // 5. Architecture Drift Detection
+  final healthScore = (100.0 - smells.length * 2.5 - violations.length * 5.0)
+      .clamp(0.0, 100.0);
+  final driftDetector = ArchitectureDriftDetector(projectRoot);
+
+  if (argResults['drift'] as bool) {
+    final driftReport = driftDetector.compareWithLatest(
+      smells: smells,
+      violations: violations,
+      healthScore: healthScore,
+    );
+    print('\n📈 Architecture Drift Detection...');
+    if (driftReport == null) {
+      print('   No prior snapshot found — saving initial baseline.');
+    } else if (!driftReport.hasChanges && driftReport.scoreDelta == 0.0) {
+      print(
+        '   \x1B[32m✓ No architecture drift since ${driftReport.comparedAt}.\x1B[0m',
+      );
+    } else {
+      print('   Changes since ${driftReport.comparedAt}:');
+      if (driftReport.scoreDelta != 0.0) {
+        final sign = driftReport.scoreDelta > 0 ? '+' : '';
+        final color = driftReport.scoreDelta > 0 ? '\x1B[32m' : '\x1B[31m';
+        print(
+          '   Health Score: $color$sign${driftReport.scoreDelta.toStringAsFixed(1)}\x1B[0m',
+        );
+      }
+      for (final s in driftReport.newSmells) {
+        print('   \x1B[31m+ New smell:\x1B[0m $s');
+      }
+      for (final s in driftReport.resolvedSmells) {
+        print('   \x1B[32m- Resolved smell:\x1B[0m $s');
+      }
+      for (final v in driftReport.newViolations) {
+        print('   \x1B[31m+ New violation:\x1B[0m $v');
+      }
+      for (final v in driftReport.resolvedViolations) {
+        print('   \x1B[32m- Resolved violation:\x1B[0m $v');
+      }
+    }
+  }
+  driftDetector.saveSnapshot(
+    smells: smells,
+    violations: violations,
+    healthScore: healthScore,
+  );
+
   print('\n📊 Found ${nodes.length} architectural elements:');
   if (visualize) {
     final visualizer = ProviderVisualizer();
@@ -330,8 +383,9 @@ Future<void> main(List<String> arguments) async {
       final processedTypes = <String>{};
       for (final node in entry.value) {
         if (node is ProviderOfNode) {
-          if (processedTypes.contains('ProviderOf:${node.consumedClass}'))
+          if (processedTypes.contains('ProviderOf:${node.consumedClass}')) {
             continue;
+          }
           processedTypes.add('ProviderOf:${node.consumedClass}');
         }
         buffer.writeln(generator.generateSuggestion(node));
