@@ -1,3 +1,4 @@
+// TODO(Migrator): Convert ImportManager to @riverpod Notifier
 class ImportManager {
   /// Adds required Riverpod imports and optionally removes unused Provider imports.
   String processImports(String content, {bool cleanProvider = true}) {

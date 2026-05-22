@@ -1,38 +1,35 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart' as riverpod;
-import 'package:provider/provider.dart';
-import 'home_screen.dart';
-import 'provider_version/todo_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'theme.dart';
 
 void main() {
-  runApp(
-    // Wrap with Riverpod's ProviderScope at the root
-    riverpod.ProviderScope(child: const MyApp()),
-  );
+  runApp(const ProviderScope(child: MyApp()));
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends ConsumerWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return // TODO(Migrator): Remove MultiProvider, Riverpod providers are global. Wrap app in ProviderScope.
-    // TODO(Migrator): Remove MultiProvider, Riverpod providers are global. Wrap app in ProviderScope.
-    MultiProvider(
-      providers: [
-        // TODO(Migrator): Replace ChangeNotifierProvider with StateNotifierProvider
-        // TODO(Migrator): Replace ChangeNotifierProvider with StateNotifierProvider
-        // TODO(Migrator): Replace ChangeNotifierProvider with StateNotifierProvider
-        ChangeNotifierProvider(create: (_) => TodoProvider()),
-      ],
-      child: MaterialApp(
-        title: 'Flutter State Migrator',
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-          useMaterial3: true,
-        ),
-        home: const HomeScreen(),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final router = ref.watch(routerProvider);
+    final themeMode = ref.watch(themeModeProvider);
+
+    return MaterialApp.router(
+      title: 'Flutter State Migrator',
+      theme: ThemeData.light().copyWith(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        textTheme: Theme.of(context).textTheme,
+          appBarTheme: const AppBarTheme(),
       ),
+      darkTheme: ThemeData.dark().copyWith(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.deepPurple,
+          brightness: Brightness.dark,
+        ),
+      ),
+      themeMode: themeMode,
+      routerConfig: router,
     );
   }
 }

@@ -325,23 +325,26 @@ graph TD
     final isSelected = _currentView == title;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      child: ListTile(
-        onTap: () => setState(() => _currentView = title),
-        leading: Icon(
-          icon,
-          color: isSelected ? Colors.deepPurpleAccent : Colors.grey,
-        ),
-        title: Text(
-          title,
-          style: TextStyle(
-            color: isSelected ? Colors.white : Colors.grey,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+      child: Material(
+        color: Colors.transparent,
+        child: ListTile(
+          onTap: () => setState(() => _currentView = title),
+          leading: Icon(
+            icon,
+            color: isSelected ? Colors.deepPurpleAccent : Colors.grey,
           ),
+          title: Text(
+            title,
+            style: TextStyle(
+              color: isSelected ? Colors.white : Colors.grey,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            ),
+          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          tileColor: isSelected
+              ? Colors.deepPurpleAccent.withValues(alpha: 0.12)
+              : Colors.transparent,
         ),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        tileColor: isSelected
-            ? Colors.deepPurpleAccent.withValues(alpha: 0.12)
-            : Colors.transparent,
       ),
     );
   }

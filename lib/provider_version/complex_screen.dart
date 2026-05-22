@@ -11,7 +11,8 @@ class ComplexScreen extends StatelessWidget {
       providers: [
         // TODO(Migrator): Replace ChangeNotifierProvider with StateNotifierProvider
         // TODO(Migrator): Replace ChangeNotifierProvider with StateNotifierProvider
-        ChangeNotifierProvider(create: (_) => TodoProvider()),
+        // TODO(Migrator): Replace with Riverpod provider
+ChangeNotifierProvider(create: (_) => TodoProvider()),
       ],
       child: Scaffold(
         body: // TODO(Migrator): Replace Selector with ref.watch(todoproviderProvider.select(...))

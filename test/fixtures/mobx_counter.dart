@@ -7,6 +7,7 @@ part 'mobx_counter.g.dart';
 
 class CounterStore = _CounterStore with _$CounterStore;
 
+// TODO(Migrator): Convert _CounterStore to @riverpod Notifier
 abstract class _CounterStore with Store {
   @observable
   int count = 0;
@@ -45,6 +46,7 @@ abstract class _CounterStore with Store {
 
 class ProfileStore = _ProfileStore with _$ProfileStore;
 
+// TODO(Migrator): Convert _ProfileStore to @riverpod Notifier
 abstract class _ProfileStore with Store {
   @observable
   String name = '';

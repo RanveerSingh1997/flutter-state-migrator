@@ -23,6 +23,7 @@ class PackageInfo {
   String toString() => '$name ($rootPath)';
 }
 
+// TODO(Migrator): Convert MonorepoManager to @riverpod Notifier
 class MonorepoManager {
   final String rootPath;
 

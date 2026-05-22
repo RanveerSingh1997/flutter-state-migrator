@@ -1,6 +1,7 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'provider_version/provider_todo_screen.dart';
-import 'riverpod_version/riverpod_todo_screen.dart';
+import 'package:go_router/go_router.dart';
+import 'theme.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -8,29 +9,38 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('State Migrator Demo')),
+      appBar: AppBar(
+        title: const Text('State Migrator Demo'),
+        actions: const [ThemeToggleButton()],
+      ),
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const ProviderTodoScreen()),
-                );
-              },
-              child: const Text('Open Provider Implementation'),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              width: 300,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.white.withOpacity(0.3)),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.deepPurpleAccent,
+                      foregroundColor: Colors.white,
+                    ),
+                    onPressed: () => context.go('/todo'),
+                    child: const Text('Open Riverpod Implementation'),
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const RiverpodTodoScreen()),
-                );
-              },
-              child: const Text('Open Riverpod Implementation'),
-            ),
-          ],
+          ),
         ),
       ),
     );

@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 // ── Simple counter ─────────────────────────────────────────────────────────
 
+// TODO(Migrator): Convert CounterController to @riverpod Notifier
 class CounterController extends GetxController {
   final count = 0.obs;
   final label = 'counter'.obs;
@@ -29,6 +30,7 @@ class CounterController extends GetxController {
 
 // ── Profile controller ─────────────────────────────────────────────────────
 
+// TODO(Migrator): Convert ProfileController to @riverpod Notifier
 class ProfileController extends GetxController {
   final name = ''.obs;
   final age = 0.obs;

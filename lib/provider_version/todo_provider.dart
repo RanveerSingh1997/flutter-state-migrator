@@ -5,6 +5,7 @@ import 'dart:math';
 // TODO(Migrator): Convert TodoProvider to StateNotifier
 // TODO(Migrator): Convert TodoProvider to StateNotifier
 // TODO(Migrator): Convert TodoProvider to StateNotifier
+// TODO(Migrator): Convert TodoProvider to @riverpod Notifier
 class TodoProvider extends ChangeNotifier {
   List<Todo> _todos = [];
 

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 // ── Logic unit ─────────────────────────────────────────────────────────────
 
+// TODO(Migrator): Convert CounterModel to @riverpod Notifier
 class CounterModel extends ChangeNotifier {
   int _count = 0;
   String _label = 'counter';
@@ -51,11 +52,13 @@ class CounterPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final counter = Provider.of<CounterModel>(context);
+    final counter = // TODO(Migrator): Replace with ref.read or ref.watch
+Provider.of<CounterModel>(context);
     return Scaffold(
       body: Text('${counter.count}'),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => Provider.of<CounterModel>(context, listen: false)
+        onPressed: () => // TODO(Migrator): Replace with ref.read or ref.watch
+Provider.of<CounterModel>(context, listen: false)
             .increment(),
       ),
     );
@@ -67,7 +70,8 @@ class CounterDisplay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<CounterModel>(
+    return // TODO(Migrator): Change to ConsumerWidget and use ref.watch
+Consumer<CounterModel>(
       builder: (context, model, child) => Text('${model.count}'),
     );
   }
@@ -92,7 +96,8 @@ class AppRoot extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => CounterModel()),
+        // TODO(Migrator): Replace with Riverpod provider
+ChangeNotifierProvider(create: (_) => CounterModel()),
       ],
       child: MaterialApp(home: CounterPage()),
     );

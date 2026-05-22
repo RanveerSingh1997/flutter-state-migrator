@@ -32,6 +32,7 @@ class MigratorConfig {
   }
 }
 
+// TODO(Migrator): Convert ConfigurationManager to @riverpod Notifier
 class ConfigurationManager {
   static MigratorConfig loadConfig(String projectPath) {
     final configFile = File('$projectPath/migrator_config.yaml');

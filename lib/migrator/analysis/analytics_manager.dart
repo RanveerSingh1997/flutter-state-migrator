@@ -2,6 +2,7 @@ import '../models/ir_models.dart';
 import 'architecture_intelligence.dart';
 import 'governance_engine.dart';
 
+// TODO(Migrator): Convert AnalyticsManager to @riverpod Notifier
 class AnalyticsManager {
   Map<String, dynamic> calculateMetrics({
     required List<ProviderNode> nodes,

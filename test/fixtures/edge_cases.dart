@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 // ── Generic StateNotifier ─────────────────────────────────────────────────
 
+// TODO(Migrator): Convert ListNotifier to @riverpod Notifier
 class ListNotifier<T> extends ChangeNotifier {
   List<T> _items = [];
 
@@ -28,6 +29,7 @@ mixin LoggingMixin on ChangeNotifier {
   }
 }
 
+// TODO(Migrator): Convert TodoNotifier to @riverpod Notifier
 class TodoNotifier extends ChangeNotifier with LoggingMixin {
   final List<String> _todos = [];
 
@@ -48,6 +50,7 @@ class TodoNotifier extends ChangeNotifier with LoggingMixin {
 
 // ── Multiple constructor parameters (family candidate) ────────────────────
 
+// TODO(Migrator): Convert PaginatedNotifier to @riverpod Notifier
 class PaginatedNotifier extends ChangeNotifier {
   final String category;
   final int pageSize;
@@ -74,18 +77,22 @@ class MultiProviderWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final todos = context.watch<TodoNotifier>().todos;
-    final paginated = context.watch<PaginatedNotifier>();
+    final todos = // TODO(Migrator): Replace with ref.read or ref.watch
+context.watch<TodoNotifier>().todos;
+    final paginated = // TODO(Migrator): Replace with ref.read or ref.watch
+context.watch<PaginatedNotifier>();
     return Column(
       children: [
         Text('Todos: ${todos.length}'),
         Text('Page: ${paginated.page}'),
         ElevatedButton(
-          onPressed: () => context.read<TodoNotifier>().addTodo('New'),
+          onPressed: () => // TODO(Migrator): Replace with ref.read or ref.watch
+context.read<TodoNotifier>().addTodo('New'),
           child: const Text('Add'),
         ),
         ElevatedButton(
-          onPressed: () => context.read<PaginatedNotifier>().loadNextPage(),
+          onPressed: () => // TODO(Migrator): Replace with ref.read or ref.watch
+context.read<PaginatedNotifier>().loadNextPage(),
           child: const Text('Load more'),
         ),
       ],

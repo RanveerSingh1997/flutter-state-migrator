@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+// TODO(Migrator): Convert SnapshotManager to @riverpod Notifier
 class SnapshotManager {
   final String projectPath;
   static const String _snapshotDir = '.migrator_snapshots';

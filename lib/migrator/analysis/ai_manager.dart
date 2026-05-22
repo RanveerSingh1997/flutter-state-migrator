@@ -51,6 +51,7 @@ class AiGuidance {
 }
 
 // TODO(Migrator): Convert AIManager to @riverpod Notifier
+// TODO(Migrator): Convert AIManager to @riverpod Notifier
 class AIManager {
   AIManager({
     http.Client? client,

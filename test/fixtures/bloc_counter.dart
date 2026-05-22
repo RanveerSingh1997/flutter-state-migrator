@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 // ── Cubit ──────────────────────────────────────────────────────────────────
 
+// TODO(Migrator): Convert CounterCubit to @riverpod Notifier
 class CounterCubit extends Cubit<int> {
   CounterCubit() : super(0);
 
@@ -27,6 +28,7 @@ class ProfileState {
   const ProfileState({required this.name, this.verified = false});
 }
 
+// TODO(Migrator): Convert ProfileCubit to @riverpod Notifier
 class ProfileCubit extends Cubit<ProfileState> {
   ProfileCubit() : super(const ProfileState(name: ''));
 
@@ -48,6 +50,7 @@ class IncrementEvent extends CounterEvent {}
 
 class DecrementEvent extends CounterEvent {}
 
+// TODO(Migrator): Convert CounterBloc to @riverpod Notifier
 class CounterBloc extends Bloc<CounterEvent, int> {
   CounterBloc() : super(0) {
     on<IncrementEvent>((event, emit) => emit(state + 1));

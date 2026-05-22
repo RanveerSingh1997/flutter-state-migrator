@@ -32,6 +32,7 @@ class DependencyUpdateResult {
   bool get hasChanges => added.isNotEmpty || commented.isNotEmpty;
 }
 
+// TODO(Migrator): Convert DependencyManager to @riverpod Notifier
 class DependencyManager {
   final String projectPath;
 

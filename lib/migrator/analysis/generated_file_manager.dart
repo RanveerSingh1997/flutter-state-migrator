@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:path/path.dart' as p;
 
+// TODO(Migrator): Convert GeneratedFileManager to @riverpod Notifier
 class GeneratedFileManager {
   final String projectPath;
 
