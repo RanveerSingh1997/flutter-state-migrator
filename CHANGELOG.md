@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [2.2.3] - 2026-05-23
+## [2.2.4] - 2026-05-23
 
 ### Fixed
 - `BodyTransformer` now detects single-field state and emits direct `state = ...` assignments instead of unnecessary `copyWith(...)` calls.
