@@ -84,6 +84,13 @@ The platform now surfaces semantic guidance through governance validation, archi
 
 ⸻
 
+### Phase 45 — 2.2.5 Polish [IN PROGRESS]
+- **Widget tests re-enabled**: `HomeScreen` and navigation to `TodoScreen` covered.
+- **go_router v17 compatibility**: `flutter analyze lib/` clean with go_router ^17.2.3 — no API breakage.
+- **Selector fallback fixed**: Scanner now emits `(state) => state` instead of `/* TODO: Selector */`; generator fallback also updated to emit compilable code.
+- **pub points**: Zero dry-run warnings (dev CHANGELOG entry expected).
+- **Pending**: `analyzer ^13.0.0` upgrade blocked by Flutter SDK pinning `test_api 0.7.11`; revisit when SDK ships a newer pin.
+
 ## Success Definition
 
 The platform is successful when teams can migrate safely, understand architecture visually, enforce scalable rules, and trust insights backed by deterministic semantic analysis.

@@ -59,7 +59,7 @@ void main() {
   String _generateSelectorWidget(SelectorNode node) {
     final providerName = providerNameForType(node.consumedClass);
     final selector = node.selectorSnippet.startsWith('/*')
-        ? '(state) => state./* TODO: specify property */'
+        ? '(state) => state'
         : _normaliseSelectorSnippet(node.selectorSnippet);
     return '''// 🔄 Suggestion: Replace Selector with ref.watch and select()
 class MyWidget extends ConsumerWidget {
