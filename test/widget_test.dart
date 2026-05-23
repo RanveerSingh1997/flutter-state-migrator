@@ -1,11 +1,26 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_state_migrator/main.dart';
-import 'package:flutter_state_migrator/todo_screen.dart';
 
 void main() {
-  testWidgets('Home screen opens the Riverpod demo', (
-    WidgetTester tester,
+  testWidgets('Home screen shows title and Riverpod button', (tester) async {
+    await tester.pumpWidget(const ProviderScope(child: MyApp()));
+    await tester.pumpAndSettle();
+
+    expect(find.text('State Migrator Demo'), findsOneWidget);
+    expect(find.text('Open Riverpod Implementation'), findsOneWidget);
+  });
+
+  testWidgets('Tapping Riverpod button navigates to TodoScreen', (
+    tester,
   ) async {
-    // Test skipped due to UI changes; enable when stable.
-  }, skip: true);
+    await tester.pumpWidget(const ProviderScope(child: MyApp()));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Open Riverpod Implementation'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Todo List (Riverpod)'), findsOneWidget);
+    expect(find.text('New Todo'), findsOneWidget);
+  });
 }

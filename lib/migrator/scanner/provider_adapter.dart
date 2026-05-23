@@ -322,7 +322,7 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
       if (typeArgs != null && typeArgs.arguments.length >= 2) {
         final consumedType = typeArgs.arguments[0].beginToken.lexeme;
         final selectedType = typeArgs.arguments[1].beginToken.lexeme;
-        String selectorSnippet = '/* TODO: Selector */';
+        String selectorSnippet = '(state) => state';
         int? builderOffset;
         int? builderLength;
         int? childOffset;
@@ -535,7 +535,7 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
       if (typeArguments == null || typeArguments.arguments.length < 2) {
         return false;
       }
-      String selectorSnippet = '/* TODO: Selector */';
+      String selectorSnippet = '(state) => state';
       int? builderOffset;
       int? builderLength;
       int? childOffset;
