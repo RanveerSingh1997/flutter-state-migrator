@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.2.3] - 2026-05-23
+
+### Fixed
+- `BodyTransformer` now detects single-field state and emits direct `state = ...` assignments instead of unnecessary `copyWith(...)` calls.
+- Single-field list mutations rewritten cleanly: `state = [...state, item]`, `state = state.where(...).toList()`.
+- Added `.removeWhere(predicate)` → `state = state.where(...)` rewrite for single-field list providers.
+- Adjacent `copyWith` calls in multi-field notifiers are now merged into one statement.
+
+### Changed
+- Demo app UI updated: `HomeScreen` uses `go_router` navigation, glassmorphism card layout, and a `ThemeToggleButton`.
+- Provider todo screen and `todo_screen.dart` refactored to match updated routing and theme system.
+- Dashboard `main.dart` refreshed for consistency with new theme.
+
 ## [2.2.2] - 2026-05-16
 
 ### Fixed
