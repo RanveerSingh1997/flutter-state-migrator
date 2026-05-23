@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.2.5] - 2026-05-23
+
+### Fixed
+- Selector scanner fallback now emits `(state) => state` instead of a non-compiling `/* TODO: Selector */` comment when no `selector:` argument is captured.
+- Riverpod generator fallback for unresolved selectors updated to match — emits `(state) => state` instead of `(state) => state./* TODO: specify property */`.
+
+### Added
+- Widget tests re-enabled and expanded: covers `HomeScreen` title, `ThemeToggleButton`, and navigation to `TodoScreen` via go_router.
+
+### Changed
+- `go_router` dependency bumped to `^17.2.3` (verified zero API breakage).
+- `get` bumped to `^4.7.3`, `mobx` to `^2.6.0`.
+
 ## [2.2.4] - 2026-05-23
 
 ### Fixed
