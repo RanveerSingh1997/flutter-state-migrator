@@ -65,7 +65,10 @@ class PaginatedNotifier extends ChangeNotifier {
   Future<void> loadNextPage() async {
     await Future.delayed(const Duration(milliseconds: 100));
     _page++;
-    _items = List.generate(pageSize, (i) => '$category item ${_page * pageSize + i}');
+    _items = List.generate(
+      pageSize,
+      (i) => '$category item ${_page * pageSize + i}',
+    );
     notifyListeners();
   }
 }
@@ -78,21 +81,26 @@ class MultiProviderWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final todos = // TODO(Migrator): Replace with ref.read or ref.watch
-context.watch<TodoNotifier>().todos;
+    context
+        .watch<TodoNotifier>()
+        .todos;
     final paginated = // TODO(Migrator): Replace with ref.read or ref.watch
-context.watch<PaginatedNotifier>();
+    context
+        .watch<PaginatedNotifier>();
     return Column(
       children: [
         Text('Todos: ${todos.length}'),
         Text('Page: ${paginated.page}'),
         ElevatedButton(
-          onPressed: () => // TODO(Migrator): Replace with ref.read or ref.watch
-context.read<TodoNotifier>().addTodo('New'),
+          onPressed:
+              () => // TODO(Migrator): Replace with ref.read or ref.watch
+                  context.read<TodoNotifier>().addTodo('New'),
           child: const Text('Add'),
         ),
         ElevatedButton(
-          onPressed: () => // TODO(Migrator): Replace with ref.read or ref.watch
-context.read<PaginatedNotifier>().loadNextPage(),
+          onPressed:
+              () => // TODO(Migrator): Replace with ref.read or ref.watch
+                  context.read<PaginatedNotifier>().loadNextPage(),
           child: const Text('Load more'),
         ),
       ],

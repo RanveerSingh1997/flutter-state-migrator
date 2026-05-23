@@ -69,7 +69,10 @@ class TodoNotifier extends ChangeNotifier with LoggingMixin {
     });
 
     test('transformer does not crash on mixin-bearing class', () {
-      expect(() => _migrate(mixinSource, filename: 'mixin.dart'), returnsNormally);
+      expect(
+        () => _migrate(mixinSource, filename: 'mixin.dart'),
+        returnsNormally,
+      );
     });
   });
 
@@ -88,11 +91,14 @@ class PaginatedNotifier extends ChangeNotifier {
 }
 ''';
 
-    test('scanner marks class with required constructor params as family candidate', () {
-      final nodes = _scan(paginatedSource);
-      final node = nodes.whereType<LogicUnitNode>().first;
-      expect(node.isFamilyCandidate, isTrue);
-    });
+    test(
+      'scanner marks class with required constructor params as family candidate',
+      () {
+        final nodes = _scan(paginatedSource);
+        final node = nodes.whereType<LogicUnitNode>().first;
+        expect(node.isFamilyCandidate, isTrue);
+      },
+    );
 
     test('transformer emits family candidate warning comment', () {
       final migrated = _migrate(paginatedSource, filename: 'paginated.dart');

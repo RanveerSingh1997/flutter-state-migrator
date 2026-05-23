@@ -34,7 +34,9 @@ class TodoScreen extends ConsumerWidget {
                   icon: const Icon(Icons.add),
                   onPressed: () {
                     if (textController.text.isNotEmpty) {
-                      ref.read(todoProvider.notifier).addTodo(textController.text);
+                      ref
+                          .read(todoProvider.notifier)
+                          .addTodo(textController.text);
                       textController.clear();
                     }
                   },
@@ -51,16 +53,20 @@ class TodoScreen extends ConsumerWidget {
                   title: Text(
                     todo.title,
                     style: TextStyle(
-                      decoration: todo.isCompleted ? TextDecoration.lineThrough : null,
+                      decoration: todo.isCompleted
+                          ? TextDecoration.lineThrough
+                          : null,
                     ),
                   ),
                   leading: Checkbox(
                     value: todo.isCompleted,
-                    onChanged: (_) => ref.read(todoProvider.notifier).toggleTodo(todo.id),
+                    onChanged: (_) =>
+                        ref.read(todoProvider.notifier).toggleTodo(todo.id),
                   ),
                   trailing: IconButton(
                     icon: const Icon(Icons.delete),
-                    onPressed: () => ref.read(todoProvider.notifier).removeTodo(todo.id),
+                    onPressed: () =>
+                        ref.read(todoProvider.notifier).removeTodo(todo.id),
                   ),
                 );
               },

@@ -340,7 +340,9 @@ graph TD
               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
             ),
           ),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           tileColor: isSelected
               ? Colors.deepPurpleAccent.withValues(alpha: 0.12)
               : Colors.transparent,

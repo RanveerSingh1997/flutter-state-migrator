@@ -198,10 +198,7 @@ class CounterModel extends ChangeNotifier {
       expect(headerEdit.replacement, contains('part "counter_model.g.dart";'));
       expect(classEdit.replacement, contains('return 0;'));
       expect(classEdit.replacement, contains('void increment(int delta)'));
-      expect(
-        classEdit.replacement,
-        contains('state = state.copyWith(count: state.count + delta);'),
-      );
+      expect(classEdit.replacement, contains('state = state + delta;'));
 
       final providerRead = transformer.transformNode(
         ProviderOfNode(
@@ -454,16 +451,17 @@ dev_dependencies:
 
   group('Phase 44 AI guidance', () {
     test('AIManager provides deterministic fallback guidance', () async {
-      final guidance = await AIManager(
-        client: MockClient(
-          (_) async => http.Response('service unavailable', 503),
-        ),
-      ).refactorMethodBody(
-        className: 'CounterModel',
-        stateFields: const ['_count'],
-        methodName: 'increment',
-        methodBody: '{ _count += 1; notifyListeners(); }',
-      );
+      final guidance =
+          await AIManager(
+            client: MockClient(
+              (_) async => http.Response('service unavailable', 503),
+            ),
+          ).refactorMethodBody(
+            className: 'CounterModel',
+            stateFields: const ['_count'],
+            methodName: 'increment',
+            methodBody: '{ _count += 1; notifyListeners(); }',
+          );
 
       expect(guidance.recommendation, isNotEmpty);
       expect(guidance.prompt, contains('CounterModel'));

@@ -17,32 +17,47 @@ void main() {
 
     test('Detects Provider ChangeNotifier', () {
       final file = File('${tempDir.path}/counter.dart');
-      file.writeAsStringSync('class Counter extends ChangeNotifier { int count = 0; }');
-      
+      file.writeAsStringSync(
+        'class Counter extends ChangeNotifier { int count = 0; }',
+      );
+
       final scanner = AstScanner(tempDir.path);
       final nodes = scanner.scanProject();
-      
-      expect(nodes.any((n) => n is LogicUnitNode && n.name == 'Counter'), isTrue);
+
+      expect(
+        nodes.any((n) => n is LogicUnitNode && n.name == 'Counter'),
+        isTrue,
+      );
     });
 
     test('Detects Bloc / Cubit', () {
       final file = File('${tempDir.path}/counter_cubit.dart');
-      file.writeAsStringSync('class CounterCubit extends Cubit<int> { CounterCubit() : super(0); }');
-      
+      file.writeAsStringSync(
+        'class CounterCubit extends Cubit<int> { CounterCubit() : super(0); }',
+      );
+
       final scanner = AstScanner(tempDir.path);
       final nodes = scanner.scanProject();
-      
-      expect(nodes.any((n) => n is LogicUnitNode && n.name == 'CounterCubit'), isTrue);
+
+      expect(
+        nodes.any((n) => n is LogicUnitNode && n.name == 'CounterCubit'),
+        isTrue,
+      );
     });
 
     test('Detects GetX Controller', () {
       final file = File('${tempDir.path}/counter_controller.dart');
-      file.writeAsStringSync('class CounterController extends GetxController { var count = 0.obs; }');
-      
+      file.writeAsStringSync(
+        'class CounterController extends GetxController { var count = 0.obs; }',
+      );
+
       final scanner = AstScanner(tempDir.path);
       final nodes = scanner.scanProject();
-      
-      expect(nodes.any((n) => n is LogicUnitNode && n.name == 'CounterController'), isTrue);
+
+      expect(
+        nodes.any((n) => n is LogicUnitNode && n.name == 'CounterController'),
+        isTrue,
+      );
     });
 
     test('Detects MobX Store', () {
@@ -55,11 +70,14 @@ void main() {
           void increment() => count++;
         }
       ''');
-      
+
       final scanner = AstScanner(tempDir.path);
       final nodes = scanner.scanProject();
-      
-      expect(nodes.any((n) => n is LogicUnitNode && n.name == 'CounterStore'), isTrue);
+
+      expect(
+        nodes.any((n) => n is LogicUnitNode && n.name == 'CounterStore'),
+        isTrue,
+      );
     });
   });
 }

@@ -53,13 +53,15 @@ class CounterPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final counter = // TODO(Migrator): Replace with ref.read or ref.watch
-Provider.of<CounterModel>(context);
+    Provider.of<CounterModel>(
+      context,
+    );
     return Scaffold(
       body: Text('${counter.count}'),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => // TODO(Migrator): Replace with ref.read or ref.watch
-Provider.of<CounterModel>(context, listen: false)
-            .increment(),
+        onPressed:
+            () => // TODO(Migrator): Replace with ref.read or ref.watch
+                Provider.of<CounterModel>(context, listen: false).increment(),
       ),
     );
   }
@@ -71,7 +73,7 @@ class CounterDisplay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return // TODO(Migrator): Change to ConsumerWidget and use ref.watch
-Consumer<CounterModel>(
+    Consumer<CounterModel>(
       builder: (context, model, child) => Text('${model.count}'),
     );
   }
@@ -97,7 +99,7 @@ class AppRoot extends StatelessWidget {
     return MultiProvider(
       providers: [
         // TODO(Migrator): Replace with Riverpod provider
-ChangeNotifierProvider(create: (_) => CounterModel()),
+        ChangeNotifierProvider(create: (_) => CounterModel()),
       ],
       child: MaterialApp(home: CounterPage()),
     );

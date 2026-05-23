@@ -20,7 +20,7 @@ class MyApp extends ConsumerWidget {
       theme: ThemeData.light().copyWith(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         textTheme: Theme.of(context).textTheme,
-          appBarTheme: const AppBarTheme(),
+        appBarTheme: const AppBarTheme(),
       ),
       darkTheme: ThemeData.dark().copyWith(
         colorScheme: ColorScheme.fromSeed(

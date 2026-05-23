@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 import 'home_screen.dart';
 import 'todo_screen.dart';
 
-// Provider for the app's GoRouter configuration.
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: '/',
@@ -17,10 +16,8 @@ final routerProvider = Provider<GoRouter>((ref) {
   );
 });
 
-// Theme mode provider – toggles between light and dark mode.
 final themeModeProvider = StateProvider<ThemeMode>((ref) => ThemeMode.system);
 
-// Helper widget to toggle theme mode from the UI.
 class ThemeToggleButton extends ConsumerWidget {
   const ThemeToggleButton({super.key});
 

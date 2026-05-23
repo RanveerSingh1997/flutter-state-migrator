@@ -61,8 +61,7 @@ String _migrateSource(String source, String filename) {
 }
 
 // Fixture directory is always <package-root>/test/fixtures.
-String get _fixtureDir =>
-    p.join(Directory.current.path, 'test', 'fixtures');
+String get _fixtureDir => p.join(Directory.current.path, 'test', 'fixtures');
 
 /// Read fixture source from test/fixtures/[name].
 String _fixture(String name) =>
@@ -91,18 +90,22 @@ void main() {
 
     test('detects CounterModel as LogicUnitNode', () {
       final lu = nodes.whereType<LogicUnitNode>().firstWhere(
-            (n) => n.name == 'CounterModel',
-          );
-      expect(lu.stateFields.map((f) => f.rawName),
-          containsAll(['_count', '_label', '_loading']));
-      expect(lu.methods.map((m) => m.name),
-          containsAll(['increment', 'decrement', 'reset', 'addMany']));
+        (n) => n.name == 'CounterModel',
+      );
+      expect(
+        lu.stateFields.map((f) => f.rawName),
+        containsAll(['_count', '_label', '_loading']),
+      );
+      expect(
+        lu.methods.map((m) => m.name),
+        containsAll(['increment', 'decrement', 'reset', 'addMany']),
+      );
     });
 
     test('detects async loadFromApi method', () {
       final lu = nodes.whereType<LogicUnitNode>().firstWhere(
-            (n) => n.name == 'CounterModel',
-          );
+        (n) => n.name == 'CounterModel',
+      );
       final load = lu.methods.firstWhere((m) => m.name == 'loadFromApi');
       expect(load.isAsync, isTrue);
     });
@@ -174,9 +177,14 @@ void main() {
 
     test('output parses without errors', () {
       final result = parseString(content: output, throwIfDiagnostics: false);
-      final errors = result.errors.where((e) => e.errorCode.type.name == 'ERROR');
-      expect(errors, isEmpty,
-          reason: 'Transformed Provider output has parse errors');
+      final errors = result.errors.where(
+        (e) => e.errorCode.type.name == 'ERROR',
+      );
+      expect(
+        errors,
+        isEmpty,
+        reason: 'Transformed Provider output has parse errors',
+      );
     });
   });
 
@@ -202,8 +210,8 @@ void main() {
 
     test('detects ProfileCubit with state fields', () {
       final pc = nodes.whereType<LogicUnitNode>().firstWhere(
-            (n) => n.name == 'ProfileCubit',
-          );
+        (n) => n.name == 'ProfileCubit',
+      );
       expect(pc.stateFields, isNotEmpty);
     });
 
@@ -216,8 +224,8 @@ void main() {
 
     test('CounterCubit async loadFromApi is detected as async', () {
       final cc = nodes.whereType<LogicUnitNode>().firstWhere(
-            (n) => n.name == 'CounterCubit',
-          );
+        (n) => n.name == 'CounterCubit',
+      );
       final load = cc.methods.firstWhere((m) => m.name == 'loadFromApi');
       expect(load.isAsync, isTrue);
     });
@@ -238,9 +246,14 @@ void main() {
 
     test('output parses without errors', () {
       final result = parseString(content: output, throwIfDiagnostics: false);
-      final errors = result.errors.where((e) => e.errorCode.type.name == 'ERROR');
-      expect(errors, isEmpty,
-          reason: 'Transformed BLoC output has parse errors');
+      final errors = result.errors.where(
+        (e) => e.errorCode.type.name == 'ERROR',
+      );
+      expect(
+        errors,
+        isEmpty,
+        reason: 'Transformed BLoC output has parse errors',
+      );
     });
   });
 
@@ -259,30 +272,36 @@ void main() {
 
     test('detects CounterController', () {
       expect(
-        nodes.whereType<LogicUnitNode>().any((n) => n.name == 'CounterController'),
+        nodes.whereType<LogicUnitNode>().any(
+          (n) => n.name == 'CounterController',
+        ),
         isTrue,
       );
     });
 
     test('CounterController has observable fields', () {
       final cc = nodes.whereType<LogicUnitNode>().firstWhere(
-            (n) => n.name == 'CounterController',
-          );
-      expect(cc.stateFields.map((f) => f.rawName),
-          containsAll(['count', 'label', 'loading']));
+        (n) => n.name == 'CounterController',
+      );
+      expect(
+        cc.stateFields.map((f) => f.rawName),
+        containsAll(['count', 'label', 'loading']),
+      );
     });
 
     test('detects ProfileController', () {
       expect(
-        nodes.whereType<LogicUnitNode>().any((n) => n.name == 'ProfileController'),
+        nodes.whereType<LogicUnitNode>().any(
+          (n) => n.name == 'ProfileController',
+        ),
         isTrue,
       );
     });
 
     test('CounterController async loadFromApi detected', () {
       final cc = nodes.whereType<LogicUnitNode>().firstWhere(
-            (n) => n.name == 'CounterController',
-          );
+        (n) => n.name == 'CounterController',
+      );
       final load = cc.methods.firstWhere((m) => m.name == 'loadFromApi');
       expect(load.isAsync, isTrue);
     });
@@ -303,9 +322,14 @@ void main() {
 
     test('output parses without errors', () {
       final result = parseString(content: output, throwIfDiagnostics: false);
-      final errors = result.errors.where((e) => e.errorCode.type.name == 'ERROR');
-      expect(errors, isEmpty,
-          reason: 'Transformed GetX output has parse errors');
+      final errors = result.errors.where(
+        (e) => e.errorCode.type.name == 'ERROR',
+      );
+      expect(
+        errors,
+        isEmpty,
+        reason: 'Transformed GetX output has parse errors',
+      );
     });
   });
 
@@ -331,10 +355,12 @@ void main() {
 
     test('CounterStore has observable fields', () {
       final cs = nodes.whereType<LogicUnitNode>().firstWhere(
-            (n) => n.name == '_CounterStore',
-          );
-      expect(cs.stateFields.map((f) => f.rawName),
-          containsAll(['count', 'label', 'loading']));
+        (n) => n.name == '_CounterStore',
+      );
+      expect(
+        cs.stateFields.map((f) => f.rawName),
+        containsAll(['count', 'label', 'loading']),
+      );
     });
 
     test('detects _ProfileStore', () {
@@ -346,8 +372,8 @@ void main() {
 
     test('CounterStore async loadFromApi detected', () {
       final cs = nodes.whereType<LogicUnitNode>().firstWhere(
-            (n) => n.name == '_CounterStore',
-          );
+        (n) => n.name == '_CounterStore',
+      );
       final load = cs.methods.firstWhere((m) => m.name == 'loadFromApi');
       expect(load.isAsync, isTrue);
     });
@@ -368,9 +394,14 @@ void main() {
 
     test('output parses without errors', () {
       final result = parseString(content: output, throwIfDiagnostics: false);
-      final errors = result.errors.where((e) => e.errorCode.type.name == 'ERROR');
-      expect(errors, isEmpty,
-          reason: 'Transformed MobX output has parse errors');
+      final errors = result.errors.where(
+        (e) => e.errorCode.type.name == 'ERROR',
+      );
+      expect(
+        errors,
+        isEmpty,
+        reason: 'Transformed MobX output has parse errors',
+      );
     });
   });
 
@@ -390,8 +421,9 @@ void main() {
         'getx_counter.dart',
         'mobx_counter.dart',
       ]) {
-        File(p.join(tmpDir.path, name))
-            .writeAsStringSync(File(p.join(fixtureDir, name)).readAsStringSync());
+        File(
+          p.join(tmpDir.path, name),
+        ).writeAsStringSync(File(p.join(fixtureDir, name)).readAsStringSync());
       }
 
       final scanner = AstScanner(tmpDir.path);
@@ -411,8 +443,9 @@ void main() {
     });
 
     test('scan does not throw on malformed dart file', () {
-      File(p.join(tmpDir.path, 'broken.dart'))
-          .writeAsStringSync('this is not valid dart {{{');
+      File(
+        p.join(tmpDir.path, 'broken.dart'),
+      ).writeAsStringSync('this is not valid dart {{{');
       final scanner = AstScanner(tmpDir.path);
       expect(() => scanner.scanProject(), returnsNormally);
     });

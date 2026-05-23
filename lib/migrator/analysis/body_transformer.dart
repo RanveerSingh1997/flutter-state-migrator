@@ -5,6 +5,7 @@ class BodyTransformer {
   /// state-update style.
   String transformBody(String body, List<FieldInfo> stateFields) {
     var transformed = body;
+    final isSingleField = stateFields.length == 1;
 
     // Build a mapping rawName -> publicName for all state fields.
     final fieldMap = {for (final f in stateFields) f.rawName: f.publicName};
@@ -19,10 +20,17 @@ class BodyTransformer {
         raw,
         pub,
         fieldMap,
+        isSingleField,
       );
 
       // 2. Handle numeric/boolean/generic mutations (=, +=, -=, ++, --, ??=)
-      transformed = _rewriteFieldMutations(transformed, raw, pub, fieldMap);
+      transformed = _rewriteFieldMutations(
+        transformed,
+        raw,
+        pub,
+        fieldMap,
+        isSingleField,
+      );
     }
 
     // 3. Clean up framework-specific calls
@@ -33,7 +41,9 @@ class BodyTransformer {
     transformed = transformed.replaceAll(RegExp(r'emit\([^;]*\);?\s*'), '');
 
     // 4. Merge adjacent copyWith calls for better readability
-    transformed = _mergeAdjacentCopyWithStatements(transformed);
+    if (!isSingleField) {
+      transformed = _mergeAdjacentCopyWithStatements(transformed);
+    }
 
     return transformed.replaceAll(RegExp(r'\n{3,}'), '\n\n').trimRight();
   }
@@ -43,6 +53,7 @@ class BodyTransformer {
     String rawField,
     String stateField,
     Map<String, String> fieldMap,
+    bool isSingleField,
   ) {
     final escaped = RegExp.escape(rawField);
     var transformed = source;
@@ -54,7 +65,11 @@ class BodyTransformer {
         final item = _normalizeStateReferences(
           match.group(1)!.trim(),
           fieldMap,
+          isSingleField: isSingleField,
         );
+        if (isSingleField) {
+          return 'state = [...state, $item];';
+        }
         return 'state = state.copyWith($stateField: [...state.$stateField, $item]);';
       },
     );
@@ -66,7 +81,11 @@ class BodyTransformer {
         final items = _normalizeStateReferences(
           match.group(1)!.trim(),
           fieldMap,
+          isSingleField: isSingleField,
         );
+        if (isSingleField) {
+          return 'state = [...state, ...$items];';
+        }
         return 'state = state.copyWith($stateField: [...state.$stateField, ...$items]);';
       },
     );
@@ -78,15 +97,47 @@ class BodyTransformer {
         final item = _normalizeStateReferences(
           match.group(1)!.trim(),
           fieldMap,
+          isSingleField: isSingleField,
         );
+        if (isSingleField) {
+          return 'state = state.where((e) => e != $item).toList();';
+        }
         return 'state = state.copyWith($stateField: state.$stateField.where((e) => e != $item).toList());';
+      },
+    );
+
+    // .removeWhere((item) => predicate)
+    transformed = transformed.replaceAllMapped(
+      RegExp('$escaped\\.removeWhere\\(\\(([^)]+)\\)\\s*=>\\s*([^;]+)\\);'),
+      (match) {
+        final arg = match.group(1)!.trim();
+        final body = _normalizeStateReferences(
+          match.group(2)!.trim(),
+          fieldMap,
+          isSingleField: isSingleField,
+        );
+        var inverted = body;
+        if (body.contains('==')) {
+          inverted = body.replaceAll('==', '!=');
+        } else if (body.contains('!=')) {
+          inverted = body.replaceAll('!=', '==');
+        } else {
+          inverted = '!($body)';
+        }
+
+        if (isSingleField) {
+          return 'state = state.where(($arg) => $inverted).toList();';
+        }
+        return 'state = state.copyWith($stateField: state.$stateField.where(($arg) => $inverted).toList());';
       },
     );
 
     // .clear() -> state = state.copyWith(field: [])
     transformed = transformed.replaceAll(
       RegExp('$escaped\\.clear\\(\\);'),
-      'state = state.copyWith($stateField: []);',
+      isSingleField
+          ? 'state = [];'
+          : 'state = state.copyWith($stateField: []);',
     );
 
     return transformed;
@@ -97,6 +148,7 @@ class BodyTransformer {
     String rawField,
     String stateField,
     Map<String, String> fieldMap,
+    bool isSingleField,
   ) {
     final escaped = RegExp.escape(rawField);
     var transformed = source;
@@ -104,11 +156,15 @@ class BodyTransformer {
     // Increment/Decrement
     transformed = transformed.replaceAllMapped(
       RegExp('(?:\\+\\+$escaped|$escaped\\+\\+)'),
-      (_) => 'state = state.copyWith($stateField: state.$stateField + 1)',
+      (_) => isSingleField
+          ? 'state = state + 1'
+          : 'state = state.copyWith($stateField: state.$stateField + 1)',
     );
     transformed = transformed.replaceAllMapped(
       RegExp('(?:--$escaped|$escaped--)'),
-      (_) => 'state = state.copyWith($stateField: state.$stateField - 1)',
+      (_) => isSingleField
+          ? 'state = state - 1'
+          : 'state = state.copyWith($stateField: state.$stateField - 1)',
     );
 
     // Compound Assignments (+=, -=, *=, /=)
@@ -122,7 +178,11 @@ class BodyTransformer {
           final delta = _normalizeStateReferences(
             match.group(1)!.trim(),
             fieldMap,
+            isSingleField: isSingleField,
           );
+          if (isSingleField) {
+            return 'state = state $mathOp $delta;';
+          }
           return 'state = state.copyWith($stateField: state.$stateField $mathOp $delta);';
         },
       );
@@ -135,7 +195,11 @@ class BodyTransformer {
         final value = _normalizeStateReferences(
           match.group(1)!.trim(),
           fieldMap,
+          isSingleField: isSingleField,
         );
+        if (isSingleField) {
+          return 'state = state ?? $value;';
+        }
         return 'state = state.copyWith($stateField: state.$stateField ?? $value);';
       },
     );
@@ -147,7 +211,11 @@ class BodyTransformer {
         final value = _normalizeStateReferences(
           match.group(1)!.trim(),
           fieldMap,
+          isSingleField: isSingleField,
         );
+        if (isSingleField) {
+          return 'state = $value;';
+        }
         return 'state = state.copyWith($stateField: $value);';
       },
     );
@@ -160,15 +228,16 @@ class BodyTransformer {
   /// it becomes 'state.count * state.price'.
   String _normalizeStateReferences(
     String expression,
-    Map<String, String> fieldMap,
-  ) {
+    Map<String, String> fieldMap, {
+    required bool isSingleField,
+  }) {
     var normalized = expression;
     for (final entry in fieldMap.entries) {
       final escaped = RegExp.escape(entry.key);
       // Negative lookbehind/lookahead to ensure we don't match sub-words or member access
       normalized = normalized.replaceAllMapped(
         RegExp('(?<![\\w.])$escaped(?!\\w)'),
-        (_) => 'state.${entry.value}',
+        (_) => isSingleField ? 'state' : 'state.${entry.value}',
       );
     }
     return normalized;
