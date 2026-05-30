@@ -1,6 +1,6 @@
 name: flutter_state_migrator
 description: "Automated CLI tool to migrate Flutter apps from Provider, BLoC, GetX, and MobX to Riverpod."
-version: 2.3.2
+version: 2.3.3
 homepage: https://github.com/RanveerSingh1997/flutter-state-migrator
 repository: https://github.com/RanveerSingh1997/flutter-state-migrator
 
@@ -16,7 +16,7 @@ dependencies:
   cupertino_icons: ^1.0.9
   provider: ^6.1.5+1
   flutter_riverpod: ^3.3.1
-  analyzer: ^12.1.0
+  analyzer: '>=12.1.0 <14.0.0'
   args: ^2.7.0
   path: ^1.9.1
   yaml: ^3.1.3

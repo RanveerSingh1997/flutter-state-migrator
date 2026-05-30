@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.3.3] - 2026-05-30
+
+### Fixed
+- Broadened `analyzer` constraint from `^12.1.0` to `>=12.1.0 <14.0.0`.
+  The constraint range now includes analyzer 13.0.0, resolving the pub.dev
+  transitive-dependency warning. The resolver still selects 12.1.0 because
+  the Flutter SDK's `test` package currently requires `analyzer <13.0.0`;
+  the constraint will automatically widen once a compatible `test` is shipped.
+
 ## [2.3.2] - 2026-05-30
 
 ### Changed
