@@ -1,5 +1,11 @@
 import '../models/ir_models.dart';
 
+/// Rewrites method bodies from mutable ChangeNotifier/BLoC style to immutable
+/// Riverpod state-update style using regex-based pattern substitution.
+///
+/// Handles `.add`, `.addAll`, `.remove`, `.removeWhere`, `.clear`, assignment
+/// (`=`, `+=`, `-=`), increment/decrement (`++`, `--`), null-coalescing assignment
+/// (`??=`), and `notifyListeners()` / `emit()` removal.
 class BodyTransformer {
   /// Transform a method body from ChangeNotifier mutation style to Riverpod
   /// state-update style.

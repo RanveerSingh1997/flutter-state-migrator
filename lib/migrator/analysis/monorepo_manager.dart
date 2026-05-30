@@ -13,20 +13,27 @@ const _excludedDirs = {
   '.vscode',
 };
 
+/// Metadata about a single Dart package discovered under the monorepo root.
 class PackageInfo {
+  /// Dart package name from `pubspec.yaml`.
   final String name;
+
+  /// Absolute path to the package root directory.
   final String rootPath;
 
+  /// Creates a [PackageInfo].
   PackageInfo({required this.name, required this.rootPath});
 
   @override
   String toString() => '$name ($rootPath)';
 }
 
-// TODO(Migrator): Convert MonorepoManager to @riverpod Notifier
+/// Discovers Dart packages in a workspace and scopes migrations per-package.
 class MonorepoManager {
+  /// Absolute path to the workspace root.
   final String rootPath;
 
+  /// Creates a [MonorepoManager] for [rootPath].
   MonorepoManager(this.rootPath);
 
   /// True when more than one Dart package exists under [rootPath].

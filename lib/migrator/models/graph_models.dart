@@ -1,13 +1,41 @@
 import 'ir_models.dart';
 
-enum RelationshipType { provides, watches, reads, creates, navigates, calls }
+/// The semantic type of a relationship between two architecture components.
+enum RelationshipType {
+  /// A logic unit is exposed through a provider declaration.
+  provides,
 
+  /// A consumer reactively watches a provider's state.
+  watches,
+
+  /// A consumer imperatively reads a provider's state once.
+  reads,
+
+  /// A widget or logic unit instantiates another component.
+  creates,
+
+  /// A component triggers navigation to another route or screen.
+  navigates,
+
+  /// A component invokes a method on another component.
+  calls,
+}
+
+/// A directed relationship between two nodes in the [ArchitectureGraph].
 class DependencyEdge {
+  /// ID of the source component.
   final String fromId;
+
+  /// ID of the target component.
   final String toId;
+
+  /// Semantic type of the dependency.
   final RelationshipType type;
+
+  /// Source offset where the relationship originates.
   final int offset;
 
+  /// Creates a [DependencyEdge] between [fromId] and [toId].
   DependencyEdge({
     required this.fromId,
     required this.toId,
@@ -16,6 +44,10 @@ class DependencyEdge {
   });
 }
 
+/// A semantic graph of all detected components and their dependencies.
+///
+/// Built by [GraphBuilder] from the flat list of [ProviderNode]s emitted by
+/// the scanner adapters. Downstream intelligence engines operate on this graph.
 class ArchitectureGraph {
   /// Map of unique component ID to its IR node.
   final Map<String, ProviderNode> nodes = {};
@@ -23,10 +55,12 @@ class ArchitectureGraph {
   /// List of semantic relationships.
   final List<DependencyEdge> edges = [];
 
+  /// Registers [node] under [id].
   void addNode(String id, ProviderNode node) {
     nodes[id] = node;
   }
 
+  /// Appends [edge] to the graph.
   void addEdge(DependencyEdge edge) {
     edges.add(edge);
   }
@@ -80,6 +114,9 @@ class ArchitectureGraph {
   }
 
   /// Detects circular dependencies in the graph.
+  ///
+  /// Returns each cycle as an ordered list of node IDs, with the first node
+  /// repeated at the end to close the loop.
   List<List<String>> findCycles() {
     final cycles = <List<String>>[];
     final visited = <String>{};

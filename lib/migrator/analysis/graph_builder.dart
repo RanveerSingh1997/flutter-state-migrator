@@ -1,7 +1,12 @@
 import '../models/ir_models.dart';
 import '../models/graph_models.dart';
 
+/// Converts a flat list of [ProviderNode]s into a typed [ArchitectureGraph].
+///
+/// The builder assigns stable component IDs, then walks the node list a second
+/// time to infer [DependencyEdge]s between providers, consumers, and logic units.
 class GraphBuilder {
+  /// Builds and returns an [ArchitectureGraph] from [nodes].
   ArchitectureGraph buildGraph(List<ProviderNode> nodes) {
     final graph = ArchitectureGraph();
 

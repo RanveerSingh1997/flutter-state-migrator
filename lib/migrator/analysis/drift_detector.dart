@@ -4,9 +4,15 @@ import 'dart:io';
 import 'architecture_intelligence.dart';
 import 'governance_engine.dart';
 
+/// A point-in-time record of architecture health used as a drift baseline.
 class DriftSnapshot {
+  /// When the snapshot was taken.
   final DateTime timestamp;
+
+  /// Stable `'name:nodeId'` fingerprints for each detected smell.
   final List<String> smellFingerprints;
+
+  /// Stable `'ruleName:nodeId'` fingerprints for each governance violation.
   final List<String> violationFingerprints;
   final double healthScore;
 
@@ -34,14 +40,27 @@ class DriftSnapshot {
   };
 }
 
+/// The difference between the current analysis and a prior [DriftSnapshot].
 class DriftReport {
+  /// Smells that are new since the baseline snapshot.
   final List<String> newSmells;
+
+  /// Smells that have been resolved since the baseline snapshot.
   final List<String> resolvedSmells;
+
+  /// Governance violations that are new since the baseline snapshot.
   final List<String> newViolations;
+
+  /// Governance violations that have been resolved since the baseline snapshot.
   final List<String> resolvedViolations;
+
+  /// Change in Architecture Health Score (positive = improvement).
   final double scoreDelta;
+
+  /// Timestamp of the prior snapshot this report was compared against.
   final DateTime comparedAt;
 
+  /// Creates a [DriftReport].
   DriftReport({
     required this.newSmells,
     required this.resolvedSmells,
@@ -51,6 +70,7 @@ class DriftReport {
     required this.comparedAt,
   });
 
+  /// True when any smells or violations changed since the prior snapshot.
   bool get hasChanges =>
       newSmells.isNotEmpty ||
       resolvedSmells.isNotEmpty ||
@@ -58,11 +78,15 @@ class DriftReport {
       resolvedViolations.isNotEmpty;
 }
 
+/// Tracks architectural health trends by comparing analysis results against
+/// saved snapshots stored in `.migrator_drift/`.
 class ArchitectureDriftDetector {
+  /// Absolute path to the project root where `.migrator_drift/` is written.
   final String projectRoot;
   static const String _driftDir = '.migrator_drift';
   static const String _snapshotFile = 'snapshot.json';
 
+  /// Creates a detector for the project at [projectRoot].
   ArchitectureDriftDetector(this.projectRoot);
 
   /// Returns null on the first run (no prior snapshot to compare against).

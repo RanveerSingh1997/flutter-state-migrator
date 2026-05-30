@@ -2,6 +2,11 @@ import 'package:analyzer/dart/ast/ast.dart';
 
 import '../models/ir_models.dart';
 
+/// Extracts a [MethodInfo] from [member], recording its return type, body,
+/// async flag, getter flag, and formal parameters.
+///
+/// [callsNotifyListeners] should be `true` for methods that mutate state
+/// (equivalent to `notifyListeners()` / `emit()` in the source framework).
 MethodInfo buildMethodInfo(
   MethodDeclaration member, {
   required bool callsNotifyListeners,

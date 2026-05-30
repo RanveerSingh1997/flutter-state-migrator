@@ -1,12 +1,21 @@
 import '../models/graph_models.dart';
 import '../models/ir_models.dart';
 
+/// A breach of a configurable architecture contract.
 class GovernanceViolation {
+  /// ID of the offending component in the [ArchitectureGraph].
   final String nodeId;
+
+  /// Name of the rule that was broken, e.g. `'Forbidden Dependency'`.
   final String ruleName;
+
+  /// Human-readable description of the breach.
   final String message;
+
+  /// Severity level: `'warning'` or `'error'`.
   final String severity;
 
+  /// Creates a [GovernanceViolation] for [nodeId].
   GovernanceViolation({
     required this.nodeId,
     required this.ruleName,
@@ -15,12 +24,22 @@ class GovernanceViolation {
   });
 }
 
+/// Validates an [ArchitectureGraph] against configurable architecture contracts.
+///
+/// Contracts are sourced from `migrator_config.yaml` under the `governance:` key.
+/// Supported rules: forbidden layer dependencies, max dependency fan-out,
+/// and max dependency depth.
 class GovernanceEngine {
+  /// The graph to validate.
   final ArchitectureGraph graph;
+
+  /// Parsed `governance:` section from `migrator_config.yaml`.
   final Map<String, dynamic> config;
 
+  /// Creates an engine that validates [graph] against [config].
   GovernanceEngine(this.graph, this.config);
 
+  /// Runs all configured governance rules and returns every violation found.
   List<GovernanceViolation> validate() {
     final violations = <GovernanceViolation>[];
 

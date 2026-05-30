@@ -1,8 +1,14 @@
 import 'dart:convert';
 import 'dart:io';
 
-// TODO(Migrator): Convert SnapshotManager to @riverpod Notifier
+/// Creates and restores full project snapshots before aggressive migrations.
+///
+/// Snapshots are stored in `.migrator_snapshots/<timestamp>/` and include
+/// all `.dart`, `pubspec.yaml`, and `pubspec.lock` files. A JSON manifest
+/// records the file inventory for reliable rollback.
 class SnapshotManager {
+  /// Absolute path to the project root.
+  /// Absolute path to the project root.
   final String projectPath;
   static const String _snapshotDir = '.migrator_snapshots';
   static const String _manifestName = 'manifest.json';
@@ -17,6 +23,7 @@ class SnapshotManager {
     '.vscode',
   ];
 
+  /// Creates a [SnapshotManager] for the project at [projectPath].
   SnapshotManager(this.projectPath);
 
   /// Copies every `.dart` and `pubspec.yaml` file under [projectPath] into a

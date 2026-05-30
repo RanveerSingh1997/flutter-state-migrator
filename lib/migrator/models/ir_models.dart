@@ -295,3 +295,48 @@ class HookWidgetNode extends ProviderNode {
     required super.length,
   });
 }
+
+/// IR node for a `ProxyProvider` or `ChangeNotifierProxyProvider` declaration.
+///
+/// These wrap a result type that depends on another provider type. The Riverpod
+/// equivalent is a Notifier whose `build()` calls `ref.watch(baseProvider)`.
+class ProxyProviderNode extends ProviderNode {
+  /// The dependency type (first type argument), e.g. `AuthService`.
+  final String baseType;
+
+  /// The produced type (last type argument), e.g. `UserNotifier`.
+  final String resultType;
+
+  /// True when the original is `ChangeNotifierProxyProvider`.
+  final bool isChangeNotifier;
+
+  final int? childOffset;
+  final int? childLength;
+
+  ProxyProviderNode({
+    required this.baseType,
+    required this.resultType,
+    this.isChangeNotifier = false,
+    this.childOffset,
+    this.childLength,
+    required super.filePath,
+    required super.offset,
+    required super.length,
+  });
+}
+
+/// IR node for a `context.select<T, R>(fn)` call site.
+///
+/// Maps to `ref.watch(tProvider.select(fn))` in Riverpod.
+class ContextSelectNode extends ProviderNode {
+  final String consumedClass;
+  final String selectorSnippet;
+
+  ContextSelectNode({
+    required this.consumedClass,
+    required this.selectorSnippet,
+    required super.filePath,
+    required super.offset,
+    required super.length,
+  });
+}

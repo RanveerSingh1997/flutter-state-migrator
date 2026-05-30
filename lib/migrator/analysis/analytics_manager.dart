@@ -2,8 +2,17 @@ import '../models/ir_models.dart';
 import 'architecture_intelligence.dart';
 import 'governance_engine.dart';
 
-// TODO(Migrator): Convert AnalyticsManager to @riverpod Notifier
+/// Computes migration and architecture-health metrics from scanned nodes.
+///
+/// Produces the Architecture Health Score (0–100), estimated time saved,
+/// and other summary statistics surfaced in the interactive dashboard.
 class AnalyticsManager {
+  /// Calculates migration and health metrics from [nodes], [smells], and [violations].
+  ///
+  /// Returns a map with keys: `logic_units_migrated`, `methods_transformed`,
+  /// `files_processed`, `estimated_hours_saved`, `boilerplate_reduction_percent`,
+  /// `architecture_health_score`, `smells_count`, `violations_count`,
+  /// and `migration_success_ratio`.
   Map<String, dynamic> calculateMetrics({
     required List<ProviderNode> nodes,
     required int filesProcessed,

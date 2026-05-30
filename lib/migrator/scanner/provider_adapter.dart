@@ -4,8 +4,22 @@ import 'package:analyzer/dart/ast/visitor.dart';
 import '../models/ir_models.dart';
 import 'scanner_utils.dart';
 
+/// AST visitor that detects Provider-framework patterns in Dart source.
+///
+/// Emits [LogicUnitNode] for `ChangeNotifier` / `ValueNotifier` subclasses,
+/// [WidgetNode] for `StatelessWidget` / `StatefulWidget`, [ConsumerNode] for
+/// `Consumer` / `ValueListenableBuilder`, [SelectorNode] for `Selector`,
+/// [ProviderDeclarationNode] for `ChangeNotifierProvider` and friends,
+/// [AsyncProviderNode] for `FutureProvider` / `StreamProvider`,
+/// [ProxyProviderNode] for `ProxyProvider` / `ChangeNotifierProxyProvider`,
+/// [ContextSelectNode] for `context.select`, [MultiProviderNode] for
+/// `MultiProvider`, and [ProviderOfNode] for `Provider.of` / `context.watch`
+/// / `context.read` call sites.
 class ProviderAdapter extends RecursiveAstVisitor<void> {
+  /// Absolute path to the source file being visited.
   final String filePath;
+
+  /// IR nodes detected during the visitation.
   final List<ProviderNode> nodes = [];
 
   /// Tracks whether the visitor is currently inside a `build()` method body.
@@ -16,6 +30,7 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
   /// treated as imperative one-shot access, not reactive watches.
   int _callbackDepth = 0;
 
+  /// Creates a [ProviderAdapter] for the source file at [filePath].
   ProviderAdapter(this.filePath);
 
   @override
@@ -52,6 +67,39 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
     final superClassName = extendsClause?.superclass.name.lexeme;
     final mixins =
         node.withClause?.mixinTypes.map((t) => t.name.lexeme).toList() ?? [];
+
+    // Detect ValueNotifier subclasses
+    if (extendsClause != null && superClassName == 'ValueNotifier') {
+      final className = node.namePart.typeName.lexeme;
+      final typeArgs = extendsClause.superclass.typeArguments;
+      final valueType = (typeArgs != null && typeArgs.arguments.isNotEmpty)
+          ? typeArgs.arguments.first.toSource()
+          : 'dynamic';
+      final methods = <MethodInfo>[];
+      for (final member in classBody.members) {
+        if (member is MethodDeclaration) {
+          if (member.name.lexeme == 'dispose') continue;
+          methods.add(buildMethodInfo(member, callsNotifyListeners: false));
+        }
+      }
+      nodes.add(
+        LogicUnitNode(
+          name: className,
+          stateFields: [FieldInfo(rawName: 'value', type: valueType)],
+          methods: methods,
+          isNotifier: true,
+          notifierType: NotifierType.stateNotifier,
+          role: 'provider',
+          superClassName: superClassName,
+          mixins: mixins,
+          filePath: filePath,
+          offset: node.offset,
+          length: node.length,
+        ),
+      );
+      super.visitClassDeclaration(node);
+      return;
+    }
 
     // Detect ChangeNotifier classes (Standard Provider pattern)
     if (extendsClause != null && superClassName == 'ChangeNotifier') {
@@ -379,6 +427,32 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
           length: node.length,
         ),
       );
+    } else if (typeName == 'ProxyProvider' ||
+        typeName == 'ChangeNotifierProxyProvider') {
+      _handleProxyProvider(node, typeName);
+    } else if (typeName == 'ValueListenableBuilder') {
+      final typeArgs = node.constructorName.type.typeArguments;
+      final valueType = (typeArgs != null && typeArgs.arguments.isNotEmpty)
+          ? typeArgs.arguments.first.toSource()
+          : 'dynamic';
+      int? builderOffset;
+      int? builderLength;
+      for (final arg in node.argumentList.arguments) {
+        if (arg is NamedExpression && arg.name.label.name == 'builder') {
+          builderOffset = arg.expression.offset;
+          builderLength = arg.expression.length;
+        }
+      }
+      nodes.add(
+        ConsumerNode(
+          consumedClass: valueType,
+          builderOffset: builderOffset,
+          builderLength: builderLength,
+          filePath: filePath,
+          offset: node.offset,
+          length: node.length,
+        ),
+      );
     }
 
     super.visitInstanceCreationExpression(node);
@@ -430,6 +504,26 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
             consumedClass: consumedType,
             isInBuildMethod: isWatch && isReactiveBuildContext,
             isMethodCall: _isFollowedByMethodCall(node),
+            filePath: filePath,
+            offset: node.offset,
+            length: node.length,
+          ),
+        );
+      }
+    } else if (node.target != null &&
+        node.target!.beginToken.lexeme == 'context' &&
+        node.methodName.name == 'select') {
+      // context.select<T, R>((T v) => v.field) → ref.watch(tProvider.select((v) => v.field))
+      final typeArgs = node.typeArguments;
+      if (typeArgs != null && typeArgs.arguments.isNotEmpty) {
+        final consumedType = typeArgs.arguments.first.beginToken.lexeme;
+        final selectorSnippet = node.argumentList.arguments.isNotEmpty
+            ? node.argumentList.arguments.first.toSource()
+            : '(state) => state';
+        nodes.add(
+          ContextSelectNode(
+            consumedClass: consumedType,
+            selectorSnippet: selectorSnippet,
             filePath: filePath,
             offset: node.offset,
             length: node.length,
@@ -596,6 +690,63 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
       return true;
     }
 
+    if (typeName == 'ProxyProvider' ||
+        typeName == 'ChangeNotifierProxyProvider') {
+      final baseType = (typeArguments != null && typeArguments.arguments.length >= 2)
+          ? typeArguments.arguments.first.toSource()
+          : 'Unknown';
+      final resultType = (typeArguments != null && typeArguments.arguments.length >= 2)
+          ? typeArguments.arguments.last.toSource()
+          : 'Unknown';
+      int? childOffset;
+      int? childLength;
+      for (final arg in argumentList.arguments) {
+        if (arg is NamedExpression && arg.name.label.name == 'child') {
+          childOffset = arg.expression.offset;
+          childLength = arg.expression.length;
+        }
+      }
+      nodes.add(
+        ProxyProviderNode(
+          baseType: baseType,
+          resultType: resultType,
+          isChangeNotifier: typeName == 'ChangeNotifierProxyProvider',
+          childOffset: childOffset,
+          childLength: childLength,
+          filePath: filePath,
+          offset: offset,
+          length: length,
+        ),
+      );
+      return true;
+    }
+
+    if (typeName == 'ValueListenableBuilder') {
+      final valueType =
+          (typeArguments != null && typeArguments.arguments.isNotEmpty)
+          ? typeArguments.arguments.first.toSource()
+          : 'dynamic';
+      int? builderOffset;
+      int? builderLength;
+      for (final arg in argumentList.arguments) {
+        if (arg is NamedExpression && arg.name.label.name == 'builder') {
+          builderOffset = arg.expression.offset;
+          builderLength = arg.expression.length;
+        }
+      }
+      nodes.add(
+        ConsumerNode(
+          consumedClass: valueType,
+          builderOffset: builderOffset,
+          builderLength: builderLength,
+          filePath: filePath,
+          offset: offset,
+          length: length,
+        ),
+      );
+      return true;
+    }
+
     return false;
   }
 
@@ -613,6 +764,40 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
       return expression.methodName.name;
     }
     return null;
+  }
+
+  void _handleProxyProvider(
+    InstanceCreationExpression node,
+    String typeName,
+  ) {
+    final typeArgs = node.constructorName.type.typeArguments;
+    // ProxyProvider<Base, Result> — last type arg is the result type.
+    final baseType = (typeArgs != null && typeArgs.arguments.length >= 2)
+        ? typeArgs.arguments.first.toSource()
+        : 'Unknown';
+    final resultType = (typeArgs != null && typeArgs.arguments.length >= 2)
+        ? typeArgs.arguments.last.toSource()
+        : 'Unknown';
+    int? childOffset;
+    int? childLength;
+    for (final arg in node.argumentList.arguments) {
+      if (arg is NamedExpression && arg.name.label.name == 'child') {
+        childOffset = arg.expression.offset;
+        childLength = arg.expression.length;
+      }
+    }
+    nodes.add(
+      ProxyProviderNode(
+        baseType: baseType,
+        resultType: resultType,
+        isChangeNotifier: typeName == 'ChangeNotifierProxyProvider',
+        childOffset: childOffset,
+        childLength: childLength,
+        filePath: filePath,
+        offset: node.offset,
+        length: node.length,
+      ),
+    );
   }
 
   bool _isFollowedByMethodCall(MethodInvocation node) {

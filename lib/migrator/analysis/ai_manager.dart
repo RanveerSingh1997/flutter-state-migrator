@@ -9,20 +9,48 @@ import '../models/ir_models.dart';
 import 'architecture_intelligence.dart';
 import 'governance_engine.dart';
 
-enum AiGuidanceSource { localLlm, deterministicFallback }
+/// Where an [AiGuidance] recommendation originated.
+enum AiGuidanceSource {
+  /// Response came from the local Ollama endpoint.
+  localLlm,
 
+  /// LLM was unavailable; guidance was generated deterministically from the graph.
+  deterministicFallback,
+}
+
+/// A single piece of migration or architecture guidance produced by [AIManager].
 class AiGuidance {
+  /// Short headline for the guidance card.
   final String title;
+
+  /// Component name or method path this guidance addresses.
   final String subject;
+
+  /// Category tag: `'logic-refactor'`, `'architecture'`, or `'governance'`.
   final String category;
+
+  /// Why this guidance was triggered.
   final String rationale;
+
+  /// The actual migration or remediation advice.
   final String recommendation;
+
+  /// Prompt that was sent to the LLM (or would have been sent).
   final String prompt;
+
+  /// Whether this came from the LLM or the deterministic fallback.
   final AiGuidanceSource source;
+
+  /// `'model@endpoint'` string identifying the LLM backend used.
   final String? backend;
+
+  /// Why the LLM was not used (only set when [source] is [AiGuidanceSource.deterministicFallback]).
   final String? fallbackReason;
+
+  /// Raw text returned by the LLM (only set when [source] is [AiGuidanceSource.localLlm]).
   final String? rawResponse;
 
+  /// Creates an [AiGuidance].
   const AiGuidance({
     required this.title,
     required this.subject,
@@ -50,9 +78,15 @@ class AiGuidance {
   };
 }
 
-// TODO(Migrator): Convert AIManager to @riverpod Notifier
-// TODO(Migrator): Convert AIManager to @riverpod Notifier
+/// Produces [AiGuidance] by querying a local Ollama LLM or falling back to
+/// deterministic recommendations derived from the architecture graph.
+///
+/// Prefers `http://localhost:11434/api/generate` (Ollama); falls back when
+/// the endpoint is unreachable, times out, or returns an invalid response.
 class AIManager {
+  /// Creates an [AIManager].
+  ///
+  /// Pass a custom [client] in tests to mock HTTP responses.
   AIManager({
     http.Client? client,
     this.ollamaEndpoint = 'http://localhost:11434/api/generate',
@@ -63,16 +97,27 @@ class AIManager {
 
   final http.Client _client;
   final bool _ownsClient;
+
+  /// Ollama-compatible API endpoint used for LLM completions.
   final String ollamaEndpoint;
+
+  /// Name of the Ollama model to use, e.g. `'llama3.1'`.
   final String model;
+
+  /// Maximum time to wait for a single LLM response before falling back.
   final Duration requestTimeout;
 
+  /// Closes the underlying HTTP client when this manager owns it.
   void dispose() {
     if (_ownsClient) {
       _client.close();
     }
   }
 
+  /// Returns [AiGuidance] for refactoring a single method body.
+  ///
+  /// Sends a prompt to the local LLM; falls back deterministically when
+  /// the LLM is unavailable.
   Future<AiGuidance> refactorMethodBody({
     required String className,
     required List<String> stateFields,
@@ -105,6 +150,7 @@ class AIManager {
     );
   }
 
+  /// Produces one [AiGuidance] per smell and per governance violation in the graph.
   Future<List<AiGuidance>> buildArchitectureGuidance({
     required ArchitectureGraph graph,
     required List<ArchitectureSmell> smells,

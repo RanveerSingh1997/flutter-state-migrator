@@ -8,14 +8,22 @@ import 'getx_adapter.dart';
 import 'mobx_adapter.dart';
 import '../plugins/plugin_loader.dart';
 
+/// Entry-point scanner that walks Dart files under [targetPath] and emits
+/// [ProviderNode] IR nodes by running all four framework adapters in sequence.
+///
+/// Accepts both a single `.dart` file and a directory (scanned recursively).
+/// Generated files (`*.g.dart`) are automatically excluded.
 class AstScanner {
+  /// Path to the Flutter project directory or a single `.dart` file to scan.
   final String targetPath;
   final _pluginLoader = PluginLoader();
 
+  /// Creates an [AstScanner] and initialises any plugins found under [targetPath].
   AstScanner(this.targetPath) {
     _pluginLoader.loadPlugins(targetPath);
   }
 
+  /// Scans [targetPath] and returns the flat list of detected [ProviderNode]s.
   List<ProviderNode> scanProject() {
     final irNodes = <ProviderNode>[];
     final targetType = FileSystemEntity.typeSync(

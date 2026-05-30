@@ -4,10 +4,20 @@ import 'package:analyzer/dart/ast/visitor.dart';
 import '../models/ir_models.dart';
 import 'scanner_utils.dart';
 
+/// AST visitor that detects MobX store patterns in Dart source.
+///
+/// Identifies classes as MobX stores by the presence of `@observable` or
+/// `@computed` field annotations, then emits a [LogicUnitNode] with all
+/// annotated fields captured as state. [ConsumerNode] is emitted for
+/// `Observer` widgets.
 class MobXAdapter extends RecursiveAstVisitor<void> {
+  /// Absolute path to the source file being visited.
   final String filePath;
+
+  /// IR nodes detected during the visitation.
   final List<ProviderNode> nodes = [];
 
+  /// Creates a [MobXAdapter] for the source file at [filePath].
   MobXAdapter(this.filePath);
 
   @override
@@ -43,19 +53,24 @@ class MobXAdapter extends RecursiveAstVisitor<void> {
       for (final member in classBody.members) {
         if (member is FieldDeclaration) {
           bool hasObservable = false;
+          bool hasComputed = false;
           for (final metadata in member.metadata) {
-            if (metadata.name.toSource() == 'observable') {
-              hasObservable = true;
-              break;
-            }
+            final name = metadata.name.toSource();
+            if (name == 'observable') hasObservable = true;
+            if (name == 'computed') hasComputed = true;
           }
-          if (hasObservable) {
+          if (hasObservable || hasComputed) {
             for (final variable in member.fields.variables) {
+              // @computed fields are getters in MobX but stored as late fields;
+              // mark them with a `// computed` initializer hint so the
+              // transformer can emit a derived Provider instead of a state field.
               stateFields.add(
                 FieldInfo(
                   rawName: variable.name.lexeme,
                   type: member.fields.type?.toSource() ?? 'dynamic',
-                  initializer: variable.initializer?.toSource(),
+                  initializer: hasComputed
+                      ? (variable.initializer?.toSource() ?? '/* computed */')
+                      : variable.initializer?.toSource(),
                 ),
               );
             }

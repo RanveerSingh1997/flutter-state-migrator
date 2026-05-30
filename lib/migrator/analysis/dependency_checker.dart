@@ -1,6 +1,7 @@
 import '../models/graph_models.dart';
 import '../models/ir_models.dart';
 
+/// Utility for detecting and reporting circular dependencies in an [ArchitectureGraph].
 class DependencyChecker {
   /// Detects circular dependencies in the architecture graph.
   /// Returns a list of human-readable warning strings.

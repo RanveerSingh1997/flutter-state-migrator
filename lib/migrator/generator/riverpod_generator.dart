@@ -3,9 +3,17 @@ import '../models/ir_models.dart';
 import '../scanner/scanner_utils.dart';
 import '../utils/naming.dart';
 
+/// Produces human-readable Riverpod code suggestions for detected IR nodes.
+///
+/// Used in `--mode=assisted` to write `*_riverpod.dart` side-files alongside
+/// the original source, showing the developer the intended Riverpod equivalent
+/// without rewriting the original file.
 class RiverpodGenerator {
   final _bodyTransformer = BodyTransformer();
 
+  /// Generates a Riverpod code suggestion string for [node].
+  ///
+  /// Returns an empty string for node types that have no applicable suggestion.
   String generateSuggestion(ProviderNode node) {
     if (node is LogicUnitNode) {
       return _generateStateNotifier(node);

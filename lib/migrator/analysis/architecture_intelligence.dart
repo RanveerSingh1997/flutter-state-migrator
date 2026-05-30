@@ -1,12 +1,23 @@
 import '../models/graph_models.dart';
 import '../models/ir_models.dart';
 
+/// A detected structural problem in the architecture graph.
+///
+/// Severities: `'info'`, `'warning'`, `'error'`.
 class ArchitectureSmell {
+  /// ID of the offending component in the [ArchitectureGraph].
   final String nodeId;
-  final String name;
-  final String description;
-  final String severity; // 'info', 'warning', 'error'
 
+  /// Human-readable smell name, e.g. `'God Component'`.
+  final String name;
+
+  /// Explanation of why the smell was flagged and its impact.
+  final String description;
+
+  /// Severity level: `'info'`, `'warning'`, or `'error'`.
+  final String severity;
+
+  /// Creates an [ArchitectureSmell] for the component identified by [nodeId].
   ArchitectureSmell({
     required this.nodeId,
     required this.name,
@@ -15,11 +26,18 @@ class ArchitectureSmell {
   });
 }
 
+/// Analyzes an [ArchitectureGraph] for structural problems.
+///
+/// Detects: God Component, State Explosion, High Coupling,
+/// Improper Async Pattern, Logic Leakage, and Circular Dependencies.
 class ArchitectureIntelligenceEngine {
+  /// The graph to analyze.
   final ArchitectureGraph graph;
 
+  /// Creates an engine that will analyze [graph].
   ArchitectureIntelligenceEngine(this.graph);
 
+  /// Runs all smell detectors and returns every finding.
   List<ArchitectureSmell> analyze() {
     final smells = <ArchitectureSmell>[];
 

@@ -3,14 +3,27 @@ import 'dart:io';
 import '../models/graph_models.dart';
 import '../models/ir_models.dart';
 
+/// Immutable summary produced by [ProviderVisualizer.createSnapshot].
 class GraphVisualizationSnapshot {
+  /// Mermaid diagram source representing the full graph.
   final String mermaid;
+
+  /// Total number of component nodes in the graph.
   final int nodeCount;
+
+  /// Total number of dependency edges in the graph.
   final int edgeCount;
+
+  /// Number of detected dependency cycles.
   final int cycleCount;
+
+  /// Number of logic-unit (notifier/service) nodes.
   final int logicUnitCount;
+
+  /// Number of widget nodes.
   final int widgetCount;
 
+  /// Creates a [GraphVisualizationSnapshot].
   const GraphVisualizationSnapshot({
     required this.mermaid,
     required this.nodeCount,
@@ -21,7 +34,9 @@ class GraphVisualizationSnapshot {
   });
 }
 
+/// Generates Mermaid diagrams and summary statistics from an [ArchitectureGraph].
 class ProviderVisualizer {
+  /// Builds a [GraphVisualizationSnapshot] for [graph].
   GraphVisualizationSnapshot createSnapshot(ArchitectureGraph graph) {
     return GraphVisualizationSnapshot(
       mermaid: generateMermaid(graph),
@@ -33,6 +48,7 @@ class ProviderVisualizer {
     );
   }
 
+  /// Generates a Mermaid `graph TD` diagram string for [graph].
   String generateMermaid(ArchitectureGraph graph) {
     final buffer = StringBuffer();
     buffer.writeln('graph TD');
@@ -90,12 +106,14 @@ class ProviderVisualizer {
     return buffer.toString();
   }
 
+  /// Writes [content] to `architecture_graph.mmd` inside [targetPath].
   void saveGraph(String targetPath, String content) {
     final file = File('$targetPath/architecture_graph.mmd');
     file.writeAsStringSync(content);
     print('🎨 Architecture graph saved to: \x1B[33m${file.path}\x1B[0m');
   }
 
+  /// Returns a one-line summary of the key graph metrics.
   String describeSummary(ArchitectureGraph graph) {
     final snapshot = createSnapshot(graph);
     return 'nodes=${snapshot.nodeCount}, edges=${snapshot.edgeCount}, '

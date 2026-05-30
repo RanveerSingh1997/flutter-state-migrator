@@ -1,10 +1,13 @@
 import 'dart:io';
 import 'package:path/path.dart' as p;
 
-// TODO(Migrator): Convert GeneratedFileManager to @riverpod Notifier
+/// Tracks and cleans up stale `*.g.dart` files left over from previous
+/// `build_runner` runs after source files have been renamed or deleted.
 class GeneratedFileManager {
+  /// Absolute path to the project root.
   final String projectPath;
 
+  /// Creates a [GeneratedFileManager] for the project at [projectPath].
   GeneratedFileManager(this.projectPath);
 
   /// Returns every `*.g.dart` file under [projectPath], excluding build/ and

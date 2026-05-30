@@ -2,19 +2,36 @@ import '../analysis/body_transformer.dart';
 import '../models/ir_models.dart';
 import '../utils/naming.dart';
 
+/// A single in-place source replacement produced by [RiverpodTransformer].
 class TextEdit {
+  /// Byte offset where the replacement starts.
   final int offset;
+
+  /// Number of bytes to replace (0 for a pure insertion).
   final int length;
+
+  /// The text to write at [offset].
   final String replacement;
+
+  /// Creates a [TextEdit].
   TextEdit(this.offset, this.length, this.replacement);
 }
 
+/// Converts IR nodes into [TextEdit] operations that rewrite source in-place.
+///
+/// Used in `--mode=aggressive` to perform structural rewrites: notifiers become
+/// `@riverpod` classes, widgets gain `WidgetRef ref` parameters, Provider
+/// declarations are replaced with `ProviderScope`, and provider access sites
+/// become `ref.watch` / `ref.read` calls.
 class RiverpodTransformer {
   final _bodyTransformer = BodyTransformer();
 
   /// Tracks which files have already received the @riverpod file-level header.
   final _fileHeaderInjected = <String>{};
 
+  /// Returns the [TextEdit] list that transforms [node] within [originalSource].
+  ///
+  /// Returns an empty list when [node] has no applicable transformation.
   List<TextEdit> transformNode(ProviderNode node, String originalSource) {
     if (node is ProviderOfNode) {
       return _transformProviderOf(node, originalSource);
@@ -36,6 +53,10 @@ class RiverpodTransformer {
       return _transformState(node, originalSource);
     } else if (node is HookWidgetNode) {
       return _transformHookWidget(node, originalSource);
+    } else if (node is ProxyProviderNode) {
+      return _transformProxyProvider(node, originalSource);
+    } else if (node is ContextSelectNode) {
+      return _transformContextSelect(node);
     }
     return [];
   }
@@ -650,6 +671,63 @@ part "$fileName.g.dart";
     return edits;
   }
 
+  List<TextEdit> _transformProxyProvider(
+    ProxyProviderNode node,
+    String originalSource,
+  ) {
+    final edits = <TextEdit>[];
+    final baseProviderName = providerNameForType(node.baseType);
+    final resultProviderName = providerNameForType(node.resultType);
+    final label = node.isChangeNotifier
+        ? 'ChangeNotifierProxyProvider'
+        : 'ProxyProvider';
+
+    // Replace the declaration site: if it has a child, keep the child wrapped
+    // in ProviderScope; otherwise remove the site entirely.
+    if (node.childOffset != null && node.childLength != null) {
+      final child = originalSource.substring(
+        node.childOffset!,
+        node.childOffset! + node.childLength!,
+      );
+      edits.add(TextEdit(node.offset, node.length, 'ProviderScope(child: $child)'));
+    } else {
+      edits.add(TextEdit(node.offset, node.length, ''));
+    }
+
+    // Append a skeleton Riverpod notifier at the end of the file showing the
+    // dependency as a ref.watch() call — the user fills in the build() body.
+    final skeleton = '''
+
+// TODO: Migrated from $label<${node.baseType}, ${node.resultType}>
+// The `update:` lambda dependency becomes a ref.watch() call in build().
+@riverpod
+class ${node.resultType} extends _\$${node.resultType} {
+  @override
+  ${node.resultType} build() {
+    final ${_lcFirst(node.baseType)} = ref.watch($baseProviderName);
+    // TODO: return ${node.resultType} using ${_lcFirst(node.baseType)}
+    throw UnimplementedError();
+  }
+}
+// ignore: unused_element
+final $resultProviderName = ${node.resultType}Provider;
+''';
+    edits.add(TextEdit(originalSource.length, 0, skeleton));
+    return edits;
+  }
+
+  List<TextEdit> _transformContextSelect(ContextSelectNode node) {
+    final providerName = providerNameForType(node.consumedClass);
+    final selector = node.selectorSnippet;
+    return [
+      TextEdit(
+        node.offset,
+        node.length,
+        'ref.watch($providerName.select($selector))',
+      ),
+    ];
+  }
+
   List<TextEdit> _transformHookWidget(
     HookWidgetNode node,
     String originalSource,
@@ -688,4 +766,7 @@ part "$fileName.g.dart";
     }
     return edits;
   }
+
+  String _lcFirst(String s) =>
+      s.isEmpty ? s : s[0].toLowerCase() + s.substring(1);
 }

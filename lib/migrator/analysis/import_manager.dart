@@ -1,4 +1,7 @@
-// TODO(Migrator): Convert ImportManager to @riverpod Notifier
+/// Manages `import` statements in migrated Dart files.
+///
+/// Adds `flutter_riverpod` when Riverpod symbols are present and optionally
+/// removes the `provider` import when it is no longer needed.
 class ImportManager {
   /// Adds required Riverpod imports and optionally removes unused Provider imports.
   String processImports(String content, {bool cleanProvider = true}) {

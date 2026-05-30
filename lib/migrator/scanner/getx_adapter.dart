@@ -4,10 +4,20 @@ import 'package:analyzer/dart/ast/visitor.dart';
 import '../models/ir_models.dart';
 import 'scanner_utils.dart';
 
+/// AST visitor that detects GetX patterns in Dart source.
+///
+/// Emits [LogicUnitNode] for `GetxController` subclasses with `.obs` fields,
+/// [ProviderDeclarationNode] for `Get.put`, `Get.lazyPut`, and `Get.create`,
+/// [ProviderOfNode] for `Get.find<T>()`, [ConsumerNode] for `GetX<T>` /
+/// `GetBuilder<T>` / `Obx`, and [MultiProviderNode] for `GetMaterialApp`.
 class GetXAdapter extends RecursiveAstVisitor<void> {
+  /// Absolute path to the source file being visited.
   final String filePath;
+
+  /// IR nodes detected during the visitation.
   final List<ProviderNode> nodes = [];
 
+  /// Creates a [GetXAdapter] for the source file at [filePath].
   GetXAdapter(this.filePath);
 
   @override
@@ -143,6 +153,27 @@ class GetXAdapter extends RecursiveAstVisitor<void> {
           ),
         );
       }
+    } else if ((name == 'lazyPut' || name == 'create') &&
+        node.target?.toSource() == 'Get') {
+      // Get.lazyPut<T>(() => T()) / Get.create<T>(() => T())
+      final typeArgs = node.typeArguments;
+      String? type;
+      if (typeArgs != null && typeArgs.arguments.isNotEmpty) {
+        type = typeArgs.arguments.first.toSource();
+      } else if (node.argumentList.arguments.isNotEmpty) {
+        type = _inferTypeFromFactory(node.argumentList.arguments.first);
+      }
+      if (type != null) {
+        nodes.add(
+          ProviderDeclarationNode(
+            providerType: 'Get.$name',
+            providedClass: type,
+            filePath: filePath,
+            offset: node.offset,
+            length: node.length,
+          ),
+        );
+      }
     } else if (name == 'Obx') {
       // Obx(() => ...) is technically a function/constructor invocation depending on implementation,
       // but often appears as a MethodInvocation if used without 'new'.
@@ -182,6 +213,17 @@ class GetXAdapter extends RecursiveAstVisitor<void> {
       return expression.methodName.name;
     }
     return null;
+  }
+
+  // Infer type from a factory lambda: `() => MyController()` or `() => MyController.named()`
+  String? _inferTypeFromFactory(Expression expression) {
+    if (expression is FunctionExpression) {
+      final body = expression.body;
+      if (body is ExpressionFunctionBody) {
+        return _inferTypeFromPut(body.expression);
+      }
+    }
+    return _inferTypeFromPut(expression);
   }
 
   String _inferObservableType(String? declaredType, String? initializer) {

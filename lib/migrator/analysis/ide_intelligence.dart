@@ -7,12 +7,20 @@ import '../models/ir_models.dart';
 import 'architecture_intelligence.dart';
 import 'governance_engine.dart';
 
+/// A quick-fix action surfaced alongside an [IdeDiagnostic] in the VS Code extension.
 class IdeQuickFix {
+  /// Human-readable label shown in the editor lightbulb menu.
   final String title;
+
+  /// VS Code command identifier that executes the fix.
   final String command;
+  /// VS Code code-action kind, e.g. `'quickfix'` or `'refactor'`.
   final String kind;
+
+  /// Optional detail message shown in the action description.
   final String? message;
 
+  /// Creates an [IdeQuickFix].
   const IdeQuickFix({
     required this.title,
     required this.command,
@@ -28,10 +36,20 @@ class IdeQuickFix {
   };
 }
 
+/// A structured diagnostic emitted by [IdeIntelligenceEngine] for the VS Code extension.
+///
+/// Carries source range, severity, category, message, and optional quick-fixes.
 class IdeDiagnostic {
+  /// Absolute path to the file this diagnostic belongs to.
   final String filePath;
+
+  /// 0-based line number where the diagnostic starts.
   final int startLine;
+
+  /// 0-based column number where the diagnostic starts.
   final int startColumn;
+
+  /// 0-based line number where the diagnostic ends.
   final int endLine;
   final int endColumn;
   final String severity;
@@ -73,13 +91,26 @@ class IdeDiagnostic {
   };
 }
 
+/// Full diagnostic payload produced by [IdeIntelligenceEngine.buildReport].
+///
+/// Serialises to the JSON format consumed by the VS Code companion extension.
 class IdeAnalysisReport {
+  /// Absolute path to the scanned project directory.
   final String targetPath;
+
+  /// Total number of diagnostics across all categories.
   final int totalDiagnostics;
+
+  /// Number of diagnostics in the `'architecture'` category.
   final int architectureDiagnosticCount;
+
+  /// Number of diagnostics in the `'governance'` category.
   final int governanceDiagnosticCount;
+
+  /// Flat list of all [IdeDiagnostic]s.
   final List<IdeDiagnostic> diagnostics;
 
+  /// Creates an [IdeAnalysisReport].
   const IdeAnalysisReport({
     required this.targetPath,
     required this.totalDiagnostics,
@@ -101,13 +132,20 @@ class IdeAnalysisReport {
   };
 }
 
+/// Converts [ArchitectureSmell]s and [GovernanceViolation]s into structured
+/// [IdeDiagnostic]s with source ranges and quick-fix actions.
+///
+/// Output is consumed by the `--ide-json` CLI flag and the VS Code extension.
 class IdeIntelligenceEngine {
+  /// Absolute path to the project root, used to resolve file-relative offsets.
   final String targetPath;
 
   final Map<String, _FileLineLookup> _lineLookups = {};
 
+  /// Creates an [IdeIntelligenceEngine] for the project at [targetPath].
   IdeIntelligenceEngine(this.targetPath);
 
+  /// Builds an [IdeAnalysisReport] from the supplied [graph], [smells], and [violations].
   IdeAnalysisReport buildReport({
     required ArchitectureGraph graph,
     required List<ArchitectureSmell> smells,

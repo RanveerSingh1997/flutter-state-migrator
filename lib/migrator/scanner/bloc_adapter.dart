@@ -4,10 +4,21 @@ import 'package:analyzer/dart/ast/visitor.dart';
 import '../models/ir_models.dart';
 import 'scanner_utils.dart';
 
+/// AST visitor that detects BLoC/Cubit patterns in Dart source.
+///
+/// Emits [LogicUnitNode] for `Bloc<E, S>` and `Cubit<S>` classes,
+/// [ProviderDeclarationNode] for `BlocProvider` / `RepositoryProvider`,
+/// [MultiProviderNode] for `MultiBlocProvider` / `MultiRepositoryProvider`,
+/// [ConsumerNode] for `BlocBuilder` / `BlocListener` / `BlocConsumer`,
+/// and [SelectorNode] for `BlocSelector`.
 class BlocAdapter extends RecursiveAstVisitor<void> {
+  /// Absolute path to the source file being visited.
   final String filePath;
+
+  /// IR nodes detected during the visitation.
   final List<ProviderNode> nodes = [];
 
+  /// Creates a [BlocAdapter] for the source file at [filePath].
   BlocAdapter(this.filePath);
 
   @override
@@ -81,13 +92,125 @@ class BlocAdapter extends RecursiveAstVisitor<void> {
 
     if (typeName == 'BlocProvider' || typeName == 'RepositoryProvider') {
       _handleBlocDeclaration(node, typeName);
+    } else if (typeName == 'MultiBlocProvider' ||
+        typeName == 'MultiRepositoryProvider') {
+      int? childOffset;
+      int? childLength;
+      for (final arg in node.argumentList.arguments) {
+        if (arg is NamedExpression && arg.name.label.name == 'child') {
+          childOffset = arg.expression.offset;
+          childLength = arg.expression.length;
+        }
+      }
+      nodes.add(
+        MultiProviderNode(
+          childOffset: childOffset,
+          childLength: childLength,
+          filePath: filePath,
+          offset: node.offset,
+          length: node.length,
+        ),
+      );
     } else if (typeName == 'BlocBuilder' ||
         typeName == 'BlocListener' ||
         typeName == 'BlocConsumer') {
       _handleBlocConsumer(node, typeName);
+    } else if (typeName == 'BlocSelector') {
+      // BlocSelector<BlocType, State, SelectedValue>
+      final typeArgs = node.constructorName.type.typeArguments;
+      if (typeArgs != null && typeArgs.arguments.length >= 3) {
+        final consumedClass = typeArgs.arguments[0].toSource();
+        final selectedType = typeArgs.arguments[2].toSource();
+        String selectorSnippet = '(state) => state';
+        int? builderOffset;
+        int? builderLength;
+        for (final arg in node.argumentList.arguments) {
+          if (arg is! NamedExpression) continue;
+          if (arg.name.label.name == 'selector') {
+            selectorSnippet = arg.expression.toSource();
+          } else if (arg.name.label.name == 'builder') {
+            builderOffset = arg.expression.offset;
+            builderLength = arg.expression.length;
+          }
+        }
+        nodes.add(
+          SelectorNode(
+            consumedClass: consumedClass,
+            selectedType: selectedType,
+            selectorSnippet: selectorSnippet,
+            builderOffset: builderOffset,
+            builderLength: builderLength,
+            filePath: filePath,
+            offset: node.offset,
+            length: node.length,
+          ),
+        );
+      }
     }
 
     super.visitInstanceCreationExpression(node);
+  }
+
+  @override
+  void visitMethodInvocation(MethodInvocation node) {
+    // Handle constructor-like calls without `new` keyword.
+    if (node.target != null) {
+      super.visitMethodInvocation(node);
+      return;
+    }
+    final name = node.methodName.name;
+    final typeArgs = node.typeArguments;
+
+    if (name == 'MultiBlocProvider' || name == 'MultiRepositoryProvider') {
+      int? childOffset;
+      int? childLength;
+      for (final arg in node.argumentList.arguments) {
+        if (arg is NamedExpression && arg.name.label.name == 'child') {
+          childOffset = arg.expression.offset;
+          childLength = arg.expression.length;
+        }
+      }
+      nodes.add(
+        MultiProviderNode(
+          childOffset: childOffset,
+          childLength: childLength,
+          filePath: filePath,
+          offset: node.offset,
+          length: node.length,
+        ),
+      );
+    } else if (name == 'BlocSelector') {
+      if (typeArgs != null && typeArgs.arguments.length >= 3) {
+        final consumedClass = typeArgs.arguments[0].toSource();
+        final selectedType = typeArgs.arguments[2].toSource();
+        String selectorSnippet = '(state) => state';
+        int? builderOffset;
+        int? builderLength;
+        for (final arg in node.argumentList.arguments) {
+          if (arg is! NamedExpression) continue;
+          if (arg.name.label.name == 'selector') {
+            selectorSnippet = arg.expression.toSource();
+          } else if (arg.name.label.name == 'builder') {
+            builderOffset = arg.expression.offset;
+            builderLength = arg.expression.length;
+          }
+        }
+        nodes.add(
+          SelectorNode(
+            consumedClass: consumedClass,
+            selectedType: selectedType,
+            selectorSnippet: selectorSnippet,
+            builderOffset: builderOffset,
+            builderLength: builderLength,
+            filePath: filePath,
+            offset: node.offset,
+            length: node.length,
+          ),
+        );
+      }
+    }
+
+    super.visitMethodInvocation(node);
   }
 
   void _handleBlocDeclaration(InstanceCreationExpression node, String type) {
