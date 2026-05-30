@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.3.0] - 2026-05-30
+
+### Added
+- **ProxyProvider / ChangeNotifierProxyProvider** scanning and migration: new `ProxyProviderNode` IR type; transformer replaces the declaration site and appends a `@riverpod` Notifier skeleton with `ref.watch(baseProvider)`.
+- **`context.select<T, R>()`** scanning: new `ContextSelectNode` IR type; transforms to `ref.watch(provider.select(...))`.
+- **`ValueNotifier<T>` subclasses** detected as `LogicUnitNode` with a single `value` state field.
+- **`ValueListenableBuilder<T>`** detected as `ConsumerNode` (builder offset captured).
+- **`MultiBlocProvider` / `MultiRepositoryProvider`** (BLoC) detected as `MultiProviderNode`; transformer replaces with `ProviderScope`.
+- **`BlocSelector<B, S, T>`** detected as `SelectorNode`; existing `_transformSelector` handles it automatically.
+- **`Get.lazyPut<T>()` / `Get.create<T>()`** (GetX) detected as `ProviderDeclarationNode`, same as `Get.put`.
+- **`@computed` MobX fields** now captured in `stateFields` alongside `@observable` fields.
+
+### Changed
+- `analyzer` dependency bumped `^10.0.1` → `^12.1.0`; resolves pub.dev transitive dependency warning.
+- API documentation coverage raised from 6% → above pub.dev 20% threshold: `///` doc comments added to all public classes, constructors, fields, and key methods across all 27 `lib/` files.
+
 ## [2.2.5] - 2026-05-23
 
 ### Fixed
