@@ -3,15 +3,30 @@ library;
 
 import 'dart:io';
 
+/// Resolved configuration collected by the [InteractiveWizard].
 class WizardConfig {
+  /// Absolute or relative path to the Flutter project to migrate.
   final String targetPath;
+
+  /// Migration mode: `'safe'`, `'assisted'`, or `'aggressive'`.
   final String mode;
+
+  /// Whether to request AI-assisted guidance during the migration.
   final bool useAi;
+
+  /// When true, show diffs but do not write any files.
   final bool dryRun;
+
+  /// When true, add Riverpod imports and remove legacy ones after migration.
   final bool cleanImports;
+
+  /// When true, write a `migration_report.json` summary after the run.
   final bool generateReport;
+
+  /// When true, write a Mermaid architecture diagram after the run.
   final bool visualize;
 
+  /// Creates a [WizardConfig].
   WizardConfig({
     required this.targetPath,
     required this.mode,
@@ -22,6 +37,7 @@ class WizardConfig {
     this.visualize = false,
   });
 
+  /// Serialises this config to a JSON-compatible map.
   Map<String, dynamic> toJson() => {
     'targetPath': targetPath,
     'mode': mode,
@@ -33,7 +49,11 @@ class WizardConfig {
   };
 }
 
+/// Runs a step-by-step interactive CLI prompt sequence to collect [WizardConfig].
+///
+/// Invoked by `dart run bin/migrator.dart` when no arguments are supplied.
 class InteractiveWizard {
+  /// Presents the interactive prompts and returns the resolved [WizardConfig].
   WizardConfig start() {
     _printBanner();
 

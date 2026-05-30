@@ -39,6 +39,7 @@ class FieldInfo {
   /// Source text of the initializer expression.
   final String? initializer;
 
+  /// Creates a [FieldInfo].
   const FieldInfo({
     required this.rawName,
     this.type = 'dynamic',
@@ -48,18 +49,28 @@ class FieldInfo {
 
 /// A parameter captured from a method declaration.
 class ParamInfo {
+  /// Parameter name as it appears in source.
   final String name;
+
+  /// Dart type of the parameter, defaulting to `'dynamic'` when unresolved.
   final String type;
 
+  /// Creates a [ParamInfo].
   const ParamInfo({required this.name, this.type = 'dynamic'});
 
+  /// Returns `'type name'` — the parameter in source-compatible form.
   String toSource() => '$type $name';
 }
 
 /// Captured information about a single method in a detected class.
 class MethodInfo {
+  /// Method name as it appears in source.
   final String name;
+
+  /// True when the method calls `notifyListeners()`, `emit()`, or equivalent.
   final bool callsNotifyListeners;
+
+  /// Full body source text including braces or the `=> expr` arrow.
   final String bodySnippet;
 
   /// True when the method body contains `async`/`await`.
@@ -74,6 +85,7 @@ class MethodInfo {
   /// Formal parameters of the method.
   final List<ParamInfo> parameters;
 
+  /// Creates a [MethodInfo].
   MethodInfo({
     required this.name,
     required this.callsNotifyListeners,
@@ -84,6 +96,7 @@ class MethodInfo {
     this.parameters = const [],
   });
 
+  /// Comma-separated parameter list in source-compatible form.
   String get paramSource => parameters.map((p) => p.toSource()).join(', ');
 }
 
@@ -109,6 +122,7 @@ class LogicUnitNode extends ProviderNode {
   /// Names of mixins used by this class.
   final List<String> mixins;
 
+  /// Creates a [LogicUnitNode].
   LogicUnitNode({
     required this.name,
     required this.stateFields,
@@ -124,8 +138,10 @@ class LogicUnitNode extends ProviderNode {
     required super.length,
   });
 
+  /// Raw field names in declaration order.
   List<String> get stateVariables => stateFields.map((f) => f.rawName).toList();
 
+  /// Serialises the node to a JSON-compatible map for reports and dashboards.
   Map<String, dynamic> toJson() => {
     'type': 'logic_unit',
     'name': name,
@@ -144,11 +160,19 @@ class LogicUnitNode extends ProviderNode {
 
 /// IR node for an explicit Provider/ChangeNotifierProvider declaration site.
 class ProviderDeclarationNode extends ProviderNode {
-  final String providerType; // e.g. ChangeNotifierProvider
-  final String providedClass; // e.g. Counter
+  /// Provider widget type, e.g. `'ChangeNotifierProvider'` or `'BlocProvider'`.
+  final String providerType;
+
+  /// Name of the class being provided, e.g. `'Counter'`.
+  final String providedClass;
+
+  /// Source offset of the `child:` argument, if present.
   final int? childOffset;
+
+  /// Source length of the `child:` argument, if present.
   final int? childLength;
 
+  /// Creates a [ProviderDeclarationNode].
   ProviderDeclarationNode({
     required this.providerType,
     required this.providedClass,
@@ -162,12 +186,22 @@ class ProviderDeclarationNode extends ProviderNode {
 
 /// IR node for a Consumer or Builder widget that watches a provider.
 class ConsumerNode extends ProviderNode {
+  /// Name of the consumed provider type, e.g. `'Counter'`.
   final String consumedClass;
+
+  /// Source offset of the `builder:` argument, if present.
   final int? builderOffset;
+
+  /// Source length of the `builder:` argument, if present.
   final int? builderLength;
+
+  /// Source offset of the `child:` argument, if present.
   final int? childOffset;
+
+  /// Source length of the `child:` argument, if present.
   final int? childLength;
 
+  /// Creates a [ConsumerNode].
   ConsumerNode({
     required this.consumedClass,
     this.builderOffset,
@@ -182,10 +216,16 @@ class ConsumerNode extends ProviderNode {
 
 /// IR node for a `context.watch`, `context.read`, or `Provider.of` access.
 class ProviderOfNode extends ProviderNode {
+  /// Name of the consumed provider type.
   final String consumedClass;
+
+  /// True when the access is inside a `build()` method (reactive watch context).
   final bool isInBuildMethod;
+
+  /// True when the result is immediately used for a method call (→ `.notifier`).
   final bool isMethodCall;
 
+  /// Creates a [ProviderOfNode].
   ProviderOfNode({
     required this.consumedClass,
     this.isInBuildMethod = false,
@@ -198,14 +238,28 @@ class ProviderOfNode extends ProviderNode {
 
 /// IR node for a `Selector` widget that listens to a derived slice of state.
 class SelectorNode extends ProviderNode {
+  /// Name of the watched provider type.
   final String consumedClass;
+
+  /// Dart type of the selected sub-value, e.g. `'int'`.
   final String selectedType;
+
+  /// Source text of the selector lambda, e.g. `'(s) => s.count'`.
   final String selectorSnippet;
+
+  /// Source offset of the `builder:` argument, if present.
   final int? builderOffset;
+
+  /// Source length of the `builder:` argument, if present.
   final int? builderLength;
+
+  /// Source offset of the `child:` argument, if present.
   final int? childOffset;
+
+  /// Source length of the `child:` argument, if present.
   final int? childLength;
 
+  /// Creates a [SelectorNode].
   SelectorNode({
     required this.consumedClass,
     required this.selectedType,
@@ -222,9 +276,13 @@ class SelectorNode extends ProviderNode {
 
 /// IR node for a `MultiProvider` wrapper.
 class MultiProviderNode extends ProviderNode {
+  /// Source offset of the `child:` argument, if present.
   final int? childOffset;
+
+  /// Source length of the `child:` argument, if present.
   final int? childLength;
 
+  /// Creates a [MultiProviderNode].
   MultiProviderNode({
     this.childOffset,
     this.childLength,
@@ -236,11 +294,19 @@ class MultiProviderNode extends ProviderNode {
 
 /// IR node for a `FutureProvider` or `StreamProvider` declaration.
 class AsyncProviderNode extends ProviderNode {
-  final String providerType; // FutureProvider or StreamProvider
+  /// Either `'FutureProvider'` or `'StreamProvider'`.
+  final String providerType;
+
+  /// The async value type, e.g. `'List<Todo>'`.
   final String providedType;
+
+  /// Source offset of the `child:` argument, if present.
   final int? childOffset;
+
+  /// Source length of the `child:` argument, if present.
   final int? childLength;
 
+  /// Creates an [AsyncProviderNode].
   AsyncProviderNode({
     required this.providerType,
     required this.providedType,
@@ -254,10 +320,16 @@ class AsyncProviderNode extends ProviderNode {
 
 /// IR node for a StatelessWidget or StatefulWidget class.
 class WidgetNode extends ProviderNode {
+  /// Class name of the widget, e.g. `'HomeScreen'`.
   final String widgetName;
+
+  /// Either `'StatelessWidget'` or `'StatefulWidget'`.
   final String widgetType;
+
+  /// Source offset of the `build()` method (or `createState()` for stateful).
   final int? buildMethodOffset;
 
+  /// Creates a [WidgetNode].
   WidgetNode({
     required this.widgetName,
     required this.widgetType,
@@ -270,9 +342,13 @@ class WidgetNode extends ProviderNode {
 
 /// IR node for a `State<T>` class paired with a `StatefulWidget`.
 class StateNode extends ProviderNode {
+  /// Name of the `State` subclass, e.g. `'_HomeScreenState'`.
   final String stateClassName;
+
+  /// Name of the associated `StatefulWidget` subclass.
   final String widgetName;
 
+  /// Creates a [StateNode].
   StateNode({
     required this.stateClassName,
     required this.widgetName,
@@ -284,9 +360,13 @@ class StateNode extends ProviderNode {
 
 /// IR node for a `HookWidget` that uses flutter_hooks.
 class HookWidgetNode extends ProviderNode {
+  /// Class name of the hook widget.
   final String widgetName;
+
+  /// Source offset of the `build()` method.
   final int buildMethodOffset;
 
+  /// Creates a [HookWidgetNode].
   HookWidgetNode({
     required this.widgetName,
     required this.buildMethodOffset,
@@ -310,9 +390,13 @@ class ProxyProviderNode extends ProviderNode {
   /// True when the original is `ChangeNotifierProxyProvider`.
   final bool isChangeNotifier;
 
+  /// Source offset of the `child:` argument, if present.
   final int? childOffset;
+
+  /// Source length of the `child:` argument, if present.
   final int? childLength;
 
+  /// Creates a [ProxyProviderNode].
   ProxyProviderNode({
     required this.baseType,
     required this.resultType,
@@ -329,9 +413,13 @@ class ProxyProviderNode extends ProviderNode {
 ///
 /// Maps to `ref.watch(tProvider.select(fn))` in Riverpod.
 class ContextSelectNode extends ProviderNode {
+  /// Name of the watched provider type, e.g. `'Counter'`.
   final String consumedClass;
+
+  /// Source text of the selector function passed to `context.select`.
   final String selectorSnippet;
 
+  /// Creates a [ContextSelectNode].
   ContextSelectNode({
     required this.consumedClass,
     required this.selectorSnippet,

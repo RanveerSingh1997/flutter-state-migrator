@@ -12,6 +12,7 @@ class GeneratedFileManager {
 
   /// Returns every `*.g.dart` file under [projectPath], excluding build/ and
   /// hidden directories.
+  /// Returns all `*.g.dart` files under [projectPath], excluding build and tool dirs.
   List<File> listGeneratedFiles() {
     final dir = Directory(projectPath);
     if (!dir.existsSync()) return [];

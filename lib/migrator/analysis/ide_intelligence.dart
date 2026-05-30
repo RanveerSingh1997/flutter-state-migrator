@@ -54,15 +54,32 @@ class IdeDiagnostic {
 
   /// 0-based line number where the diagnostic ends.
   final int endLine;
+
+  /// 0-based column number where the diagnostic ends.
   final int endColumn;
+
+  /// Diagnostic severity string: `'error'`, `'warning'`, or `'information'`.
   final String severity;
+
+  /// Short machine-readable code identifying the rule, e.g. `'god-component'`.
   final String code;
+
+  /// Publisher string shown in the VS Code Problems panel, e.g. `'flutter_state_migrator'`.
   final String source;
+
+  /// High-level category: `'architecture'` or `'governance'`.
   final String category;
+
+  /// Human-readable description displayed in the editor.
   final String message;
+
+  /// Stable component ID from the [ArchitectureGraph] this diagnostic belongs to.
   final String nodeId;
+
+  /// Optional list of code actions the editor can offer.
   final List<IdeQuickFix> quickFixes;
 
+  /// Creates an [IdeDiagnostic].
   const IdeDiagnostic({
     required this.filePath,
     required this.startLine,
@@ -78,6 +95,7 @@ class IdeDiagnostic {
     this.quickFixes = const [],
   });
 
+  /// Serialises this diagnostic to a JSON-compatible map.
   Map<String, dynamic> toJson() => {
     'filePath': filePath,
     'startLine': startLine,
@@ -122,6 +140,7 @@ class IdeAnalysisReport {
     required this.diagnostics,
   });
 
+  /// Serialises this report to the JSON payload consumed by the VS Code extension.
   Map<String, dynamic> toJson() => {
     'targetPath': targetPath,
     'summary': {

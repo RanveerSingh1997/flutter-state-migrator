@@ -19,6 +19,7 @@ class DriftSnapshot {
   final List<String> violationFingerprints;
   final double healthScore;
 
+  /// Creates a [DriftSnapshot].
   DriftSnapshot({
     required this.timestamp,
     required this.smellFingerprints,
@@ -26,6 +27,7 @@ class DriftSnapshot {
     required this.healthScore,
   });
 
+  /// Deserialises a [DriftSnapshot] from [json].
   factory DriftSnapshot.fromJson(Map<String, dynamic> json) => DriftSnapshot(
     timestamp: DateTime.parse(json['timestamp'] as String),
     smellFingerprints: List<String>.from(json['smellFingerprints'] as List),
@@ -35,6 +37,7 @@ class DriftSnapshot {
     healthScore: (json['healthScore'] as num).toDouble(),
   );
 
+  /// Serialises this snapshot to a JSON-compatible map.
   Map<String, dynamic> toJson() => {
     'timestamp': timestamp.toIso8601String(),
     'smellFingerprints': smellFingerprints,

@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.3.2] - 2026-05-30
+
+### Changed
+- Comprehensive `///` doc comments added to all remaining undocumented public
+  API elements: `FieldInfo`, `ParamInfo`, `MethodInfo`, all IR node fields and
+  constructors (`ProviderDeclarationNode`, `ConsumerNode`, `ProviderOfNode`,
+  `SelectorNode`, `MultiProviderNode`, `AsyncProviderNode`, `WidgetNode`,
+  `StateNode`, `HookWidgetNode`, `ProxyProviderNode`, `ContextSelectNode`),
+  `WizardConfig`, `InteractiveWizard`, `PluginLoader`, `MigrationPlugin`,
+  `CustomAdapter`, `CustomTransformer`, `IdeDiagnostic` fields, `toJson`
+  methods across all models, and `DriftSnapshot` factory/toJson.
+
 ## [2.3.1] - 2026-05-30
 
 ### Fixed
