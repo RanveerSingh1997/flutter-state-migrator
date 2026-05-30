@@ -1,3 +1,6 @@
+/// Structured IDE diagnostics and quick-fix actions for the VS Code extension.
+library;
+
 import 'dart:io';
 
 import 'package:analyzer/dart/analysis/utilities.dart';

@@ -1,3 +1,6 @@
+/// AST adapter for Provider-framework pattern detection.
+library;
+
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/ast/visitor.dart';
 

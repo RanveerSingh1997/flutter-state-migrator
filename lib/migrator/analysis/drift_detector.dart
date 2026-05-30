@@ -1,3 +1,6 @@
+/// Architecture health drift detection via snapshot comparison.
+library;
+
 import 'dart:convert';
 import 'dart:io';
 

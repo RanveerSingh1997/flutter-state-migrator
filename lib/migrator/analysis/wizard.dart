@@ -1,3 +1,6 @@
+/// Interactive CLI wizard for guided migration mode selection.
+library;
+
 import 'dart:io';
 
 class WizardConfig {

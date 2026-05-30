@@ -1,3 +1,6 @@
+/// Architecture Health Score computation and migration analytics.
+library;
+
 import '../models/ir_models.dart';
 import 'architecture_intelligence.dart';
 import 'governance_engine.dart';

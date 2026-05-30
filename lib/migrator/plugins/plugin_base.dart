@@ -1,3 +1,6 @@
+/// Base interfaces for compile-time migrator plugins.
+library;
+
 import 'package:analyzer/dart/ast/visitor.dart';
 import '../models/ir_models.dart';
 

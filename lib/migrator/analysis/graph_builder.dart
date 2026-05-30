@@ -1,3 +1,6 @@
+/// Converts flat IR node lists into a typed [ArchitectureGraph].
+library;
+
 import '../models/ir_models.dart';
 import '../models/graph_models.dart';
 

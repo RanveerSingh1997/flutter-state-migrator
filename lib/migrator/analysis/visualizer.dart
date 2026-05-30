@@ -1,3 +1,6 @@
+/// Mermaid diagram generation and graph summary statistics.
+library;
+
 import 'dart:io';
 
 import '../models/graph_models.dart';

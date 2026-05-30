@@ -1,3 +1,6 @@
+/// LLM-assisted migration guidance with deterministic fallbacks.
+library;
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -64,6 +67,7 @@ class AiGuidance {
     this.rawResponse,
   });
 
+  /// Serialises this guidance to a JSON-compatible map.
   Map<String, dynamic> toJson() => {
     'title': title,
     'subject': subject,

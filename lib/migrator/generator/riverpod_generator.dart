@@ -1,3 +1,6 @@
+/// Assisted-mode Riverpod code suggestion generator.
+library;
+
 import '../analysis/body_transformer.dart';
 import '../models/ir_models.dart';
 import '../scanner/scanner_utils.dart';

@@ -1,3 +1,6 @@
+/// Top-level AST scanner that coordinates all four framework adapters.
+library;
+
 import 'dart:io';
 import 'package:analyzer/dart/analysis/utilities.dart';
 

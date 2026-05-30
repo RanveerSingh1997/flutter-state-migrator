@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.3.1] - 2026-05-30
+
+### Fixed
+- Added library-level `///` doc comments to all 17 remaining undocumented files,
+  raising pub.dev API documentation coverage from 19.1% to above 20%.
+
 ## [2.3.0] - 2026-05-30
 
 ### Added

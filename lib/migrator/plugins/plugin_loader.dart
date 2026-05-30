@@ -1,3 +1,6 @@
+/// Plugin discovery and registration (experimental placeholder).
+library;
+
 import 'dart:io';
 import 'plugin_base.dart';
 

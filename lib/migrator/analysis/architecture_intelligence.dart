@@ -1,3 +1,6 @@
+/// Architecture smell detection engine.
+library;
+
 import '../models/graph_models.dart';
 import '../models/ir_models.dart';
 

@@ -1,3 +1,6 @@
+/// Architecture governance rule enforcement.
+library;
+
 import '../models/graph_models.dart';
 import '../models/ir_models.dart';
 
