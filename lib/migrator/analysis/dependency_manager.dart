@@ -2,13 +2,13 @@ import 'dart:io';
 
 /// Packages to add under `dependencies:` after a Riverpod migration.
 const _riverpodDeps = {
-  'flutter_riverpod': '^2.6.1',
-  'riverpod_annotation': '^2.6.1',
+  'flutter_riverpod': '^3.3.1',
+  'riverpod_annotation': '^3.3.1',
 };
 
 /// Packages to add under `dev_dependencies:` after a Riverpod migration.
 const _riverpodDevDeps = {
-  'riverpod_generator': '^2.6.1',
+  'riverpod_generator': '^3.3.1',
   'build_runner': '^2.4.0',
 };
 
@@ -31,8 +31,15 @@ class DependencyUpdateResult {
   /// Packages that were commented out in `pubspec.yaml`.
   final List<String> commented;
 
+  /// True when `flutter pub get` completed successfully after the update.
+  final bool pubGetSucceeded;
+
   /// Creates a [DependencyUpdateResult].
-  const DependencyUpdateResult({required this.added, required this.commented});
+  const DependencyUpdateResult({
+    required this.added,
+    required this.commented,
+    this.pubGetSucceeded = false,
+  });
 
   /// True when any packages were added or commented.
   bool get hasChanges => added.isNotEmpty || commented.isNotEmpty;
@@ -94,7 +101,34 @@ class DependencyManager {
     }
 
     pubspecFile.writeAsStringSync(content);
-    return DependencyUpdateResult(added: added, commented: commented);
+
+    // Run `flutter pub get` so the project compiles immediately after migration.
+    bool pubGetOk = false;
+    if (added.isNotEmpty || commented.isNotEmpty) {
+      try {
+        final result = await Process.run(
+          'flutter',
+          ['pub', 'get'],
+          workingDirectory: projectPath,
+        );
+        pubGetOk = result.exitCode == 0;
+        if (!pubGetOk) {
+          stderr.writeln(
+            '[Migrator] WARNING: flutter pub get failed '
+            '(exit ${result.exitCode}). Run it manually.\n'
+            '${result.stderr}',
+          );
+        }
+      } catch (e) {
+        stderr.writeln('[Migrator] WARNING: Could not run flutter pub get: $e');
+      }
+    }
+
+    return DependencyUpdateResult(
+      added: added,
+      commented: commented,
+      pubGetSucceeded: pubGetOk,
+    );
   }
 
   /// Returns true if [name] already appears as a non-commented dep key.

@@ -2,6 +2,51 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.4.0] - 2026-06-01
+
+### Fixed — Critical bugs (migrated code would not compile)
+- **edit_applier**: pure insertions (length == 0) were silently dropped when
+  they shared an offset with a content-replacing edit. File-level headers
+  (`riverpod_annotation` import + `part` directive) are now always applied.
+  A stderr warning is emitted when a non-zero edit is legitimately skipped.
+- **import_manager**: `riverpod_annotation` was never injected — every file
+  containing `@riverpod` annotations would fail to compile. Now injected
+  whenever `@riverpod` or a `.g.dart` part directive is detected. Symbol
+  detection now strips comments first to prevent false positives on
+  `// ConsumerWidget` or similar comment lines.
+- **FutureProvider / StreamProvider** output contained `return /* TODO */;`
+  — a syntax error. Replaced with a `throw UnimplementedError()` stub inside
+  a compilable async body.
+- **ProxyProvider** output emitted `throw UnimplementedError()` as the
+  `build()` body, crashing at runtime. Replaced with `return ResultType()`
+  and a clear TODO comment.
+- **body_transformer**: regex-based source rewriting corrupted string literals,
+  multi-line expressions, and chained calls. Replaced with a safe comment-only
+  approach: the original body is preserved verbatim and a structured
+  `// TODO(Migrator):` block is prepended listing each detected mutation
+  pattern and its Riverpod equivalent.
+
+### Fixed — Missing implementations
+- **dependency_manager**: `updateDependencies()` now actually runs
+  `flutter pub get` after updating `pubspec.yaml`. Legacy packages
+  (`provider`, `flutter_bloc`, `get`, `mobx`, etc.) are commented out;
+  Riverpod 3.x packages are added with correct current versions.
+- **analytics_manager**: `migration_success_ratio` was hardcoded to `1.0`.
+  Now computed honestly from a `partialMigrations` count (files that received
+  TODO placeholders). Health score now uses severity-weighted deductions
+  (error smells deduct 10 pts, warnings 2.5 pts; governance errors 8 pts).
+
+### Added
+- **MobX Store detection**: `extends Store` and `with Store` patterns are now
+  detected in addition to field-level `@observable`/`@computed` annotations,
+  covering the abstract-class-based MobX code-gen pattern.
+- **Integration tests** (`test/integration_test.dart`): end-to-end pipeline
+  test copies `example/lib` to a temp directory, runs the full
+  Scanner → Transformer → applyEdits → ImportManager chain, and asserts that
+  Riverpod patterns are present and no syntax-error placeholders remain.
+  Also includes unit tests for the applyEdits overlap fix and ImportManager
+  false-positive fix.
+
 ## [2.3.4] - 2026-06-01
 
 ### Fixed

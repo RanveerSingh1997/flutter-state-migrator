@@ -32,19 +32,35 @@ class MobXAdapter extends RecursiveAstVisitor<void> {
     }
 
     bool isMobXStore = false;
-    // Also check for abstract classes ending in '_Store' or with 'Store' mixin
-    // but the most reliable way is checking for annotations.
-    for (final member in classBody.members) {
-      if (member is FieldDeclaration) {
-        for (final metadata in member.metadata) {
-          final name = metadata.name.toSource();
-          if (name == 'observable' || name == 'computed') {
-            isMobXStore = true;
-            break;
+
+    // Detect via `extends Store` — the pattern used by abstract base classes
+    // in code-generated MobX (e.g. `abstract class _CartStore with Store`).
+    final extendsClause = node.extendsClause;
+    final withClause = node.withClause;
+    if (extendsClause != null &&
+        extendsClause.superclass.name.lexeme == 'Store') {
+      isMobXStore = true;
+    }
+    if (!isMobXStore && withClause != null) {
+      if (withClause.mixinTypes.any((t) => t.name.lexeme == 'Store')) {
+        isMobXStore = true;
+      }
+    }
+
+    // Detect via @observable / @computed field annotations.
+    if (!isMobXStore) {
+      for (final member in classBody.members) {
+        if (member is FieldDeclaration) {
+          for (final metadata in member.metadata) {
+            final name = metadata.name.toSource();
+            if (name == 'observable' || name == 'computed') {
+              isMobXStore = true;
+              break;
+            }
           }
         }
+        if (isMobXStore) break;
       }
-      if (isMobXStore) break;
     }
 
     if (isMobXStore) {

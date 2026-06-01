@@ -1,6 +1,6 @@
 name: flutter_state_migrator
 description: "Automated CLI tool to migrate Flutter apps from Provider, BLoC, GetX, and MobX to Riverpod."
-version: 2.3.4
+version: 2.4.0
 homepage: https://github.com/RanveerSingh1997/flutter-state-migrator
 repository: https://github.com/RanveerSingh1997/flutter-state-migrator
 

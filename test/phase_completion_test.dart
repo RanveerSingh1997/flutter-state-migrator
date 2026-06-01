@@ -61,7 +61,7 @@ void main() {
   });
 
   group('Phase 29 body transformer', () {
-    test('rewrites list mutation and merges multi-step state updates', () {
+    test('emits migration hint comments and preserves original body', () {
       final result = BodyTransformer().transformBody(
         '''
 {
@@ -81,12 +81,14 @@ void main() {
         ],
       );
 
-      expect(
-        result,
-        contains(
-          'state = state.copyWith(items: [...state.items, todo], count: state.count + 1, label: state.label ?? fallback);',
-        ),
-      );
+      // New behavior: preserves original body and prepends TODO comment hints.
+      expect(result, contains('// TODO(Migrator):'));
+      expect(result, contains('_items.add(item)'));   // hint for .add()
+      expect(result, contains('_count++'));           // hint for ++
+      expect(result, contains('_label = x'));         // hint for assignment
+      // Original source lines are preserved verbatim.
+      expect(result, contains('_items.add(todo);'));
+      expect(result, contains('_count++;'));
     });
   });
 
@@ -198,7 +200,11 @@ class CounterModel extends ChangeNotifier {
       expect(headerEdit.replacement, contains('part "counter_model.g.dart";'));
       expect(classEdit.replacement, contains('return 0;'));
       expect(classEdit.replacement, contains('void increment(int delta)'));
-      expect(classEdit.replacement, contains('state = state + delta;'));
+      // Body transformer now preserves original + prepends TODO hint comment.
+      expect(
+        classEdit.replacement,
+        contains('// TODO(Migrator):'),
+      );
 
       final providerRead = transformer.transformNode(
         ProviderOfNode(
