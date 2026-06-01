@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.3.4] - 2026-06-01
+
+### Fixed
+- Completely rewrote the `example/` app — the previous example had syntax errors,
+  used the deprecated `StateNotifierProvider` API, imported `flutter_riverpod` while
+  only listing `provider` in its pubspec, and contained broken migration output.
+- The example is now a clean, compilable **Provider app (before-state)** with
+  `CounterNotifier`, `TodoNotifier`, and a `SettingsScreen` that exercises
+  `context.watch`, `context.read`, `Consumer`, and `context.select` — the four
+  patterns developers most commonly need to migrate. Run the migrator on it to see
+  the automated Riverpod conversion.
+- Removed committed generated artefacts (`dependency_graph.mmd`,
+  `migration_report.json`, broken `counter_model.dart`) from `example/lib/`.
+
 ## [2.3.3] - 2026-05-30
 
 ### Fixed

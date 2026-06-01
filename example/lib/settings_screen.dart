@@ -1,33 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'counter_model.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class SettingsScreen extends ConsumerStatefulWidget {
+import 'counter_notifier.dart';
+import 'todo_notifier.dart';
+
+class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
   @override
-  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
-}
-
-class _SettingsScreenState extends ConsumerState<SettingsScreen> {
-  @override
   Widget build(BuildContext context) {
+    // context.select — migrates to ref.watch(provider.select(...))
+    final completedCount =
+        context.select<TodoNotifier, int>((n) => n.completedCount);
+
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
-      body: Center(
+      body: Padding(
+        padding: const EdgeInsets.all(24),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Consumer(
-              builder: (context, ref, child) => ref.watch(countermodelProvider.select((_, model) => model.count))
-                  Text('Count from Selector: $count'),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () =>
-                  ref.read(countermodelProvider).increment(),
-              child: const Text('Increment from Settings'),
+            Text('Completed todos: $completedCount'),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.restart_alt),
+              label: const Text('Reset counter'),
+              // context.read — migrates to ref.read(provider.notifier).reset()
+              onPressed: () => context.read<CounterNotifier>().reset(),
             ),
           ],
         ),

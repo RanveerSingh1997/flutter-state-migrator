@@ -1,9 +1,21 @@
-name: example_app
-description: A sample app to test the migrator.
+name: flutter_state_migrator_example
+description: >
+  A sample Flutter app using Provider — run the migrator on it to see the
+  automated Riverpod conversion in action.
 version: 1.0.0
+publish_to: none
+
 environment:
-  sdk: '>=3.0.0 <4.0.0'
+  sdk: '>=3.9.0 <4.0.0'
+
 dependencies:
   flutter:
     sdk: flutter
-  provider: ^6.1.1
+  provider: ^6.1.5+1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
