@@ -144,7 +144,7 @@ class GetXAdapter extends RecursiveAstVisitor<void> {
       // Get.put(MyController())
       final type =
           node.typeArguments?.arguments.first.toSource() ??
-          _inferTypeFromPut(node.argumentList.arguments.first);
+          _inferTypeFromPut(node.argumentList.arguments.first.argumentExpression);
       if (type != null) {
         nodes.add(
           ProviderDeclarationNode(
@@ -164,7 +164,7 @@ class GetXAdapter extends RecursiveAstVisitor<void> {
       if (typeArgs != null && typeArgs.arguments.isNotEmpty) {
         type = typeArgs.arguments.first.toSource();
       } else if (node.argumentList.arguments.isNotEmpty) {
-        type = _inferTypeFromFactory(node.argumentList.arguments.first);
+        type = _inferTypeFromFactory(node.argumentList.arguments.first.argumentExpression);
       }
       if (type != null) {
         nodes.add(

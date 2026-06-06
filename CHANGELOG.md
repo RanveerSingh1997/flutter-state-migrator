@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.5.0] - 2026-06-06
+
+### Added
+- **`migrator --version` / `-V`**: prints `migrator <version>` and exits — required for CI scripts that pin tool versions.
+- **`migrator --init [path]`**: scaffolds an annotated `migrator_config.yaml` in the target project directory with all supported keys and explanatory comments. Safe to run on projects with no existing config.
+- **BuildContext Leak Risk detection**: `ArchitectureIntelligenceEngine` now flags any async method in a logic unit that references `context` across an `await` gap without a `mounted` guard. Severity: `error`.
+- **Cloud LLM fallback**: `AIManager` now tries the Anthropic Claude API (`claude-haiku-4-5-20251001`) when `MIGRATOR_AI_KEY` is set, before falling back to Ollama and then deterministic guidance. The CLI labels the guidance source as `[CLOUD LLM]` (magenta), `[LOCAL LLM]` (cyan), or `[FALLBACK]` (yellow).
+- **Real-world e-commerce demo** in `example/`: 600-line Provider app with `MultiProvider`, `ChangeNotifierProxyProvider`, `Consumer2`, and `Selector` — covers every migration pattern the tool handles.
+
+### Changed
+- **Pure Dart CLI package**: removed all Flutter SDK dependencies from the root `pubspec.yaml`. Flutter UI code moved to the `dashboard/` sub-package. The CLI can now be installed with a plain Dart SDK (`dart pub global activate flutter_state_migrator`) without requiring Flutter.
+- **`analyzer` upgraded to `^13.0.0`**: updated all four scanner files for analyzer 13 API changes (`NamedArgument` replaces `NamedExpression`; `FormalParameter.type` replaces removed `SimpleFormalParameter`/`DefaultFormalParameter`; `Argument.argumentExpression` for positional arguments).
+
 ## [2.4.0] - 2026-06-01
 
 ### Fixed — Critical bugs (migrated code would not compile)

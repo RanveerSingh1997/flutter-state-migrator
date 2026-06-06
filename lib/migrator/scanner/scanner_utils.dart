@@ -24,15 +24,9 @@ MethodInfo buildMethodInfo(
   if (!isGetter && member.parameters != null) {
     for (final param in member.parameters!.parameters) {
       final paramName = param.name?.lexeme ?? '';
-      var paramType = 'dynamic';
-      if (param is SimpleFormalParameter) {
-        paramType = param.type?.toSource() ?? 'dynamic';
-      } else if (param is DefaultFormalParameter) {
-        final inner = param.parameter;
-        if (inner is SimpleFormalParameter) {
-          paramType = inner.type?.toSource() ?? 'dynamic';
-        }
-      }
+      // analyzer 13: SimpleFormalParameter → RegularFormalParameter;
+      // DefaultFormalParameter removed — FormalParameter.type covers both.
+      var paramType = param.type?.toSource() ?? 'dynamic';
       if (paramName.isNotEmpty) {
         params.add(ParamInfo(name: paramName, type: paramType));
       }

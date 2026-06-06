@@ -31,8 +31,8 @@ class ArchitectureSmell {
 
 /// Analyzes an [ArchitectureGraph] for structural problems.
 ///
-/// Detects: God Component, State Explosion, High Coupling,
-/// Improper Async Pattern, Logic Leakage, and Circular Dependencies.
+/// Detects: God Component, State Explosion, High Coupling, Improper Async
+/// Pattern, BuildContext Leak Risk, Logic Leakage, and Circular Dependencies.
 class ArchitectureIntelligenceEngine {
   /// The graph to analyze.
   final ArchitectureGraph graph;
@@ -116,6 +116,26 @@ class ArchitectureIntelligenceEngine {
           severity: 'info',
         ),
       );
+    }
+
+    // BuildContext Leak: async method uses context across an await gap without a mounted guard
+    for (final method in node.methods) {
+      if (method.isAsync &&
+          method.bodySnippet.contains('context') &&
+          !method.bodySnippet.contains('mounted')) {
+        unitSmells.add(
+          ArchitectureSmell(
+            nodeId: id,
+            name: 'BuildContext Leak Risk',
+            description:
+                'Method ${method.name} in ${node.name} references BuildContext across an async gap without a mounted check. '
+                'The widget may have unmounted by the time the callback runs, causing a crash. '
+                'Add `if (!context.mounted) return;` after each await.',
+            severity: 'error',
+          ),
+        );
+        break;
+      }
     }
 
     return unitSmells;

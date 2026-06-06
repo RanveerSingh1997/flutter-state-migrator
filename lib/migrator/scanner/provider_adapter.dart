@@ -284,10 +284,10 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
       int? childOffset;
       int? childLength;
       for (final arg in node.argumentList.arguments) {
-        if (arg is NamedExpression) {
-          if (arg.name.label.name == 'create') {
-            if (arg.expression is FunctionExpression) {
-              final func = arg.expression as FunctionExpression;
+        if (arg is NamedArgument) {
+          if (arg.name.lexeme == 'create') {
+            if (arg.argumentExpression is FunctionExpression) {
+              final func = arg.argumentExpression as FunctionExpression;
               final body = func.body;
               if (body is ExpressionFunctionBody) {
                 if (body.expression is InstanceCreationExpression) {
@@ -300,9 +300,9 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
                 }
               }
             }
-          } else if (arg.name.label.name == 'child') {
-            childOffset = arg.expression.offset;
-            childLength = arg.expression.length;
+          } else if (arg.name.lexeme == 'child') {
+            childOffset = arg.argumentExpression.offset;
+            childLength = arg.argumentExpression.length;
           }
         }
       }
@@ -327,13 +327,13 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
         int? childLength;
 
         for (final arg in node.argumentList.arguments) {
-          if (arg is! NamedExpression) continue;
-          if (arg.name.label.name == 'builder') {
-            builderOffset = arg.expression.offset;
-            builderLength = arg.expression.length;
-          } else if (arg.name.label.name == 'child') {
-            childOffset = arg.expression.offset;
-            childLength = arg.expression.length;
+          if (arg is! NamedArgument) continue;
+          if (arg.name.lexeme == 'builder') {
+            builderOffset = arg.argumentExpression.offset;
+            builderLength = arg.argumentExpression.length;
+          } else if (arg.name.lexeme == 'child') {
+            childOffset = arg.argumentExpression.offset;
+            childLength = arg.argumentExpression.length;
           }
         }
 
@@ -354,9 +354,9 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
       int? childOffset;
       int? childLength;
       for (final arg in node.argumentList.arguments) {
-        if (arg is NamedExpression && arg.name.label.name == 'child') {
-          childOffset = arg.expression.offset;
-          childLength = arg.expression.length;
+        if (arg is NamedArgument && arg.name.lexeme == 'child') {
+          childOffset = arg.argumentExpression.offset;
+          childLength = arg.argumentExpression.length;
         }
       }
       nodes.add(
@@ -379,15 +379,15 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
         int? childOffset;
         int? childLength;
         for (final arg in node.argumentList.arguments) {
-          if (arg is! NamedExpression) continue;
-          if (arg.name.label.name == 'selector') {
-            selectorSnippet = arg.expression.toSource();
-          } else if (arg.name.label.name == 'builder') {
-            builderOffset = arg.expression.offset;
-            builderLength = arg.expression.length;
-          } else if (arg.name.label.name == 'child') {
-            childOffset = arg.expression.offset;
-            childLength = arg.expression.length;
+          if (arg is! NamedArgument) continue;
+          if (arg.name.lexeme == 'selector') {
+            selectorSnippet = arg.argumentExpression.toSource();
+          } else if (arg.name.lexeme == 'builder') {
+            builderOffset = arg.argumentExpression.offset;
+            builderLength = arg.argumentExpression.length;
+          } else if (arg.name.lexeme == 'child') {
+            childOffset = arg.argumentExpression.offset;
+            childLength = arg.argumentExpression.length;
           }
         }
         nodes.add(
@@ -414,9 +414,9 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
         providedType = typeArgs.arguments.first.beginToken.lexeme;
       }
       for (final arg in node.argumentList.arguments) {
-        if (arg is NamedExpression && arg.name.label.name == 'child') {
-          childOffset = arg.expression.offset;
-          childLength = arg.expression.length;
+        if (arg is NamedArgument && arg.name.lexeme == 'child') {
+          childOffset = arg.argumentExpression.offset;
+          childLength = arg.argumentExpression.length;
         }
       }
       nodes.add(
@@ -441,9 +441,9 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
       int? builderOffset;
       int? builderLength;
       for (final arg in node.argumentList.arguments) {
-        if (arg is NamedExpression && arg.name.label.name == 'builder') {
-          builderOffset = arg.expression.offset;
-          builderLength = arg.expression.length;
+        if (arg is NamedArgument && arg.name.lexeme == 'builder') {
+          builderOffset = arg.argumentExpression.offset;
+          builderLength = arg.argumentExpression.length;
         }
       }
       nodes.add(
@@ -550,12 +550,12 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
       int? childOffset;
       int? childLength;
       for (final arg in argumentList.arguments) {
-        if (arg is! NamedExpression) continue;
-        if (arg.name.label.name == 'create') {
-          providedClass = _inferConstructedType(arg.expression);
-        } else if (arg.name.label.name == 'child') {
-          childOffset = arg.expression.offset;
-          childLength = arg.expression.length;
+        if (arg is! NamedArgument) continue;
+        if (arg.name.lexeme == 'create') {
+          providedClass = _inferConstructedType(arg.argumentExpression);
+        } else if (arg.name.lexeme == 'child') {
+          childOffset = arg.argumentExpression.offset;
+          childLength = arg.argumentExpression.length;
         }
       }
       nodes.add(
@@ -582,13 +582,13 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
       int? childLength;
 
       for (final arg in argumentList.arguments) {
-        if (arg is! NamedExpression) continue;
-        if (arg.name.label.name == 'builder') {
-          builderOffset = arg.expression.offset;
-          builderLength = arg.expression.length;
-        } else if (arg.name.label.name == 'child') {
-          childOffset = arg.expression.offset;
-          childLength = arg.expression.length;
+        if (arg is! NamedArgument) continue;
+        if (arg.name.lexeme == 'builder') {
+          builderOffset = arg.argumentExpression.offset;
+          builderLength = arg.argumentExpression.length;
+        } else if (arg.name.lexeme == 'child') {
+          childOffset = arg.argumentExpression.offset;
+          childLength = arg.argumentExpression.length;
         }
       }
 
@@ -611,9 +611,9 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
       int? childOffset;
       int? childLength;
       for (final arg in argumentList.arguments) {
-        if (arg is NamedExpression && arg.name.label.name == 'child') {
-          childOffset = arg.expression.offset;
-          childLength = arg.expression.length;
+        if (arg is NamedArgument && arg.name.lexeme == 'child') {
+          childOffset = arg.argumentExpression.offset;
+          childLength = arg.argumentExpression.length;
         }
       }
       nodes.add(
@@ -638,15 +638,15 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
       int? childOffset;
       int? childLength;
       for (final arg in argumentList.arguments) {
-        if (arg is! NamedExpression) continue;
-        if (arg.name.label.name == 'selector') {
-          selectorSnippet = arg.expression.toSource();
-        } else if (arg.name.label.name == 'builder') {
-          builderOffset = arg.expression.offset;
-          builderLength = arg.expression.length;
-        } else if (arg.name.label.name == 'child') {
-          childOffset = arg.expression.offset;
-          childLength = arg.expression.length;
+        if (arg is! NamedArgument) continue;
+        if (arg.name.lexeme == 'selector') {
+          selectorSnippet = arg.argumentExpression.toSource();
+        } else if (arg.name.lexeme == 'builder') {
+          builderOffset = arg.argumentExpression.offset;
+          builderLength = arg.argumentExpression.length;
+        } else if (arg.name.lexeme == 'child') {
+          childOffset = arg.argumentExpression.offset;
+          childLength = arg.argumentExpression.length;
         }
       }
       nodes.add(
@@ -674,9 +674,9 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
       int? childOffset;
       int? childLength;
       for (final arg in argumentList.arguments) {
-        if (arg is NamedExpression && arg.name.label.name == 'child') {
-          childOffset = arg.expression.offset;
-          childLength = arg.expression.length;
+        if (arg is NamedArgument && arg.name.lexeme == 'child') {
+          childOffset = arg.argumentExpression.offset;
+          childLength = arg.argumentExpression.length;
         }
       }
       nodes.add(
@@ -704,9 +704,9 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
       int? childOffset;
       int? childLength;
       for (final arg in argumentList.arguments) {
-        if (arg is NamedExpression && arg.name.label.name == 'child') {
-          childOffset = arg.expression.offset;
-          childLength = arg.expression.length;
+        if (arg is NamedArgument && arg.name.lexeme == 'child') {
+          childOffset = arg.argumentExpression.offset;
+          childLength = arg.argumentExpression.length;
         }
       }
       nodes.add(
@@ -732,9 +732,9 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
       int? builderOffset;
       int? builderLength;
       for (final arg in argumentList.arguments) {
-        if (arg is NamedExpression && arg.name.label.name == 'builder') {
-          builderOffset = arg.expression.offset;
-          builderLength = arg.expression.length;
+        if (arg is NamedArgument && arg.name.lexeme == 'builder') {
+          builderOffset = arg.argumentExpression.offset;
+          builderLength = arg.argumentExpression.length;
         }
       }
       nodes.add(
@@ -784,9 +784,9 @@ class ProviderAdapter extends RecursiveAstVisitor<void> {
     int? childOffset;
     int? childLength;
     for (final arg in node.argumentList.arguments) {
-      if (arg is NamedExpression && arg.name.label.name == 'child') {
-        childOffset = arg.expression.offset;
-        childLength = arg.expression.length;
+      if (arg is NamedArgument && arg.name.lexeme == 'child') {
+        childOffset = arg.argumentExpression.offset;
+        childLength = arg.argumentExpression.length;
       }
     }
     nodes.add(
