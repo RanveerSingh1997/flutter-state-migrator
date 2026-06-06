@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../riverpod_version/todo_notifier.dart';
+import 'riverpod_version/todo_notifier.dart';
 
 /// A generic Todo list screen built with Riverpod.
 ///

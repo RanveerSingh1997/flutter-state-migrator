@@ -1,6 +1,6 @@
 import 'package:flutter_state_migrator/migrator/generator/riverpod_transformer.dart';
 import 'package:flutter_state_migrator/migrator/models/ir_models.dart';
-import 'package:flutter_test/flutter_test.dart';
+import 'package:test/test.dart';
 
 void main() {
   final transformer = RiverpodTransformer();

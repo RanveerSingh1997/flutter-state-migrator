@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_state_migrator/main.dart';
+import 'package:migration_dashboard/app.dart';
 
 void main() {
   testWidgets('Home screen shows title and Riverpod button', (tester) async {

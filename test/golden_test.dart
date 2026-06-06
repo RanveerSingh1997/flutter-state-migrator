@@ -15,7 +15,7 @@ import 'dart:io';
 
 import 'package:analyzer/dart/analysis/utilities.dart';
 import 'package:path/path.dart' as p;
-import 'package:flutter_test/flutter_test.dart';
+import 'package:test/test.dart';
 
 import 'package:flutter_state_migrator/migrator/analysis/import_manager.dart';
 import 'package:flutter_state_migrator/migrator/generator/riverpod_transformer.dart';

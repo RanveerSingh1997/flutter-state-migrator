@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:flutter_test/flutter_test.dart';
+import 'package:test/test.dart';
 import 'package:path/path.dart' as p;
 import 'package:flutter_state_migrator/migrator/analysis/body_transformer.dart';
 import 'package:flutter_state_migrator/migrator/analysis/ai_manager.dart';

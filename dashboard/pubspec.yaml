@@ -1,18 +1,23 @@
 name: migration_dashboard
-description: Interactive dashboard for Flutter State Migrator
+description: Interactive dashboard and demo app for Flutter State Migrator
 version: 1.0.0
 publish_to: 'none'
 
 environment:
-  sdk: ^3.0.0
+  sdk: ^3.9.2
 
 dependencies:
   flutter:
     sdk: flutter
+  cupertino_icons: ^1.0.9
+  provider: ^6.1.5+1
+  flutter_riverpod: ^3.3.1
+  go_router: ^17.2.3
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  test: ^1.24.0
   flutter_lints: ^2.0.0
 
 flutter:

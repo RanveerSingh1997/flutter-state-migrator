@@ -4,7 +4,7 @@ import 'package:flutter_state_migrator/migrator/scanner/bloc_adapter.dart';
 import 'package:flutter_state_migrator/migrator/scanner/getx_adapter.dart';
 import 'package:flutter_state_migrator/migrator/scanner/mobx_adapter.dart';
 import 'package:flutter_state_migrator/migrator/scanner/provider_adapter.dart';
-import 'package:flutter_test/flutter_test.dart';
+import 'package:test/test.dart';
 
 void main() {
   group('ProviderAdapter Tests', () {

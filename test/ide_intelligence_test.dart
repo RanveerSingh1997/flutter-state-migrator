@@ -6,7 +6,7 @@ import 'package:flutter_state_migrator/migrator/analysis/governance_engine.dart'
 import 'package:flutter_state_migrator/migrator/analysis/graph_builder.dart';
 import 'package:flutter_state_migrator/migrator/analysis/ide_intelligence.dart';
 import 'package:flutter_state_migrator/migrator/models/ir_models.dart';
-import 'package:flutter_test/flutter_test.dart';
+import 'package:test/test.dart';
 
 void main() {
   group('IdeIntelligenceEngine', () {

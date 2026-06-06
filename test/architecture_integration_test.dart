@@ -1,7 +1,7 @@
 import 'package:flutter_state_migrator/migrator/analysis/graph_builder.dart';
 import 'package:flutter_state_migrator/migrator/models/graph_models.dart';
 import 'package:flutter_state_migrator/migrator/models/ir_models.dart';
-import 'package:flutter_test/flutter_test.dart';
+import 'package:test/test.dart';
 
 void main() {
   test('GraphBuilder attributes provider usage to the owning logic unit', () {

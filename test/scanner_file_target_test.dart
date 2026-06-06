@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_state_migrator/migrator/scanner/ast_scanner.dart';
-import 'package:flutter_test/flutter_test.dart';
+import 'package:test/test.dart';
 
 void main() {
   test('AstScanner can scan a single file target', () {
