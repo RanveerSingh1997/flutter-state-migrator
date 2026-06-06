@@ -508,12 +508,16 @@ Future<void> main(List<String> arguments) async {
           print('   \x1B[32m✓ No AI guidance candidates detected.\x1B[0m');
         } else {
           for (final guidance in allGuidance) {
-            final sourceLabel = guidance.source == AiGuidanceSource.localLlm
-                ? 'LOCAL LLM'
-                : 'FALLBACK';
-            final color = guidance.source == AiGuidanceSource.localLlm
-                ? '\x1B[36m'
-                : '\x1B[33m';
+            final sourceLabel = switch (guidance.source) {
+              AiGuidanceSource.cloudLlm => 'CLOUD LLM',
+              AiGuidanceSource.localLlm => 'LOCAL LLM',
+              AiGuidanceSource.deterministicFallback => 'FALLBACK',
+            };
+            final color = switch (guidance.source) {
+              AiGuidanceSource.cloudLlm => '\x1B[35m',
+              AiGuidanceSource.localLlm => '\x1B[36m',
+              AiGuidanceSource.deterministicFallback => '\x1B[33m',
+            };
             print('   $color$sourceLabel\x1B[0m: ${guidance.title}');
             print('      Why: ${guidance.rationale}');
             print('      Next: ${guidance.recommendation}');

@@ -14,6 +14,9 @@ import 'governance_engine.dart';
 
 /// Where an [AiGuidance] recommendation originated.
 enum AiGuidanceSource {
+  /// Response came from the Anthropic cloud API (via `MIGRATOR_AI_KEY`).
+  cloudLlm,
+
   /// Response came from the local Ollama endpoint.
   localLlm,
 
@@ -82,25 +85,38 @@ class AiGuidance {
   };
 }
 
-/// Produces [AiGuidance] by querying a local Ollama LLM or falling back to
-/// deterministic recommendations derived from the architecture graph.
+/// Produces [AiGuidance] by querying an LLM or falling back to deterministic
+/// recommendations derived from the architecture graph.
 ///
-/// Prefers `http://localhost:11434/api/generate` (Ollama); falls back when
-/// the endpoint is unreachable, times out, or returns an invalid response.
+/// Priority order:
+/// 1. **Anthropic cloud API** — used when `MIGRATOR_AI_KEY` is set in the
+///    environment (or [cloudApiKey] is provided explicitly). Calls
+///    `https://api.anthropic.com/v1/messages` with `claude-haiku-4-5-20251001`.
+/// 2. **Local Ollama** — tried when no cloud key is present.
+///    Defaults to `http://localhost:11434/api/generate`.
+/// 3. **Deterministic fallback** — used when both LLM options are unavailable.
 class AIManager {
   /// Creates an [AIManager].
   ///
+  /// [cloudApiKey] defaults to the `MIGRATOR_AI_KEY` environment variable.
   /// Pass a custom [client] in tests to mock HTTP responses.
   AIManager({
     http.Client? client,
+    String? cloudApiKey,
     this.ollamaEndpoint = 'http://localhost:11434/api/generate',
     this.model = 'llama3.1',
-    this.requestTimeout = const Duration(seconds: 4),
+    this.requestTimeout = const Duration(seconds: 10),
   }) : _client = client ?? http.Client(),
-       _ownsClient = client == null;
+       _ownsClient = client == null,
+       _cloudApiKey =
+           cloudApiKey ?? Platform.environment['MIGRATOR_AI_KEY'];
+
+  static const _anthropicEndpoint = 'https://api.anthropic.com/v1/messages';
+  static const _cloudModel = 'claude-haiku-4-5-20251001';
 
   final http.Client _client;
   final bool _ownsClient;
+  final String? _cloudApiKey;
 
   /// Ollama-compatible API endpoint used for LLM completions.
   final String ollamaEndpoint;
@@ -219,7 +235,26 @@ class AIManager {
     required String prompt,
     required String fallbackRecommendation,
   }) async {
-    final llmResult = await _requestCompletion(prompt);
+    // Try cloud API first when a key is present.
+    if (_cloudApiKey != null) {
+      final cloudResult = await _requestCloudCompletion(prompt);
+      if (cloudResult.response != null) {
+        return AiGuidance(
+          title: title,
+          subject: subject,
+          category: category,
+          rationale: rationale,
+          recommendation: cloudResult.response!,
+          prompt: prompt,
+          source: AiGuidanceSource.cloudLlm,
+          backend: '$_cloudModel@$_anthropicEndpoint',
+          rawResponse: cloudResult.response,
+        );
+      }
+      // Cloud failed — still try Ollama before giving up.
+    }
+
+    final llmResult = await _requestOllamaCompletion(prompt);
     if (llmResult.response != null) {
       return AiGuidance(
         title: title,
@@ -242,12 +277,75 @@ class AIManager {
       recommendation: fallbackRecommendation,
       prompt: prompt,
       source: AiGuidanceSource.deterministicFallback,
-      backend: '$model@$ollamaEndpoint',
+      backend: _cloudApiKey != null ? '$_cloudModel@$_anthropicEndpoint' : '$model@$ollamaEndpoint',
       fallbackReason: llmResult.failureReason,
     );
   }
 
-  Future<_LlmResult> _requestCompletion(String prompt) async {
+  /// Calls the Anthropic Messages API using [_cloudApiKey].
+  Future<_LlmResult> _requestCloudCompletion(String prompt) async {
+    try {
+      final response = await _client
+          .post(
+            Uri.parse(_anthropicEndpoint),
+            headers: {
+              HttpHeaders.contentTypeHeader: 'application/json; charset=UTF-8',
+              'x-api-key': _cloudApiKey!,
+              'anthropic-version': '2023-06-01',
+            },
+            body: jsonEncode({
+              'model': _cloudModel,
+              'max_tokens': 512,
+              'messages': [
+                {'role': 'user', 'content': prompt},
+              ],
+            }),
+          )
+          .timeout(requestTimeout);
+
+      if (response.statusCode != 200) {
+        return _LlmResult.failure(
+          'Anthropic API returned status ${response.statusCode}.',
+        );
+      }
+
+      final payload = jsonDecode(response.body);
+      if (payload is! Map<String, dynamic>) {
+        return const _LlmResult.failure(
+          'Anthropic API returned an invalid JSON payload.',
+        );
+      }
+
+      final content = payload['content'];
+      if (content is! List || content.isEmpty) {
+        return const _LlmResult.failure('Anthropic API response content was empty.');
+      }
+      final text = (content.first as Map<String, dynamic>)['text'];
+      if (text is! String || text.trim().isEmpty) {
+        return const _LlmResult.failure('Anthropic API text block was empty.');
+      }
+
+      return _LlmResult.success(text.trim());
+    } on TimeoutException {
+      return _LlmResult.failure(
+        'Timed out waiting for the Anthropic API.',
+      );
+    } on SocketException catch (error) {
+      return _LlmResult.failure(
+        'Could not reach the Anthropic API: ${error.message}',
+      );
+    } on http.ClientException catch (error) {
+      return _LlmResult.failure(
+        'HTTP client error while contacting the Anthropic API: ${error.message}',
+      );
+    } on FormatException catch (error) {
+      return _LlmResult.failure(
+        'Could not decode Anthropic API response: ${error.message}',
+      );
+    }
+  }
+
+  Future<_LlmResult> _requestOllamaCompletion(String prompt) async {
     try {
       final response = await _client
           .post(
